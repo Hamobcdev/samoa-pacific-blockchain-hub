@@ -69,6 +69,12 @@ contract SamoaPacificBlockchainHubTest is Test {
         hub.setNDIDS(address(ndids));
         hub.setAIDTracker(address(aidTracker));
 
+        // Wire hub into ministry nodes (so the hub can coordinate workflows)
+        cbsNode.setHub(address(hub));
+        mcitNode.setHub(address(hub));
+        mofNode.setHub(address(hub));
+        educationNode.setHub(address(hub));
+
         // Register ministries in hub
         hub.registerMinistry("Central Bank of Samoa",    "CBS",       address(cbsNode));
         hub.registerMinistry("Ministry of Comms & IT",   "MCIT",      address(mcitNode));
@@ -351,18 +357,20 @@ contract SamoaPacificBlockchainHubTest is Test {
         vm.startPrank(admin);
         ndids.registerCitizen(CITIZEN_HASH);
         ndids.grantReadAccess(CITIZEN_HASH, address(educationNode));
+        vm.stopPrank();
 
         // Grant MOF read access to Education node
+        vm.prank(education);
         educationNode.authoriseReader(address(mofNode));
 
         // Execute the full workflow through the hub
+        vm.prank(admin);
         bool success = hub.executeEnrolmentWorkflow(
             CITIZEN_HASH,
             address(educationNode),
             address(mofNode),
             DATA_HASH
         );
-        vm.stopPrank();
 
         assertTrue(success);
 

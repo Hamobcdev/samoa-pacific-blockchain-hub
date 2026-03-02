@@ -24,7 +24,9 @@ contract MinistryNode {
     string  public ministryName;
     string  public ministryCode;
     address public immutable ministryAdmin;
+    address public immutable deployer;
     NDIDSRegistry public immutable ndids;
+    address public hub;
 
     // ── Service Records ──────────────────────────────────────────
 
@@ -73,6 +75,7 @@ contract MinistryNode {
         ministryCode  = _code;
         ministryAdmin = _admin;
         ndids         = NDIDSRegistry(_ndids);
+        deployer      = msg.sender;
     }
 
     modifier onlyAdmin() {
@@ -80,10 +83,21 @@ contract MinistryNode {
         _;
     }
 
+    modifier onlyAdminOrHub() {
+        if (msg.sender != ministryAdmin && msg.sender != hub) revert Unauthorised();
+        _;
+    }
+
     modifier onlyAuthorised() {
         if (msg.sender != ministryAdmin && !authorisedReaders[msg.sender])
             revert ReadAccessDenied();
         _;
+    }
+
+    function setHub(address _hub) external {
+        if (hub != address(0)) revert Unauthorised();
+        if (msg.sender != deployer && msg.sender != ministryAdmin) revert Unauthorised();
+        hub = _hub;
     }
 
     // ── Service Recording ────────────────────────────────────────
@@ -97,7 +111,7 @@ contract MinistryNode {
         string calldata serviceType,
         bytes32 dataHash,
         bool verifyViaNDIDS
-    ) external onlyAdmin returns (uint256 recordId) {
+    ) external onlyAdminOrHub returns (uint256 recordId) {
         bool verified = false;
         if (verifyViaNDIDS) {
             verified = ndids.verifyCitizen(citizenHash);
@@ -119,12 +133,12 @@ contract MinistryNode {
 
     // ── Cross-Ministry Read Access ───────────────────────────────
 
-    function authoriseReader(address reader) external onlyAdmin {
+    function authoriseReader(address reader) external onlyAdminOrHub {
         authorisedReaders[reader] = true;
         emit ReaderAuthorised(reader);
     }
 
-    function revokeReader(address reader) external onlyAdmin {
+    function revokeReader(address reader) external onlyAdminOrHub {
         authorisedReaders[reader] = false;
         emit ReaderRevoked(reader);
     }

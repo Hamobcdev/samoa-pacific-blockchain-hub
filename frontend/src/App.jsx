@@ -561,15 +561,42 @@ function MinistryDashboard({ provider, connected, blockNumber, onBack }) {
   const hubContract = useContract(ADDR.HUB, ABI.HUB, provider);
   const { data: hubData } = usePoll(async () => {
     if (!hubContract) return null;
-    const [mins, perms] = await Promise.all([
-      hubContract.getAllMinistries(),
-      hubContract.getPermissions(),
-    ]);
-    return { ministries: mins, permissions: perms };
+    const mins = await hubContract.getAllMinistries();
+    // Explicitly map to plain objects — ethers v6 Result objects need manual extraction
+    const mapped = Array.from(mins).map(m => ({
+      name:         String(m.name         ?? m[0] ?? ""),
+      code:         String(m.code         ?? m[1] ?? ""),
+      contractAddr: String(m.contractAddr ?? m[2] ?? ""),
+      active:       Boolean(m.active      ?? m[3] ?? true),
+      registeredAt: Number(m.registeredAt ?? m[4] ?? 0),
+    }));
+    return { ministries: mapped };
   }, [hubContract]);
 
   const ministryList = hubData?.ministries || MOCK.ministries;
-  const allPerms     = hubData?.permissions || MOCK.permissions;
+
+  // Read permissions directly from each node's authorisedReaders mapping
+  // This catches permissions set via authoriseReader() directly OR via hub
+  const { data: livePerms } = usePoll(async () => {
+    if (!provider || !ministryList?.length) return null;
+    const pairs = [];
+    const codes = Object.keys(MINISTRY_ADDRS);
+    for (const fromCode of codes) {
+      const fromContract = new ethers.Contract(MINISTRY_ADDRS[fromCode], ABI.MINISTRY, provider);
+      for (const toCode of codes) {
+        if (fromCode === toCode) continue;
+        try {
+          const hasAccess = await fromContract.authorisedReaders(MINISTRY_ADDRS[toCode]);
+          if (hasAccess) {
+            pairs.push({ fromCode, toCode, active: true, grantedAt: 0 });
+          }
+        } catch(e) { /* skip */ }
+      }
+    }
+    return pairs;
+  }, [provider, ministryList]);
+
+  const allPerms = livePerms || MOCK.permissions;
 
   // Ministry node contract for selected ministry
   const ministryContract = useContract(ministry?.contractAddr, ABI.MINISTRY, provider);

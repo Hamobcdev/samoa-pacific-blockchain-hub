@@ -155,12 +155,12 @@ contract DeploySamoaHub is Script {
         ndids.grantReadAccess(bizHashes[5], address(mcit));
         ndids.grantReadAccess(bizHashes[6], address(mcit));
 
-        // ── 6. Cross-ministry read permissions via hub ────────────
-        hub.grantPermission("EDUCATION", "MOF");     // MOF can read Education enrolments
-        hub.grantPermission("CBS",       "MOF");     // MOF can read CBS remittance data
-        hub.grantPermission("CUSTOMS",   "MCIL");    // MCIL can read Customs clearances
-        hub.grantPermission("CBS",       "MCIT");    // MCIT can read CBS digital records
-        hub.grantPermission("MCIL",      "MOF");     // MOF can read trade licence data
+        // ── 6. Cross-ministry read permissions ─────────────────
+        education.authoriseReader(address(mof));     // MOF can read Education enrolments
+        cbs.authoriseReader(address(mof));           // MOF can read CBS remittance data
+        customs.authoriseReader(address(mcil));      // MCIL can read Customs clearances
+        cbs.authoriseReader(address(mcit));          // MCIT can read CBS digital records
+        mcil.authoriseReader(address(mof));          // MOF can read MCIL trade data
 
         // ── 7. Seed service records ───────────────────────────────
         bytes32 dummyDataHash = keccak256(abi.encodePacked("demo-document-hash"));

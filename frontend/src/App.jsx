@@ -612,7 +612,7 @@ function MinistryDashboard({ provider, connected, blockNumber, onBack }) {
                   <div style={{ fontSize:"14px", fontWeight:700, marginBottom:"8px", lineHeight:1.3 }}>{m.name}</div>
                   <div style={{ display:"flex", justifyContent:"space-between", fontSize:"11px", color:C.silver }}>
                     <span style={{ color:m.active?C.seafoam:C.danger, fontWeight:700 }}>● {m.active?"Active":"Inactive"}</span>
-                    <Mono color={C.muted}>{m.contractAddr.slice(0,8)}...</Mono>
+                    <Mono color={C.muted}>{m.contractAddr?.slice(0,8)}...</Mono>
                   </div>
                 </div>
               );
@@ -632,7 +632,7 @@ function MinistryDashboard({ provider, connected, blockNumber, onBack }) {
 
   return (
     <div style={{ minHeight:"100vh", background:C.deep, fontFamily:F.ui, color:C.white }}>
-      <TopBar title={ministry.name} sub={`${ministry.code} Node · ${ministry.contractAddr.slice(0,10)}...${ministry.contractAddr.slice(-6)}`} accent={ministry.color} blockNumber={blockNumber} onBack={onBack} />
+      <TopBar title={ministry.name} sub={ministry.contractAddr ? `${ministry.code} Node · ${ministry.contractAddr.slice(0,10)}...${ministry.contractAddr.slice(-6)}` : `${ministry.code} Node`} accent={ministry.color} blockNumber={blockNumber} onBack={onBack} />
       <ConnectionBanner connected={connected} error={!connected?"Chain offline":null} network={CONFIG.NETWORK} />
       <div style={{ background:ministry.color+"22", borderBottom:`1px solid ${ministry.color}44`, padding:"10px 28px", display:"flex", gap:"28px", alignItems:"center" }}>
         <span style={{ fontSize:"22px" }}>{ministry.icon}</span>
@@ -831,8 +831,16 @@ function NDIDSDashboard({ provider, connected, blockNumber, onBack }) {
       if (ndidsContract) {
         found = await ndidsContract.isRegistered(hash);
       } else {
-        // fallback: check known demo hashes
-        found = ["SAMOA-001","SAMOA-002","SAMOA-003","SAMOA-004","SAMOA-005"].includes(input.toUpperCase());
+        // offline fallback — matches all 25 citizens from Deploy script
+        const known = [
+          "SAMOA-EDU-001","SAMOA-EDU-002","SAMOA-EDU-003","SAMOA-EDU-004","SAMOA-EDU-005",
+          "SAMOA-EDU-006","SAMOA-EDU-007","SAMOA-CBS-001","SAMOA-CBS-002","SAMOA-CBS-003",
+          "SAMOA-TRADE-001","SAMOA-TRADE-002","SAMOA-TRADE-003",
+          "SAMOA-WELFARE-001","SAMOA-WELFARE-002","SAMOA-WELFARE-003","SAMOA-WELFARE-004","SAMOA-WELFARE-005",
+          "SAMOA-CUSTOMS-001","SAMOA-CUSTOMS-002","SAMOA-MCIL-001","SAMOA-MCIL-002",
+          "SAMOA-MCIT-001","SAMOA-MCIT-002","SAMOA-MCIT-003",
+        ];
+        found = known.includes(input.toUpperCase());
       }
       setResult({ found, hash, input: input.trim() });
     } catch(e) {
@@ -1036,7 +1044,7 @@ function PublicDashboard({ provider, connected, blockNumber, onBack }) {
                       </div>
                       <div style={{ textAlign:"right" }}>
                         <StatusBadge status={m.active?"Active":"Inactive"} />
-                        <div style={{ marginTop:"4px" }}><Mono color={C.muted}>{m.contractAddr.slice(0,8)}...{m.contractAddr.slice(-5)}</Mono></div>
+                        <div style={{ marginTop:"4px" }}><Mono color={C.muted}>{m.contractAddr?.slice(0,8)}...{m.contractAddr?.slice(-5)}</Mono></div>
                       </div>
                     </div>
                   );
@@ -1204,7 +1212,7 @@ function Landing({ onSelect, blockNumber, connected, error }) {
           {roles.map(role=>(
             <div key={role.id} onClick={()=>onSelect(role.id)}
               onMouseEnter={()=>setHovered(role.id)} onMouseLeave={()=>setHovered(null)}
-              style={{ background:hovered===role.id?C.navy:C.deep, border:`1px solid ${hovered===role.id?role.accent+"66":C.ocean}`, borderTop:`3px solid ${role.accent}`, borderRadius:"14px", padding:"26px 20px", cursor:"pointer", textAlign:"left", transition:"all 0.2s", transform:hovered===role.id?"translateY(-4px)":"none", boxShadow:hovered===role.id?`0 20px 40px ${role.accent}18`:"none" }}>
+              style={{ background:hovered===role.id?C.navy:C.deep, borderTop:`3px solid ${role.accent}`, borderLeft:`1px solid ${hovered===role.id?role.accent+"44":C.ocean}`, borderRight:`1px solid ${hovered===role.id?role.accent+"44":C.ocean}`, borderBottom:`1px solid ${hovered===role.id?role.accent+"44":C.ocean}`, borderRadius:"14px", padding:"26px 20px", cursor:"pointer", textAlign:"left", transition:"all 0.2s", transform:hovered===role.id?"translateY(-4px)":"none", boxShadow:hovered===role.id?`0 20px 40px ${role.accent}18`:"none" }}>
               <div style={{ fontSize:"34px", marginBottom:"14px" }}>{role.icon}</div>
               <div style={{ fontSize:"16px", fontWeight:900, fontFamily:F.display, marginBottom:"3px" }}>{role.title}</div>
               <div style={{ fontSize:"10px", fontWeight:700, color:role.accent, letterSpacing:"1.2px", textTransform:"uppercase", marginBottom:"12px" }}>{role.sub}</div>

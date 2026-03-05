@@ -331,7 +331,7 @@ contract SamoaPacificBlockchainHubTest is Test {
     // INTEROPERABILITY HUB TESTS
     // ════════════════════════════════════════════════════════════
 
-    function test_Hub_MinistryRegistration() public {
+    function test_Hub_MinistryRegistration() public view {
         assertEq(hub.getMinistryCount(), 4);
         InteroperabilityHub.Ministry memory m = hub.getMinistry("CBS");
         assertEq(m.name, "Central Bank of Samoa");
@@ -390,7 +390,7 @@ contract SamoaPacificBlockchainHubTest is Test {
         assertEq(log[0].workflowType, "ENROLMENT_AND_BENEFIT");
     }
 
-    function test_Hub_GetAllMinistries() public {
+    function test_Hub_GetAllMinistries() public view {
         InteroperabilityHub.Ministry[] memory all = hub.getAllMinistries();
         assertEq(all.length, 4);
     }

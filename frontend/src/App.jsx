@@ -576,8 +576,23 @@ function ReceiptCard({ txHash, citizenId, serviceType, evidenceNote, timestamp, 
   const oHash      = officerId ? officerHashFor(officerId) : null;
 
   const handlePrint = () => {
-    const w = window.open("", "_blank");
-    w.document.write(`<html><head><title>${ref}</title>
+    const w = window.open("", "_blank", "width=700,height=900,scrollbars=yes");
+    if (!w) {
+      // Popup blocked — fall back to a printable blob URL
+      const html = getPrintHtml(ref, wf, serviceType, ministry, citizenId, oHash, txHash, timestamp, amount, fee, evidenceNote);
+      const blob = new Blob([html], { type:"text/html" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href = url; a.target = "_blank"; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      return;
+    }
+    w.document.write(getPrintHtml(ref, wf, serviceType, ministry, citizenId, oHash, txHash, timestamp, amount, fee, evidenceNote));
+    w.document.close(); w.focus(); w.print();
+  };
+
+  function getPrintHtml(ref, wf, serviceType, ministry, citizenId, oHash, txHash, timestamp, amount, fee, evidenceNote) {
+    return `<html><head><title>${ref}</title>
     <style>body{font-family:monospace;padding:24px;color:#111} h1{font-size:16px} .ref{font-size:22px;font-weight:900;color:#E8552A;margin:8px 0 16px} table{width:100%;border-collapse:collapse;margin-bottom:16px} td{padding:6px 8px;border-bottom:1px solid #eee;font-size:12px} td:first-child{color:#666;width:140px} .step{padding:3px 0;font-size:11px} .done{color:#0FB894} .cur{color:#E8552A;font-weight:700} .nxt{color:#D4860A} footer{font-size:10px;color:#999;margin-top:20px;border-top:1px solid #eee;padding-top:10px}</style>
     </head><body>
     <h1>🌺 Samoa Pacific Blockchain Hub</h1>
@@ -603,9 +618,8 @@ function ReceiptCard({ txHash, citizenId, serviceType, evidenceNote, timestamp, 
       ${wf.nextStep ? `<div class="step nxt">⏭ Step ${wf.step+1}: ${wf.nextStep.ministry} — ${wf.nextStep.action}</div>` : ""}
     ` : ""}
     <footer>Permanently recorded on ${CONFIG.NETWORK}. Contract: ${MINISTRY_ADDRS[ministry?.code] || "—"}<br/>Samoa Pacific Blockchain Hub v8 · Anthony George Williams · Synergy Blockchain Pacific</footer>
-    </body></html>`);
-    w.document.close(); w.print();
-  };
+    </body></html>`;
+  }
 
   return (
     <div style={{ ...card(), borderLeft:`4px solid ${isComplete ? C.seafoam : C.coral}`, maxWidth:"700px" }}>
@@ -692,7 +706,7 @@ function ReceiptCard({ txHash, citizenId, serviceType, evidenceNote, timestamp, 
         <button onClick={handlePrint} style={{ ...btn("ghost") }}>🖨 Print / Download PDF</button>
         <button onClick={onAnother}  style={{ ...btn("ghost") }}>Record Another</button>
         {wf.nextStep && onNext && (
-          <button onClick={onNext} style={{ ...btn("primary") }}>Go to {wf.nextStep.ministry} →</button>
+          <button onClick={onNext} style={{ ...btn("primary") }}>← Hub — open {wf.nextStep.ministry} Pending Actions</button>
         )}
       </div>
     </div>
@@ -1174,7 +1188,7 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
               onAnother={() => { setLastReceipt(null); setTab("record"); }}
               onNext={() => {
                 const wf = WORKFLOWS[lastReceipt.serviceType];
-                if (wf?.nextStep?.ministry) alert(`Navigate to the ${wf.nextStep.ministry} dashboard and select the Pending Actions tab — the step will appear pre-filled.`);
+                if (wf?.nextStep?.ministry) onBack(); // go home so user can click next ministry
               }}
             />
           </>

@@ -93,6 +93,9 @@ const ABI = {
     "function ministryCode() view returns (string)",
     "function authorisedReaders(address) view returns (bool)",
     "function records(uint256) view returns (bytes32,string,bytes32,uint256,bool)",
+    "function recordService(bytes32 citizenHash, string serviceType, bytes32 dataHash, bool ndidsVerified) external",
+    "function authoriseReader(address reader) external",
+    "function revokeReader(address reader) external",
     "event ServiceDelivered(uint256 indexed recordId, bytes32 indexed citizenHash, string serviceType, bool ndidsVerified, uint256 timestamp)",
     "event ReaderAuthorised(address indexed reader)",
     "event ReaderRevoked(address indexed reader)",
@@ -900,6 +903,104 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack }) {
 // ═══════════════════════════════════════════════════════════════════════
 // RECORD SERVICE FORM — submits directly to chain via ethers.js
 // ═══════════════════════════════════════════════════════════════════════
+function RecordsTab({ records, totalRecords, loading, connected, ministry }) {
+  const [search, setSearch] = useState("");
+
+  const filtered = search.trim()
+    ? records.filter(r =>
+        r.serviceType.toLowerCase().includes(search.toLowerCase()) ||
+        serviceLabel(r.serviceType).toLowerCase().includes(search.toLowerCase()) ||
+        r.citizenHash.toLowerCase().includes(search.toLowerCase()) ||
+        (r.dataHash && r.dataHash.toLowerCase().includes(search.toLowerCase()))
+      )
+    : records;
+
+  return (
+    <>
+      <SectionHead
+        title="Service Records"
+        sub={connected ? `${totalRecords} records on-chain · showing last 10 · auto-refreshing every 3s` : "Demo records — connect chain for live data"}
+      />
+
+      {/* Search bar */}
+      <div style={{ marginBottom:"14px", position:"relative" }}>
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search by citizen hash, service type, or reference…"
+          style={{
+            width:"100%", padding:"11px 14px 11px 38px",
+            borderRadius:"8px", border:`1px solid ${C.ocean}`,
+            background:C.abyss, color:C.white, fontSize:"13px",
+            fontFamily:F.ui, boxSizing:"border-box",
+          }}
+        />
+        <span style={{ position:"absolute", left:"13px", top:"50%", transform:"translateY(-50%)", fontSize:"14px", color:C.muted }}>🔍</span>
+        {search && (
+          <button
+            onClick={() => setSearch("")}
+            style={{ position:"absolute", right:"12px", top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:"16px", lineHeight:1 }}
+          >×</button>
+        )}
+      </div>
+
+      {loading && connected
+        ? <LoadingCard msg="Reading records from contract…" />
+        : (
+          <div style={{ ...card() }}>
+            {filtered.length === 0 && (
+              <div style={{ padding:"28px", textAlign:"center", color:C.muted, fontSize:"13px" }}>
+                {search ? `No records matching "${search}"` : connected ? "No records yet — use Record Service tab to add the first one" : "Connect Anvil to see live records"}
+              </div>
+            )}
+            {filtered.map((r, i) => (
+              <div key={r.id} style={{ padding:"14px 0", borderBottom:i<filtered.length-1?`1px solid ${C.ocean}`:"none" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"6px" }}>
+                  <div style={{ display:"flex", gap:"12px", alignItems:"center" }}>
+                    <div style={{ width:"34px", height:"34px", borderRadius:"8px", background:ministry?.color+"22", border:`1px solid ${ministry?.color}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px", flexShrink:0 }}>📋</div>
+                    <div>
+                      <div style={{ fontWeight:800, fontSize:"13px", color:C.white }}>
+                        #{r.id} — {serviceLabel(r.serviceType)}
+                      </div>
+                      <div style={{ fontSize:"11px", color:C.silver, marginTop:"2px" }}>{serviceDesc(r.serviceType)}</div>
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", gap:"6px", alignItems:"center", flexShrink:0, marginLeft:"12px" }}>
+                    {r.ndidsVerified && <span style={{ ...badge(C.seafoam) }}>✓ NDIDS</span>}
+                    <span style={{ fontSize:"10px", color:C.muted, fontFamily:F.mono }}>{fmtTs(r.timestamp)}</span>
+                  </div>
+                </div>
+                <div style={{ display:"flex", gap:"16px", marginLeft:"46px", flexWrap:"wrap" }}>
+                  <div style={{ fontSize:"10px", color:C.muted }}>
+                    <span style={{ color:C.silver, fontWeight:700 }}>Citizen: </span>
+                    <Mono color={C.muted}>{r.citizenHash.slice(0,14)}…</Mono>
+                  </div>
+                  {r.dataHash && r.dataHash !== "0x0000000000000000000000000000000000000000000000000000000000000000" && (
+                    <div style={{ fontSize:"10px", color:C.muted }}>
+                      <span style={{ color:C.silver, fontWeight:700 }}>Evidence: </span>
+                      <Mono color={C.wave}>{r.dataHash.slice(0,14)}…</Mono>
+                    </div>
+                  )}
+                  {WORKFLOWS[r.serviceType] && (
+                    <div style={{ fontSize:"10px", color:C.muted }}>
+                      <span style={{ color:C.silver, fontWeight:700 }}>Workflow: </span>
+                      <span style={{ color:ministry?.color }}>{WORKFLOWS[r.serviceType].stepLabel}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div style={{ padding:"10px 0 0", fontSize:"11px", color:C.muted, display:"flex", justifyContent:"space-between" }}>
+              <span>{search ? `${filtered.length} of ${records.length} shown` : `Showing last ${records.length}`}</span>
+              <span>Total on-chain: {totalRecords} records</span>
+            </div>
+          </div>
+        )
+      }
+    </>
+  );
+}
+
 function RecordServiceForm({ ministry, provider, onSuccess, onNavigate }) {
   const [form, setForm]       = useState({ citizenId:"", serviceType:"", evidenceNote:"", reference:"", term:"", ndids:false });
   const [status, setStatus]   = useState(null);
@@ -1383,56 +1484,14 @@ function MinistryDashboard({ provider, connected, blockNumber, onBack }) {
 
       <div style={{ maxWidth:"1080px", margin:"0 auto", padding:"28px" }}>
         {tab === "records" && (
-          <>
-            <SectionHead title="Service Records" sub={connected ? `${totalRecords} records on-chain · showing last 10 · auto-refreshing` : "Demo records — connect chain for live data"} />
-            {nodeLoading && connected ? <LoadingCard msg="Reading records from contract…" /> : (
-              <div style={{ ...card() }}>
-                {liveRecords.length === 0 && (
-                  <div style={{ padding:"28px", textAlign:"center", color:C.muted, fontSize:"13px" }}>
-                    {connected ? "No records yet — use Record Service to add the first one" : "Connect Anvil to see live records"}
-                  </div>
-                )}
-                {liveRecords.map((r, i) => (
-                  <div key={r.id} style={{ padding:"14px 0", borderBottom:i<liveRecords.length-1?`1px solid ${C.ocean}`:"none" }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"6px" }}>
-                      <div style={{ display:"flex", gap:"12px", alignItems:"center" }}>
-                        <div style={{ width:"34px", height:"34px", borderRadius:"8px", background:ministry.color+"22", border:`1px solid ${ministry.color}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px", flexShrink:0 }}>📋</div>
-                        <div>
-                          <div style={{ fontWeight:800, fontSize:"13px", color:C.white }}>#{r.id} — {serviceLabel(r.serviceType)}</div>
-                          <div style={{ fontSize:"11px", color:C.silver, marginTop:"2px" }}>{serviceDesc(r.serviceType)}</div>
-                        </div>
-                      </div>
-                      <div style={{ display:"flex", gap:"6px", alignItems:"center", flexShrink:0, marginLeft:"12px" }}>
-                        {r.ndidsVerified && <span style={{ ...badge(C.seafoam) }}>✓ NDIDS Verified</span>}
-                        <span style={{ fontSize:"10px", color:C.muted, fontFamily:F.mono }}>{fmtTs(r.timestamp)}</span>
-                      </div>
-                    </div>
-                    <div style={{ display:"flex", gap:"16px", marginLeft:"46px", flexWrap:"wrap" }}>
-                      <div style={{ fontSize:"10px", color:C.muted }}>
-                        <span style={{ color:C.silver, fontWeight:700 }}>Citizen: </span>
-                        <Mono color={C.muted}>{short(r.citizenHash)}</Mono>
-                      </div>
-                      {r.dataHash && r.dataHash !== "0x0000000000000000000000000000000000000000000000000000000000000000" && (
-                        <div style={{ fontSize:"10px", color:C.muted }}>
-                          <span style={{ color:C.silver, fontWeight:700 }}>Evidence: </span>
-                          <Mono color={C.wave}>{short(r.dataHash)}</Mono>
-                        </div>
-                      )}
-                      <div style={{ fontSize:"10px", color:C.muted }}>
-                        <span style={{ color:C.silver, fontWeight:700 }}>Ministry: </span>
-                        <span style={{ color:ministry.color, fontWeight:700 }}>{ministry.code}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div style={{ padding:"10px 0 0", fontSize:"11px", color:C.muted, textAlign:"right" }}>
-                  Total on-chain: {totalRecords} records
-                </div>
-              </div>
-            )}
-          </>
+          <RecordsTab
+            records={liveRecords}
+            totalRecords={totalRecords}
+            loading={nodeLoading}
+            connected={connected}
+            ministry={ministry}
+          />
         )}
-
         {tab === "record" && (
           <RecordServiceForm
             ministry={ministry}

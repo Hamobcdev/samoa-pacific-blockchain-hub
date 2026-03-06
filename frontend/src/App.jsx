@@ -1207,10 +1207,24 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
   const aidContract = useContract(ADDR.AID, ABI.AID, provider);
 
   // Live AID contract reads (v7)
+  // ── All state declarations first (must be before any usePoll that references them) ──
+  const [selectedGrant, setSelectedGrant] = useState(0);
+  const [verForm,     setVerForm]    = useState({ grantId:"0", trancheId:"1", evidence:"", beneficiaries:"" });
+  const [relForm,     setRelForm]    = useState({ grantId:"0", trancheId:"2" });
+  const [txMsg,       setTxMsg]      = useState(null);
+  const [submitting,  setSubmitting] = useState(false);
+
+  // ── Live AID contract reads ───────────────────────────────────
   const { data:totals,    loading:totalsLoading    } = usePoll(async () => {
     if (!aidContract) return null;
     const [grants, disbursed, verified] = await Promise.all([aidContract.totalGrants(), aidContract.totalDisbursed(), aidContract.totalVerified()]);
     return { grants:Number(grants), disbursed:Number(disbursed), verified:Number(verified) };
+  }, [aidContract]);
+
+  const { data:allGrantIds } = usePoll(async () => {
+    if (!aidContract) return null;
+    const count = Number(await aidContract.totalGrants());
+    return Array.from({ length: count }, (_, i) => i);
   }, [aidContract]);
 
   const { data:grantRaw,  loading:grantLoading     } = usePoll(async () => {
@@ -1236,18 +1250,6 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
 
   // Auto beneficiary count from Education records
   const enrolmentCount = (allRecords || []).filter(r => r.serviceType === "SCHOOL_ENROLMENT_2025").length;
-
-  // v8: verifyUsage + releaseTranche forms
-  const [selectedGrant, setSelectedGrant] = useState(0);
-  const { data:allGrantIds } = usePoll(async () => {
-    if (!aidContract) return null;
-    const count = Number(await aidContract.totalGrants());
-    return Array.from({ length: count }, (_, i) => i);
-  }, [aidContract]);
-  const [verForm,     setVerForm]    = useState({ grantId:"0", trancheId:"1", evidence:"", beneficiaries:"" });
-  const [relForm,     setRelForm]    = useState({ grantId:"0", trancheId:"2" });
-  const [txMsg,       setTxMsg]      = useState(null);
-  const [submitting,  setSubmitting] = useState(false);
 
   const handleVerify = async () => {
     if (!connected) { setTxMsg({ type:"error", text:"Not connected to chain." }); return; }

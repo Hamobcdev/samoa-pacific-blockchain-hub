@@ -76,7 +76,7 @@ const ABI = {
     "function totalDisbursed() view returns (uint256)",
     "function totalVerified() view returns (uint256)",
     "function getGrant(uint256) view returns (uint256,string,address,address,uint256,uint256,uint256,uint8,uint256,uint256,uint256,string)",
-    "function getTranche(uint256,uint256) view returns (uint256,string,bytes32,uint8,uint256,uint256,address,address)",
+    "function getTranche(uint256,uint256) view returns (tuple(uint256 amount,string milestone,bytes32 evidenceHash,uint8 status,uint256 releasedAt,uint256 verifiedAt,address releasedBy,address verifiedBy))",
     "function getTrancheCount(uint256) view returns (uint256)",
     "function getAuditTrail(uint256) view returns (tuple(uint256 amount,string milestone,bytes32 evidenceHash,uint8 status,uint256 releasedAt,uint256 verifiedAt,address releasedBy,address verifiedBy)[])",
     "function verifyUsage(uint256 grantId, uint256 trancheId, bytes32 evidenceHash, uint256 beneficiariesServed) external",
@@ -1215,15 +1215,15 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
 
   const { data:grantRaw,  loading:grantLoading     } = usePoll(async () => {
     if (!aidContract) return null;
-    const g = await aidContract.getGrant(0);
+    const g = await aidContract.getGrant(selectedGrant);
     return { id:Number(g[0]), title:g[1], donor:g[2], recipient:g[3], totalAmount:Number(g[4]), releasedAmount:Number(g[5]), verifiedAmount:Number(g[6]), status:Number(g[7]), createdAt:Number(g[8]), targetBeneficiaries:Number(g[9]), actualBeneficiaries:Number(g[10]), sector:g[11] };
-  }, [aidContract]);
+  }, [aidContract, selectedGrant]);
 
   const { data:tranchesRaw, loading:tranchesLoading } = usePoll(async () => {
     if (!aidContract) return null;
-    const trail = await aidContract.getAuditTrail(0);
+    const trail = await aidContract.getAuditTrail(selectedGrant);
     return trail.map(t => ({ amount:Number(t.amount), milestone:t.milestone, evidenceHash:t.evidenceHash, status:Number(t.status), releasedAt:Number(t.releasedAt), verifiedAt:Number(t.verifiedAt), releasedBy:t.releasedBy, verifiedBy:t.verifiedBy }));
-  }, [aidContract]);
+  }, [aidContract, selectedGrant]);
 
   const t        = totals    || { grants:MOCK.totalGrants, disbursed:MOCK.totalDisbursed, verified:MOCK.totalVerified };
   const g        = grantRaw  || MOCK.grant;
@@ -1238,8 +1238,14 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
   const enrolmentCount = (allRecords || []).filter(r => r.serviceType === "SCHOOL_ENROLMENT_2025").length;
 
   // v8: verifyUsage + releaseTranche forms
-  const [verForm,     setVerForm]    = useState({ grantId:"1", trancheId:"1", evidence:"", beneficiaries:"" });
-  const [relForm,     setRelForm]    = useState({ grantId:"1", trancheId:"1" });
+  const [selectedGrant, setSelectedGrant] = useState(0);
+  const { data:allGrantIds } = usePoll(async () => {
+    if (!aidContract) return null;
+    const count = Number(await aidContract.totalGrants());
+    return Array.from({ length: count }, (_, i) => i);
+  }, [aidContract]);
+  const [verForm,     setVerForm]    = useState({ grantId:"0", trancheId:"1", evidence:"", beneficiaries:"" });
+  const [relForm,     setRelForm]    = useState({ grantId:"0", trancheId:"2" });
   const [txMsg,       setTxMsg]      = useState(null);
   const [submitting,  setSubmitting] = useState(false);
 
@@ -1296,7 +1302,38 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
       <ConnectionBanner connected={connected} error={!connected?"Chain offline — showing demo data":null} network={CONFIG.NETWORK} />
       <TabNav tabs={tabs} active={tab} onChange={setTab} accent={C.gold} />
 
-      <div style={{ maxWidth:"1080px", margin:"0 auto", padding:"28px" }}>
+      {/* ─── GRANT SELECTOR BAR ─────────────────────────────────── */}
+      <div style={{ maxWidth:"1080px", margin:"0 auto", padding:"14px 28px 0" }}>
+        <div style={{ ...card({ background:C.navy, borderColor:C.gold+"44" }), display:"flex", alignItems:"center", gap:"16px", flexWrap:"wrap" }}>
+          <div style={{ fontSize:"11px", fontWeight:800, color:C.gold, textTransform:"uppercase", letterSpacing:"0.8px", flexShrink:0 }}>Grant</div>
+          <select
+            value={selectedGrant}
+            onChange={e => {
+              const id = parseInt(e.target.value);
+              setSelectedGrant(id);
+              setVerForm(f => ({ ...f, grantId:String(id) }));
+              setRelForm(f => ({ ...f, grantId:String(id) }));
+            }}
+            style={{ background:C.ocean, color:C.white, border:`1px solid ${C.gold}44`, borderRadius:"6px", padding:"6px 12px", fontSize:"13px", fontWeight:700, cursor:"pointer" }}
+          >
+            {(allGrantIds || [0]).map(id => (
+              <option key={id} value={id}>Grant #{id}{id===0?" — UNICEF Samoa Education Access Programme 2025":""}</option>
+            ))}
+          </select>
+          <div style={{ flex:1, display:"flex", gap:"10px", flexWrap:"wrap" }}>
+            {tranches.map((tr, i) => {
+              const s = ["⏳ Pending","🔵 Released","✅ Verified"][tr.status] || "Unknown";
+              const col = [C.amber,"#4A9EE0",C.seafoam][tr.status] || C.muted;
+              return (
+                <span key={i} style={{ fontSize:"11px", fontWeight:700, color:col, background:col+"18", border:`1px solid ${col}44`, borderRadius:"99px", padding:"3px 10px" }}>
+                  T{i}: {s}
+                </span>
+              );
+            })}
+          </div>
+          <div style={{ fontSize:"11px", color:C.muted, flexShrink:0 }}>{allGrantIds?.length || 1} grant{(allGrantIds?.length||1)!==1?"s":""} on chain</div>
+        </div>
+      </div>
 
         {/* ─── GRANT OVERVIEW (v7) ─────────────────────────────── */}
         {tab === "overview" && (
@@ -1388,7 +1425,7 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
                       {sl==="Released" && !ev && <div style={{ marginTop:"10px", padding:"9px 12px", background:C.amber+"18", borderRadius:"8px", fontSize:"11px", color:C.amber, fontWeight:700 }}>⏳ Awaiting field verification</div>}
                       {sl==="Released" && !ev && (
                         <div style={{ marginTop:"10px" }}>
-                          <button onClick={() => { setVerForm(f=>({...f,trancheId:String(i+1)})); setTab("verify"); }} style={{ ...btn("success"), fontSize:"12px" }}>
+                          <button onClick={() => { setVerForm(f=>({...f,grantId:"0",trancheId:String(i)})); setTab("verify"); }} style={{ ...btn("success"), fontSize:"12px" }}>
                             ✅ Verify This Tranche →
                           </button>
                         </div>
@@ -1409,9 +1446,12 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
             <div style={{ ...card({ background:C.seafoam+"14", borderColor:C.seafoam+"33" }), marginBottom:"14px" }}>
               <div style={{ fontSize:"12px", color:C.seafoam, fontWeight:700, marginBottom:"4px" }}>🤖 Auto-populated from Education enrolment records</div>
               <div style={{ fontSize:"12px", color:C.silver }}>{enrolmentCount} school enrolments on chain — pre-filled as beneficiary count. Edit to override.</div>
+              <div style={{ fontSize:"11px", color:C.amber, marginTop:"6px", fontWeight:700 }}>
+                ℹ {tranches.map((tr,i)=>`T${i}: ${["⏳Pending","🔵Released","✅Verified"][tr.status]||"?"}`).join(" · ")} — verify a Released tranche
+              </div>
             </div>
             <div style={{ ...card(), maxWidth:"580px" }}>
-              {[["Grant ID","grantId","1"],["Tranche ID","trancheId","1"]].map(([label,key,ph]) => (
+              {[["Grant ID","grantId","0"],["Tranche ID","trancheId","1"]].map(([label,key,ph]) => (
                 <div key={key} style={{ marginBottom:"14px" }}>
                   <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>{label}</label>
                   <input value={verForm[key]} onChange={e=>setVerForm(f=>({...f,[key]:e.target.value}))} placeholder={ph} type="number" style={inStyle} />
@@ -1442,9 +1482,12 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
             <div style={{ ...card({ background:C.amber+"18", borderColor:C.amber+"44" }), marginBottom:"14px", maxWidth:"580px" }}>
               <div style={{ fontSize:"12px", color:C.amber, fontWeight:700, marginBottom:"4px" }}>⚠ Caution — Irreversible Action</div>
               <div style={{ fontSize:"12px", color:C.silver }}>releaseTranche() releases grant funds on chain. Ensure verifyUsage() has been called and evidence confirmed first. This cannot be undone.</div>
+              <div style={{ fontSize:"11px", color:C.amber, marginTop:"6px", fontWeight:700 }}>
+                ℹ {tranches.map((tr,i)=>`T${i}: ${["⏳Pending","🔵Released","✅Verified"][tr.status]||"?"}`).join(" · ")} — release a Pending tranche
+              </div>
             </div>
             <div style={{ ...card(), maxWidth:"580px" }}>
-              {[["Grant ID","grantId","1"],["Tranche ID","trancheId","1"]].map(([label,key,ph]) => (
+              {[["Grant ID","grantId","0"],["Tranche ID","trancheId","1"]].map(([label,key,ph]) => (
                 <div key={key} style={{ marginBottom:"14px" }}>
                   <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>{label}</label>
                   <input value={relForm[key]} onChange={e=>setRelForm(f=>({...f,[key]:e.target.value}))} placeholder={ph} type="number" style={inStyle} />

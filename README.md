@@ -33,13 +33,31 @@ This repository is a working proof of concept — not a live production system. 
 - Six integration test scenarios demonstrating real government workflows
 
 **What is not yet real:**
-- This has not been deployed to a public mainnet (we are deploying to Polygon as part of this application process)
+- Not yet deployed to a public testnet or mainnet — see the section below on why
 - No actual Samoa government ministry is using this system yet
 - The citizens and records are demo data — not real government data
 - We have not yet had formal government sign-off on a pilot
 
 **Why we are submitting now:**
 We are submitting because this is the level of work a two-person unfunded team can produce to demonstrate genuine capability and commitment. With UNICEF support, we can move from proof of concept to a real government pilot. Without it, we continue building as best we can with what we have.
+
+---
+
+## The Testnet Barrier — A Real Example of Why Funding Matters
+
+We attempted to deploy this system to Polygon Amoy testnet. We hit two hard walls that a funded team would not face.
+
+**The deployment script is too large for free-tier infrastructure.** The full deployment — 9 contracts, 25 citizens registered, 6 ministry nodes wired, cross-ministry permissions set, a UNICEF grant with three tranches seeded — is a single Foundry script that exceeds the gas limits on free RPC endpoints. We attempted deployment through Alchemy's free tier. Transactions dropped mid-sequence. Even after manually increasing gas fees, the deployment did not complete. The contracts that did land were orphaned — wired to addresses that didn't exist because later transactions in the sequence failed.
+
+**Free RPC tier rate limits block the full test suite.** Alchemy's free tier has request rate limits that the dashboard's 3-second polling and the full integration test suite both exceed. Running all 28+ tests against a live testnet endpoint hits those limits within the first few scenarios.
+
+This is not a technical failure. The same deployment script runs perfectly on Anvil local chain — every contract, every citizen, every permission, every test. The barrier is purely financial: a paid RPC endpoint ($50-200/month depending on throughput) and a small MATIC allocation for testnet gas would resolve both issues immediately.
+
+**We are not deploying to mainnet.** Spending real cryptocurrency on a proof-of-concept system that is not yet serving real users would be financially irresponsible. The right deployment path is: funded RPC endpoint → complete testnet deployment with public verifiable transaction hashes on Polygonscan → pilot with one Samoa government ministry → production mainnet deployment when real data is moving.
+
+We are asking UNICEF and any technical reviewers to run this system locally using the instructions below. Everything that would be publicly verifiable on a testnet block explorer is verifiable locally — the contracts, the transactions, the state changes, the audit trail. The only thing missing is a public URL, and that is a funding problem, not a capability problem.
+
+If any reviewer or AID provider is able to assist with testnet deployment infrastructure as part of the evaluation process, we would welcome that conversation.
 
 ---
 
@@ -224,31 +242,47 @@ cd frontend && npm run dev
 
 ---
 
+## Parallel Applications and Submissions
+
+This repository is the primary submission to the **UNICEF Venture Fund 2026** — focused on the children, aid accountability, and government service delivery dimensions of the system.
+
+We are also preparing a parallel submission to **UNCTAD** focused on the trade facilitation, customs workflow, and interoperability framework components — directly aligned with the UNCTAD Trade Facilitation blockchain standard targeted for global adoption by 2029. The customs and MCIL ministry nodes in this system are the technical foundation for that submission.
+
+A separate **CBS Stablecoin Pilot** repository is in development — a WST-pegged digital currency architecture designed in consultation with the Central Bank of Samoa, intended as the payment rail that connects this interoperability system to real financial settlement. That pilot will be submitted to both CBS and UNCTAD as a companion piece to this work.
+
+These are not separate projects. They are three layers of the same Pacific blockchain infrastructure programme — identity and interoperability, trade facilitation, and digital currency — being built in parallel by the same small team with no external funding.
+
+---
+
 ## Roadmap
 
-### Phase 1 — Proof of Concept (current — unfunded)
+### Phase 1 — Proof of Concept ✅ Complete (self-funded)
 - [x] 4 smart contracts written and tested
 - [x] 28+ passing tests including 6 integration scenarios
 - [x] Live multi-stakeholder dashboard with real contract reads
 - [x] 25 demo citizens across 5 service sectors
-- [x] Government engagement suite — letters, proposals, summit presentations
-- [ ] Polygon mainnet deployment (in progress)
+- [x] Government engagement suite — letters, proposals, briefings
+- [x] Full system running on Anvil local chain
+- [ ] Testnet deployment — blocked by RPC rate limits and gas constraints (see above)
 
-### Phase 2 — Pilot (requires funding)
+### Phase 2 — Pilot (requires funding — applying now)
+- [ ] Paid RPC endpoint to complete testnet deployment
 - [ ] Formal engagement with at least one Samoa government ministry
 - [ ] Wallet-based authentication for ministry officers
-- [ ] Government education programme — workshops and briefings
+- [ ] Government and youth education programme
 - [ ] IPFS integration for off-chain document storage
-- [ ] CBS stablecoin pilot consultation with proper resourcing
-- [ ] Public launch and regional Pacific documentation
+- [ ] CBS stablecoin pilot with proper resourcing
+- [ ] UNCTAD trade facilitation submission
+- [ ] Public launch and Pacific regional documentation
 
 ### Phase 3 — Production and Regional Expansion (2027–2029)
 - [ ] Live government deployment in Samoa
 - [ ] Enterprise and supply chain implementations
-- [ ] Regional Pacific expansion — replicable model for neighbouring nations
+- [ ] Regional Pacific expansion — replicable model for Pacific Island nations
 - [ ] ZK proofs for NDIDS privacy layer
-- [ ] AI-assisted service delivery optimisation on chain data
-- [ ] Contribution to Samoa 2029 national digital readiness targets
+- [ ] AI-assisted anomaly detection and service optimisation
+- [ ] Contribution to Samoa 2025–2030 ICT Development Plan targets
+- [ ] Alignment with UNCTAD 2029 global trade facilitation standard
 
 ---
 
@@ -271,4 +305,4 @@ MIT — Open source for the Pacific and beyond.
 
 *Samoa Pacific Blockchain Hub · Synergy Blockchain Pacific · 2026*
 
-*This is the work of a small Pacific team building the infrastructure their region needs, with the resources they have, before the window closes. Fa'afetai lava.*
+*This is the work of Anthony George Williams and a small Pacific team — building the infrastructure their region needs, with the resources they have, before the window closes. Every line of code was written without a salary, without a grant, and without certainty that anyone would notice. We believe they should. Fa'afetai lava.*

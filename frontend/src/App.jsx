@@ -27,14 +27,6 @@ const CONFIG = {
   POLL_MS:   3000,   // how often to refresh contract data (ms)
 };
 
-// Anvil default deployer key — replace with ministry wallet key in production
-const DEPLOYER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-
-function getSigner(provider) {
-  if (!provider) return null;
-  return new ethers.Wallet(DEPLOYER_KEY, provider);
-}
-
 // ═══════════════════════════════════════════════════════════════════════
 // CONTRACT ADDRESSES — paste from forge script output after deployment
 // These are the deterministic Anvil addresses — identical every deploy
@@ -93,9 +85,6 @@ const ABI = {
     "function ministryCode() view returns (string)",
     "function authorisedReaders(address) view returns (bool)",
     "function records(uint256) view returns (bytes32,string,bytes32,uint256,bool)",
-    "function recordService(bytes32 citizenHash, string serviceType, bytes32 dataHash, bool ndidsVerified) external",
-    "function authoriseReader(address reader) external",
-    "function revokeReader(address reader) external",
     "event ServiceDelivered(uint256 indexed recordId, bytes32 indexed citizenHash, string serviceType, bool ndidsVerified, uint256 timestamp)",
     "event ReaderAuthorised(address indexed reader)",
     "event ReaderRevoked(address indexed reader)",
@@ -118,347 +107,6 @@ const MINISTRY_ADDRS = {
   CBS: ADDR.CBS, MCIT: ADDR.MCIT, MOF: ADDR.MOF,
   MCIL: ADDR.MCIL, EDUCATION: ADDR.EDUCATION, CUSTOMS: ADDR.CUSTOMS,
 };
-
-// Ministry-specific service types with plain English descriptions
-const SERVICE_TYPES = {
-  EDUCATION: [
-    { value: "SCHOOL_ENROLMENT_2025",        label: "School Enrolment",            desc: "Child enrolled in school — identity verified via NDIDS" },
-    { value: "ATTENDANCE_RECORD",             label: "Attendance Record",           desc: "Monthly attendance recorded for enrolled student" },
-    { value: "SCHOLARSHIP_AWARDED",           label: "Scholarship Awarded",         desc: "Scholarship granted — eligibility verified on chain" },
-    { value: "GRADUATION_RECORD",             label: "Graduation / Completion",     desc: "Student completed education level" },
-    { value: "SPECIAL_NEEDS_SUPPORT",         label: "Special Needs Support",       desc: "Additional educational support services recorded" },
-  ],
-  MOF: [
-    { value: "EDUCATION_BENEFIT_ELIGIBLE_2025", label: "Education Benefit Approved",  desc: "Citizen approved for school fee subsidy" },
-    { value: "SOCIAL_WELFARE_PAYMENT_2025",   label: "Social Welfare Payment",      desc: "Welfare payment disbursed and recorded" },
-    { value: "TAX_COMPLIANCE_VERIFIED",       label: "Tax Compliance Verified",     desc: "Citizen or business tax status confirmed" },
-    { value: "BUDGET_ALLOCATION_RECORDED",    label: "Budget Allocation",           desc: "Ministry budget allocation recorded on chain" },
-    { value: "DUTY_PROCESSED",                label: "Customs Duty Processed",      desc: "Import/export duty payment confirmed by MOF" },
-  ],
-  CBS: [
-    { value: "ACCOUNT_OPENED",                label: "Bank Account Opened",         desc: "New bank account created — identity verified" },
-    { value: "REMITTANCE_RECEIVED",           label: "Remittance Received",         desc: "International remittance received and recorded" },
-    { value: "LOAN_APPROVED",                 label: "Loan Approved",               desc: "Loan application approved — credit check on chain" },
-    { value: "DIGITAL_PAYMENT_RECORDED",      label: "Digital Payment",             desc: "Digital or mobile payment transaction recorded" },
-    { value: "STABLECOIN_ISSUANCE",           label: "WST Stablecoin Issuance",     desc: "Digital WST issued against verified fiat reserve" },
-  ],
-  MCIT: [
-    { value: "BUSINESS_LICENCE_DIGITAL",      label: "Digital Business Licence",    desc: "Business licence issued and recorded digitally" },
-    { value: "SPECTRUM_LICENCE_ISSUED",       label: "Spectrum Licence Issued",     desc: "Radio/telecom spectrum licence granted" },
-    { value: "DIGITAL_ID_ISSUED",             label: "Digital ID Issued",           desc: "Government digital identity credential issued" },
-    { value: "CYBERSECURITY_AUDIT",           label: "Cybersecurity Audit",         desc: "Organisation cybersecurity compliance recorded" },
-    { value: "ICT_REGISTRATION",              label: "ICT Provider Registration",   desc: "ICT service provider registered with MCIT" },
-  ],
-  MCIL: [
-    { value: "TRADE_LICENCE_UPDATED",         label: "Trade Licence Updated",       desc: "Business trade licence renewed or updated" },
-    { value: "LABOUR_CONTRACT_RECORDED",      label: "Labour Contract Recorded",    desc: "Employment contract hashed and stored on chain" },
-    { value: "FOREIGN_INVESTMENT_APPROVED",   label: "Foreign Investment Approved", desc: "Foreign investment application approved" },
-    { value: "COMPANY_REGISTRATION",          label: "Company Registration",        desc: "New company registered with MCIL" },
-    { value: "DISPUTE_RESOLUTION_RECORDED",   label: "Dispute Resolution",          desc: "Labour or commercial dispute outcome recorded" },
-  ],
-  CUSTOMS: [
-    { value: "SHIPMENT_CLEARED_2025",         label: "Shipment Cleared",            desc: "Import/export shipment cleared through customs" },
-    { value: "TARIFF_CLASSIFICATION",         label: "Tariff Classification",       desc: "Goods tariff code assigned and recorded" },
-    { value: "PROHIBITED_GOODS_FLAGGED",      label: "Prohibited Goods Flagged",    desc: "Prohibited or restricted goods flagged at border" },
-    { value: "BOND_WAREHOUSE_RECORD",         label: "Bond Warehouse Entry",        desc: "Goods entered into bonded warehouse" },
-    { value: "TRADE_FACILITATION_RECORD",     label: "Trade Facilitation",          desc: "UNCTAD-aligned trade facilitation record" },
-  ],
-};
-
-// Human-readable service label lookup
-function serviceLabel(code) {
-  for (const types of Object.values(SERVICE_TYPES)) {
-    const found = types.find(t => t.value === code);
-    if (found) return found.label;
-  }
-  return code;
-}
-function serviceDesc(code) {
-  for (const types of Object.values(SERVICE_TYPES)) {
-    const found = types.find(t => t.value === code);
-    if (found) return found.desc;
-  }
-  return "";
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// WORKFLOW DEFINITIONS — maps service types to workflow context
-// Each entry defines: which workflow it belongs to, what step it is,
-// what came before, what comes next, and who owns each step
-// ═══════════════════════════════════════════════════════════════════════
-const WORKFLOWS = {
-  // ── Education Benefit Workflow ────────────────────────────────────────
-  SCHOOL_ENROLMENT_2025: {
-    workflowName: "Education Benefit & UNICEF Grant",
-    workflowId:   "EDU-BENEFIT",
-    step:         1,
-    totalSteps:   4,
-    owner:        "EDUCATION",
-    stepLabel:    "Step 1 of 4 — Enrolment Recorded",
-    nextStep:     { ministry: "MOF",  action: "Approve school fee benefit payment",  serviceType: "EDUCATION_BENEFIT_ELIGIBLE_2025" },
-    prevSteps:    [],
-    receipt:      { label: "Enrolment Reference", prefix: "EDU" },
-    notice:       "MOF will see this record in their Cross-Ministry tab and must approve the benefit payment. UNICEF tranche progress updates automatically when enrolment milestones are reached.",
-  },
-  EDUCATION_BENEFIT_ELIGIBLE_2025: {
-    workflowName: "Education Benefit & UNICEF Grant",
-    workflowId:   "EDU-BENEFIT",
-    step:         2,
-    totalSteps:   4,
-    owner:        "MOF",
-    stepLabel:    "Step 2 of 4 — Benefit Approved by MOF",
-    nextStep:     { ministry: "CBS",  action: "Process benefit payment to family",   serviceType: "DIGITAL_PAYMENT_RECORDED" },
-    prevSteps:    [{ ministry: "EDUCATION", label: "Enrolment recorded" }],
-    receipt:      { label: "Benefit Approval Reference", prefix: "MOF-BEN" },
-    notice:       "CBS must now process the actual payment to the citizen's bank account. Record the payment reference number when submitting.",
-  },
-  DIGITAL_PAYMENT_RECORDED: {
-    workflowName: "Education Benefit & UNICEF Grant",
-    workflowId:   "EDU-BENEFIT",
-    step:         3,
-    totalSteps:   4,
-    owner:        "CBS",
-    stepLabel:    "Step 3 of 4 — Payment Processed by CBS",
-    nextStep:     { ministry: "EDUCATION", action: "Confirm benefit received by family", serviceType: "ATTENDANCE_RECORD" },
-    prevSteps:    [{ ministry: "EDUCATION", label: "Enrolment recorded" }, { ministry: "MOF", label: "Benefit approved" }],
-    receipt:      { label: "Payment Reference", prefix: "CBS-PAY" },
-    notice:       "Education officer must confirm the family has received the benefit payment to complete the workflow and trigger UNICEF tranche verification.",
-  },
-  // ── Customs / Trade Clearance Workflow ───────────────────────────────
-  SHIPMENT_CLEARED_2025: {
-    workflowName: "Customs Trade Clearance",
-    workflowId:   "CUSTOMS-CLEAR",
-    step:         1,
-    totalSteps:   4,
-    owner:        "CUSTOMS",
-    stepLabel:    "Step 1 of 4 — Shipment Manifest Recorded",
-    nextStep:     { ministry: "MCIL", action: "Verify trade licence for importer",   serviceType: "TRADE_LICENCE_UPDATED" },
-    prevSteps:    [],
-    receipt:      { label: "Customs Tracking Reference", prefix: "CST" },
-    notice:       "MCIL must verify the importer holds a valid trade licence. Once verified, MOF will process duty payment. Container cannot be released until all 4 steps are complete.",
-  },
-  TRADE_LICENCE_UPDATED: {
-    workflowName: "Customs Trade Clearance",
-    workflowId:   "CUSTOMS-CLEAR",
-    step:         2,
-    totalSteps:   4,
-    owner:        "MCIL",
-    stepLabel:    "Step 2 of 4 — Trade Licence Verified by MCIL",
-    nextStep:     { ministry: "MOF",  action: "Calculate and confirm duty payment",  serviceType: "DUTY_PROCESSED" },
-    prevSteps:    [{ ministry: "CUSTOMS", label: "Manifest recorded" }],
-    receipt:      { label: "MCIL Licence Verification Reference", prefix: "MCIL-LIC" },
-    notice:       "MOF must now process and confirm the customs duty payment before CBS clears the funds and Customs can release the container.",
-  },
-  DUTY_PROCESSED: {
-    workflowName: "Customs Trade Clearance",
-    workflowId:   "CUSTOMS-CLEAR",
-    step:         3,
-    totalSteps:   4,
-    owner:        "MOF",
-    stepLabel:    "Step 3 of 4 — Duty Confirmed by MOF",
-    nextStep:     { ministry: "CBS",  action: "Confirm duty funds cleared",          serviceType: "DIGITAL_PAYMENT_RECORDED" },
-    prevSteps:    [{ ministry: "CUSTOMS", label: "Manifest recorded" }, { ministry: "MCIL", label: "Licence verified" }],
-    receipt:      { label: "Duty Payment Reference", prefix: "MOF-DUTY" },
-    notice:       "CBS must confirm the duty funds have cleared through the banking system. Once CBS confirms, Customs will receive notification to release the container.",
-  },
-  TRADE_FACILITATION_RECORD: {
-    workflowName: "Customs Trade Clearance",
-    workflowId:   "CUSTOMS-CLEAR",
-    step:         4,
-    totalSteps:   4,
-    owner:        "CUSTOMS",
-    stepLabel:    "Step 4 of 4 — Container Released ✓ WORKFLOW COMPLETE",
-    nextStep:     null,
-    prevSteps:    [
-      { ministry: "CUSTOMS", label: "Manifest recorded" },
-      { ministry: "MCIL",    label: "Licence verified" },
-      { ministry: "MOF",     label: "Duty confirmed" },
-      { ministry: "CBS",     label: "Payment cleared" },
-    ],
-    receipt:      { label: "Clearance Certificate Reference", prefix: "CST-CLEAR" },
-    notice:       "Workflow complete. Clearance certificate generated. All steps verified and permanently recorded on chain.",
-  },
-  // ── Social Welfare Workflow ───────────────────────────────────────────
-  SOCIAL_WELFARE_PAYMENT_2025: {
-    workflowName: "Social Welfare Disbursement",
-    workflowId:   "WELFARE",
-    step:         1,
-    totalSteps:   2,
-    owner:        "MOF",
-    stepLabel:    "Step 1 of 2 — Welfare Payment Approved",
-    nextStep:     { ministry: "CBS",  action: "Process welfare payment to recipient", serviceType: "DIGITAL_PAYMENT_RECORDED" },
-    prevSteps:    [],
-    receipt:      { label: "Welfare Payment Reference", prefix: "MOF-WEL" },
-    notice:       "CBS must process the actual payment to the recipient's account and record the bank reference number to complete this workflow.",
-  },
-  // ── Standalone records (no multi-step workflow) ───────────────────────
-  ATTENDANCE_RECORD:         { workflowName: "Education Record", workflowId: "EDU-STANDALONE", step: 1, totalSteps: 1, owner: "EDUCATION", stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Attendance Reference", prefix: "EDU-ATT" }, notice: "Attendance recorded permanently on chain. No further workflow steps required." },
-  SCHOLARSHIP_AWARDED:       { workflowName: "Scholarship",      workflowId: "EDU-SCHOLARSHIP", step: 1, totalSteps: 1, owner: "EDUCATION", stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Scholarship Reference", prefix: "EDU-SCH" }, notice: "Scholarship award recorded on chain." },
-  GRADUATION_RECORD:         { workflowName: "Graduation",       workflowId: "EDU-GRAD",        step: 1, totalSteps: 1, owner: "EDUCATION", stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Graduation Reference", prefix: "EDU-GRAD" }, notice: "Graduation recorded on chain." },
-  SPECIAL_NEEDS_SUPPORT:     { workflowName: "Special Needs",    workflowId: "EDU-SN",          step: 1, totalSteps: 1, owner: "EDUCATION", stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Support Reference", prefix: "EDU-SN" }, notice: "Support services recorded on chain." },
-  TAX_COMPLIANCE_VERIFIED:   { workflowName: "Tax Compliance",   workflowId: "MOF-TAX",         step: 1, totalSteps: 1, owner: "MOF",       stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Tax Compliance Reference", prefix: "MOF-TAX" }, notice: "Tax compliance status recorded on chain." },
-  BUDGET_ALLOCATION_RECORDED:{ workflowName: "Budget",           workflowId: "MOF-BUDGET",      step: 1, totalSteps: 1, owner: "MOF",       stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Budget Reference", prefix: "MOF-BUD" }, notice: "Budget allocation recorded on chain." },
-  ACCOUNT_OPENED:            { workflowName: "Account Opening",  workflowId: "CBS-ACCT",        step: 1, totalSteps: 1, owner: "CBS",       stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Account Reference", prefix: "CBS-ACCT" }, notice: "Account opening recorded on chain." },
-  REMITTANCE_RECEIVED:       { workflowName: "Remittance",       workflowId: "CBS-REM",         step: 1, totalSteps: 1, owner: "CBS",       stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Remittance Reference", prefix: "CBS-REM" }, notice: "Remittance received and recorded on chain." },
-  LOAN_APPROVED:             { workflowName: "Loan",             workflowId: "CBS-LOAN",        step: 1, totalSteps: 1, owner: "CBS",       stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Loan Reference", prefix: "CBS-LOAN" }, notice: "Loan approval recorded on chain." },
-  STABLECOIN_ISSUANCE:       { workflowName: "WST Stablecoin",   workflowId: "CBS-WST",         step: 1, totalSteps: 1, owner: "CBS",       stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Issuance Reference", prefix: "CBS-WST" }, notice: "WST stablecoin issuance recorded. Phase 2: live CBS mint/burn contract." },
-  BUSINESS_LICENCE_DIGITAL:  { workflowName: "Digital Licence",  workflowId: "MCIT-LIC",        step: 1, totalSteps: 1, owner: "MCIT",      stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Licence Reference", prefix: "MCIT-LIC" }, notice: "Digital business licence recorded on chain." },
-  SPECTRUM_LICENCE_ISSUED:   { workflowName: "Spectrum Licence", workflowId: "MCIT-SPEC",       step: 1, totalSteps: 1, owner: "MCIT",      stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Spectrum Reference", prefix: "MCIT-SPEC" }, notice: "Spectrum licence recorded on chain." },
-  DIGITAL_ID_ISSUED:         { workflowName: "Digital ID",       workflowId: "MCIT-DID",        step: 1, totalSteps: 1, owner: "MCIT",      stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Digital ID Reference", prefix: "MCIT-DID" }, notice: "Digital ID issuance recorded on chain." },
-  CYBERSECURITY_AUDIT:       { workflowName: "Cyber Audit",      workflowId: "MCIT-CYBER",      step: 1, totalSteps: 1, owner: "MCIT",      stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Audit Reference", prefix: "MCIT-AUD" }, notice: "Cybersecurity audit result recorded on chain." },
-  ICT_REGISTRATION:          { workflowName: "ICT Registration", workflowId: "MCIT-ICT",        step: 1, totalSteps: 1, owner: "MCIT",      stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Registration Reference", prefix: "MCIT-REG" }, notice: "ICT provider registration recorded on chain." },
-  LABOUR_CONTRACT_RECORDED:  { workflowName: "Labour Contract",  workflowId: "MCIL-LAB",        step: 1, totalSteps: 1, owner: "MCIL",      stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Contract Reference", prefix: "MCIL-LAB" }, notice: "Labour contract recorded on chain." },
-  FOREIGN_INVESTMENT_APPROVED:{ workflowName: "Foreign Investment", workflowId: "MCIL-FDI",     step: 1, totalSteps: 1, owner: "MCIL",      stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Investment Reference", prefix: "MCIL-FDI" }, notice: "Foreign investment approval recorded on chain." },
-  COMPANY_REGISTRATION:      { workflowName: "Company Reg",      workflowId: "MCIL-CRG",        step: 1, totalSteps: 1, owner: "MCIL",      stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Company Reference", prefix: "MCIL-CRG" }, notice: "Company registration recorded on chain." },
-  DISPUTE_RESOLUTION_RECORDED:{ workflowName: "Dispute",         workflowId: "MCIL-DIS",        step: 1, totalSteps: 1, owner: "MCIL",      stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Dispute Reference", prefix: "MCIL-DIS" }, notice: "Dispute resolution outcome recorded on chain." },
-  TARIFF_CLASSIFICATION:     { workflowName: "Tariff",           workflowId: "CST-TARIFF",      step: 1, totalSteps: 1, owner: "CUSTOMS",   stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Tariff Reference", prefix: "CST-TAR" }, notice: "Tariff classification recorded on chain." },
-  PROHIBITED_GOODS_FLAGGED:  { workflowName: "Prohibited Goods", workflowId: "CST-PROHIB",      step: 1, totalSteps: 1, owner: "CUSTOMS",   stepLabel: "Flagged Record",    nextStep: null, prevSteps: [], receipt: { label: "Flag Reference", prefix: "CST-FLAG" }, notice: "Prohibited goods flag recorded. Customs supervisor and MCIL have been notified." },
-  BOND_WAREHOUSE_RECORD:     { workflowName: "Bond Warehouse",   workflowId: "CST-BOND",        step: 1, totalSteps: 1, owner: "CUSTOMS",   stepLabel: "Standalone Record", nextStep: null, prevSteps: [], receipt: { label: "Warehouse Reference", prefix: "CST-BOND" }, notice: "Bond warehouse entry recorded on chain." },
-};
-
-// Generate a workflow reference number from tx hash + prefix
-function generateRef(txHash, prefix) {
-  if (!txHash) return `${prefix}-PENDING`;
-  const short = txHash.slice(2, 10).toUpperCase();
-  const ts    = Date.now().toString(36).toUpperCase().slice(-4);
-  return `${prefix}-${ts}-${short}`;
-}
-
-// Workflow progress bar component
-function WorkflowProgress({ wf, currentStep }) {
-  if (!wf || wf.totalSteps <= 1) return null;
-  return (
-    <div style={{ marginTop:"12px" }}>
-      <div style={{ fontSize:"10px", fontWeight:700, color:C.silver, marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.8px" }}>
-        Workflow Progress — {wf.workflowName}
-      </div>
-      <div style={{ display:"flex", gap:"4px", alignItems:"center" }}>
-        {Array.from({ length: wf.totalSteps }, (_, i) => {
-          const stepNum  = i + 1;
-          const isDone   = stepNum < currentStep;
-          const isCurrent = stepNum === currentStep;
-          return (
-            <div key={i} style={{ display:"flex", alignItems:"center", gap:"4px", flex:1 }}>
-              <div style={{
-                flex:1, height:"6px", borderRadius:"3px",
-                background: isDone ? C.seafoam : isCurrent ? C.coral : C.ocean,
-                transition:"all 0.3s",
-              }} />
-              {i < wf.totalSteps - 1 && <div style={{ width:"4px", height:"2px", background:C.wave }} />}
-            </div>
-          );
-        })}
-      </div>
-      <div style={{ display:"flex", justifyContent:"space-between", marginTop:"4px", fontSize:"9px", color:C.muted }}>
-        <span>{wf.prevSteps.map(s => s.ministry).join(" → ") || "Start"}</span>
-        <span style={{ color:C.coral }}>{wf.stepLabel}</span>
-        {wf.nextStep && <span>{wf.nextStep.ministry} →</span>}
-      </div>
-    </div>
-  );
-}
-
-// Receipt card shown after successful submission
-function ReceiptCard({ txHash, citizenId, serviceType, evidenceNote, timestamp, ministry, onNext, onAnother }) {
-  const wf  = WORKFLOWS[serviceType] || {};
-  const ref = generateRef(txHash, wf.receipt?.prefix || "SBP");
-  const isComplete = !wf.nextStep;
-
-  return (
-    <div style={{ ...card(), borderLeft:`4px solid ${isComplete ? C.seafoam : C.coral}`, maxWidth:"680px" }}>
-      {/* Header */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"16px" }}>
-        <div>
-          <div style={{ fontSize:"22px", marginBottom:"4px" }}>{isComplete ? "✅" : "📋"}</div>
-          <div style={{ fontSize:"16px", fontWeight:900, fontFamily:F.display, color: isComplete ? C.seafoam : C.white }}>
-            {isComplete ? "Workflow Complete" : "Step Recorded On Chain"}
-          </div>
-          <div style={{ fontSize:"12px", color:C.silver, marginTop:"2px" }}>{wf.stepLabel || "Record confirmed"}</div>
-        </div>
-        <div style={{ textAlign:"right" }}>
-          <div style={{ fontSize:"10px", color:C.muted, marginBottom:"3px" }}>Reference Number</div>
-          <div style={{ fontFamily:F.mono, fontSize:"13px", fontWeight:700, color:C.seafoam, background:C.seafoam+"18", padding:"4px 10px", borderRadius:"6px" }}>{ref}</div>
-        </div>
-      </div>
-
-      {/* Receipt details */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"14px" }}>
-        {[
-          ["Service", serviceLabel(serviceType)],
-          ["Ministry", ministry?.code],
-          ["Citizen Hash", citizenId ? ethers.keccak256(ethers.toUtf8Bytes(citizenId.trim())).slice(0,14)+"…" : "—"],
-          ["Timestamp", new Date(timestamp).toLocaleString()],
-          ["Tx Hash", txHash ? txHash.slice(0,12)+"…"+txHash.slice(-6) : "—"],
-          ["Network", CONFIG.NETWORK],
-        ].map(([label, val]) => (
-          <div key={label} style={{ background:C.abyss, borderRadius:"6px", padding:"8px 12px" }}>
-            <div style={{ fontSize:"9px", color:C.muted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.6px", marginBottom:"2px" }}>{label}</div>
-            <div style={{ fontSize:"12px", color:C.white, fontFamily:label.includes("Hash") || label==="Tx Hash" ? F.mono : F.ui, fontWeight:600 }}>{val}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Evidence note if provided */}
-      {evidenceNote && (
-        <div style={{ background:C.abyss, borderRadius:"6px", padding:"10px 12px", marginBottom:"14px" }}>
-          <div style={{ fontSize:"9px", color:C.muted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.6px", marginBottom:"3px" }}>Evidence Note (hashed on chain)</div>
-          <div style={{ fontSize:"12px", color:C.silver }}>{evidenceNote}</div>
-          <div style={{ fontSize:"10px", color:C.muted, fontFamily:F.mono, marginTop:"3px" }}>
-            Hash: {ethers.keccak256(ethers.toUtf8Bytes(evidenceNote.trim())).slice(0,20)}…
-          </div>
-        </div>
-      )}
-
-      {/* Workflow progress */}
-      <WorkflowProgress wf={wf} currentStep={wf.step || 1} />
-
-      {/* Completed prev steps */}
-      {wf.prevSteps?.length > 0 && (
-        <div style={{ marginTop:"12px" }}>
-          <div style={{ fontSize:"10px", fontWeight:700, color:C.silver, marginBottom:"6px", textTransform:"uppercase" }}>Completed Steps</div>
-          {wf.prevSteps.map((s, i) => (
-            <div key={i} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"5px 0" }}>
-              <span style={{ color:C.seafoam, fontSize:"12px" }}>✓</span>
-              <span style={{ fontSize:"12px", color:C.silver }}>{s.ministry} — {s.label}</span>
-            </div>
-          ))}
-          <div style={{ display:"flex", alignItems:"center", gap:"8px", padding:"5px 0" }}>
-            <span style={{ color:C.coral, fontSize:"12px" }}>●</span>
-            <span style={{ fontSize:"12px", color:C.white, fontWeight:700 }}>{ministry?.code} — {serviceLabel(serviceType)} (just recorded)</span>
-          </div>
-        </div>
-      )}
-
-      {/* Next step notice */}
-      {wf.nextStep && (
-        <div style={{ marginTop:"14px", padding:"12px", background:C.amber+"18", border:`1px solid ${C.amber}44`, borderRadius:"8px" }}>
-          <div style={{ fontSize:"11px", fontWeight:700, color:C.amber, marginBottom:"4px" }}>⏭ Next Step Required</div>
-          <div style={{ fontSize:"12px", color:C.silver }}>
-            <strong style={{ color:C.white }}>{wf.nextStep.ministry}</strong> must: {wf.nextStep.action}
-          </div>
-          <div style={{ fontSize:"11px", color:C.muted, marginTop:"4px" }}>{wf.notice}</div>
-        </div>
-      )}
-
-      {isComplete && (
-        <div style={{ marginTop:"14px", padding:"12px", background:C.seafoam+"18", border:`1px solid ${C.seafoam}44`, borderRadius:"8px" }}>
-          <div style={{ fontSize:"11px", fontWeight:700, color:C.seafoam, marginBottom:"4px" }}>✓ Workflow Complete</div>
-          <div style={{ fontSize:"12px", color:C.silver }}>{wf.notice}</div>
-        </div>
-      )}
-
-      {/* Actions */}
-      <div style={{ display:"flex", gap:"10px", marginTop:"16px" }}>
-        <button onClick={onAnother} style={{ ...btn("ghost") }}>Record Another</button>
-        {wf.nextStep && onNext && (
-          <button onClick={onNext} style={{ ...btn("primary") }}>
-            Go to {wf.nextStep.ministry} Dashboard →
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // ═══════════════════════════════════════════════════════════════════════
 // DESIGN SYSTEM
@@ -901,514 +549,27 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// RECORD SERVICE FORM — submits directly to chain via ethers.js
-// ═══════════════════════════════════════════════════════════════════════
-function RecordsTab({ records, totalRecords, loading, connected, ministry }) {
-  const [search, setSearch] = useState("");
-
-  const filtered = search.trim()
-    ? records.filter(r =>
-        r.serviceType.toLowerCase().includes(search.toLowerCase()) ||
-        serviceLabel(r.serviceType).toLowerCase().includes(search.toLowerCase()) ||
-        r.citizenHash.toLowerCase().includes(search.toLowerCase()) ||
-        (r.dataHash && r.dataHash.toLowerCase().includes(search.toLowerCase()))
-      )
-    : records;
-
-  return (
-    <>
-      <SectionHead
-        title="Service Records"
-        sub={connected ? `${totalRecords} records on-chain · showing last 10 · auto-refreshing every 3s` : "Demo records — connect chain for live data"}
-      />
-
-      {/* Search bar */}
-      <div style={{ marginBottom:"14px", position:"relative" }}>
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search by citizen hash, service type, or reference…"
-          style={{
-            width:"100%", padding:"11px 14px 11px 38px",
-            borderRadius:"8px", border:`1px solid ${C.ocean}`,
-            background:C.abyss, color:C.white, fontSize:"13px",
-            fontFamily:F.ui, boxSizing:"border-box",
-          }}
-        />
-        <span style={{ position:"absolute", left:"13px", top:"50%", transform:"translateY(-50%)", fontSize:"14px", color:C.muted }}>🔍</span>
-        {search && (
-          <button
-            onClick={() => setSearch("")}
-            style={{ position:"absolute", right:"12px", top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:"16px", lineHeight:1 }}
-          >×</button>
-        )}
-      </div>
-
-      {loading && connected
-        ? <LoadingCard msg="Reading records from contract…" />
-        : (
-          <div style={{ ...card() }}>
-            {filtered.length === 0 && (
-              <div style={{ padding:"28px", textAlign:"center", color:C.muted, fontSize:"13px" }}>
-                {search ? `No records matching "${search}"` : connected ? "No records yet — use Record Service tab to add the first one" : "Connect Anvil to see live records"}
-              </div>
-            )}
-            {filtered.map((r, i) => (
-              <div key={r.id} style={{ padding:"14px 0", borderBottom:i<filtered.length-1?`1px solid ${C.ocean}`:"none" }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"6px" }}>
-                  <div style={{ display:"flex", gap:"12px", alignItems:"center" }}>
-                    <div style={{ width:"34px", height:"34px", borderRadius:"8px", background:ministry?.color+"22", border:`1px solid ${ministry?.color}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px", flexShrink:0 }}>📋</div>
-                    <div>
-                      <div style={{ fontWeight:800, fontSize:"13px", color:C.white }}>
-                        #{r.id} — {serviceLabel(r.serviceType)}
-                      </div>
-                      <div style={{ fontSize:"11px", color:C.silver, marginTop:"2px" }}>{serviceDesc(r.serviceType)}</div>
-                    </div>
-                  </div>
-                  <div style={{ display:"flex", gap:"6px", alignItems:"center", flexShrink:0, marginLeft:"12px" }}>
-                    {r.ndidsVerified && <span style={{ ...badge(C.seafoam) }}>✓ NDIDS</span>}
-                    <span style={{ fontSize:"10px", color:C.muted, fontFamily:F.mono }}>{fmtTs(r.timestamp)}</span>
-                  </div>
-                </div>
-                <div style={{ display:"flex", gap:"16px", marginLeft:"46px", flexWrap:"wrap" }}>
-                  <div style={{ fontSize:"10px", color:C.muted }}>
-                    <span style={{ color:C.silver, fontWeight:700 }}>Citizen: </span>
-                    <Mono color={C.muted}>{r.citizenHash.slice(0,14)}…</Mono>
-                  </div>
-                  {r.dataHash && r.dataHash !== "0x0000000000000000000000000000000000000000000000000000000000000000" && (
-                    <div style={{ fontSize:"10px", color:C.muted }}>
-                      <span style={{ color:C.silver, fontWeight:700 }}>Evidence: </span>
-                      <Mono color={C.wave}>{r.dataHash.slice(0,14)}…</Mono>
-                    </div>
-                  )}
-                  {WORKFLOWS[r.serviceType] && (
-                    <div style={{ fontSize:"10px", color:C.muted }}>
-                      <span style={{ color:C.silver, fontWeight:700 }}>Workflow: </span>
-                      <span style={{ color:ministry?.color }}>{WORKFLOWS[r.serviceType].stepLabel}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-            <div style={{ padding:"10px 0 0", fontSize:"11px", color:C.muted, display:"flex", justifyContent:"space-between" }}>
-              <span>{search ? `${filtered.length} of ${records.length} shown` : `Showing last ${records.length}`}</span>
-              <span>Total on-chain: {totalRecords} records</span>
-            </div>
-          </div>
-        )
-      }
-    </>
-  );
-}
-
-function RecordServiceForm({ ministry, provider, onSuccess, onNavigate }) {
-  const [form, setForm]       = useState({ citizenId:"", serviceType:"", evidenceNote:"", reference:"", term:"", ndids:false });
-  const [status, setStatus]   = useState(null);
-  const [txHash, setTxHash]   = useState(null);
-  const [txTimestamp, setTxTimestamp] = useState(null);
-  const [errMsg, setErrMsg]   = useState(null);
-
-  const serviceTypes = SERVICE_TYPES[ministry?.code] || [];
-  const selectedType = serviceTypes.find(t => t.value === form.serviceType);
-  const wf = WORKFLOWS[form.serviceType] || null;
-  const isMultiStep = wf && wf.totalSteps > 1;
-
-  const submit = async () => {
-    if (!provider || !ministry?.contractAddr) return;
-    setStatus("submitting"); setErrMsg(null);
-    try {
-      const signer   = getSigner(provider);
-      const contract = new ethers.Contract(ministry.contractAddr, ABI.MINISTRY, signer);
-      const citizenHash = ethers.keccak256(ethers.toUtf8Bytes(form.citizenId.trim()));
-      // Combine evidence note + reference + term into a single evidence string
-      const evidenceParts = [form.evidenceNote, form.reference, form.term].filter(Boolean).join(" | ");
-      const dataHash = evidenceParts
-        ? ethers.keccak256(ethers.toUtf8Bytes(evidenceParts))
-        : ethers.ZeroHash;
-      const tx = await contract.recordService(citizenHash, form.serviceType, dataHash, form.ndids);
-      setTxHash(tx.hash);
-      await tx.wait();
-      setTxTimestamp(Date.now());
-      setStatus("success");
-    } catch(e) {
-      setErrMsg(e.reason || e.message || "Transaction failed — check Anvil is running");
-      setStatus("error");
-    }
-  };
-
-  const reset = () => {
-    setStatus(null); setTxHash(null); setTxTimestamp(null); setErrMsg(null);
-    setForm({ citizenId:"", serviceType:"", evidenceNote:"", reference:"", term:"", ndids:false });
-  };
-
-  if (status === "success") {
-    const evidenceParts = [form.evidenceNote, form.reference, form.term].filter(Boolean).join(" | ");
-    return (
-      <ReceiptCard
-        txHash={txHash}
-        citizenId={form.citizenId}
-        serviceType={form.serviceType}
-        evidenceNote={evidenceParts}
-        timestamp={txTimestamp}
-        ministry={ministry}
-        onAnother={() => { reset(); }}
-        onNext={wf?.nextStep ? () => { onNavigate?.(wf.nextStep.ministry); } : null}
-      />
-    );
-  }
-
-  return (
-    <>
-      <SectionHead
-        title="Record Service Delivery"
-        sub="Submits directly to the blockchain — record confirmed within seconds, receipt generated automatically"
-      />
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"16px", alignItems:"start" }}>
-
-        {/* Left — form */}
-        <div style={{ ...card(), display:"flex", flexDirection:"column", gap:"16px" }}>
-
-          {/* Citizen ID */}
-          <div>
-            <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, display:"block", marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>
-              Citizen ID — hashed before storing, zero PII on chain
-            </label>
-            <input
-              value={form.citizenId}
-              onChange={e=>setForm(f=>({...f,citizenId:e.target.value}))}
-              placeholder="e.g. SAMOA-EDU-001"
-              style={{ width:"100%", padding:"11px 14px", borderRadius:"8px", border:`1px solid ${C.ocean}`, background:C.abyss, color:C.white, fontSize:"13px", fontFamily:F.mono, boxSizing:"border-box" }}
-            />
-            {form.citizenId && (
-              <div style={{ marginTop:"5px", fontSize:"10px", color:C.muted, fontFamily:F.mono }}>
-                On-chain hash: {ethers.keccak256(ethers.toUtf8Bytes(form.citizenId.trim())).slice(0,24)}…
-              </div>
-            )}
-          </div>
-
-          {/* Service Type */}
-          <div>
-            <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, display:"block", marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>
-              Service Type
-            </label>
-            <select
-              value={form.serviceType}
-              onChange={e=>setForm(f=>({...f,serviceType:e.target.value}))}
-              style={{ width:"100%", padding:"11px 14px", borderRadius:"8px", border:`1px solid ${C.ocean}`, background:C.abyss, color:form.serviceType?C.white:C.muted, fontSize:"13px", fontFamily:F.ui }}
-            >
-              <option value="">Select service type for {ministry?.code}…</option>
-              {serviceTypes.map(s=>(
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-            {selectedType && (
-              <div style={{ marginTop:"5px", fontSize:"11px", color:C.silver, padding:"7px 10px", background:C.abyss, borderRadius:"6px", border:`1px solid ${C.ocean}` }}>
-                {selectedType.desc}
-              </div>
-            )}
-          </div>
-
-          {/* Payment Term — shown for payment/disbursement types */}
-          {(form.serviceType?.includes("BENEFIT") || form.serviceType?.includes("PAYMENT") || form.serviceType?.includes("WELFARE") || form.serviceType?.includes("DUTY")) && (
-            <div>
-              <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, display:"block", marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>
-                Payment Term / Period
-              </label>
-              <select
-                value={form.term}
-                onChange={e=>setForm(f=>({...f,term:e.target.value}))}
-                style={{ width:"100%", padding:"11px 14px", borderRadius:"8px", border:`1px solid ${C.ocean}`, background:C.abyss, color:form.term?C.white:C.muted, fontSize:"13px", fontFamily:F.ui }}
-              >
-                <option value="">Select term…</option>
-                {["Term 1 — January to April","Term 2 — May to August","Term 3 — September to December","Tranche 1","Tranche 2","Tranche 3","Q1 2025","Q2 2025","Q3 2025","Q4 2025","Annual 2025"].map(t=>(
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Reference / Tracking Number */}
-          <div>
-            <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, display:"block", marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>
-              Reference / Tracking Number {form.serviceType?.includes("SHIPMENT") || form.serviceType?.includes("TRADE") ? "(Container / Bill of Lading)" : "(optional)"}
-            </label>
-            <input
-              value={form.reference}
-              onChange={e=>setForm(f=>({...f,reference:e.target.value}))}
-              placeholder={form.serviceType?.includes("SHIPMENT") ? "e.g. CONT-2025-APL-001 or BL-REF-123" : "e.g. REF-2025-001 or payment receipt number"}
-              style={{ width:"100%", padding:"11px 14px", borderRadius:"8px", border:`1px solid ${C.ocean}`, background:C.abyss, color:C.white, fontSize:"13px", fontFamily:F.mono, boxSizing:"border-box" }}
-            />
-          </div>
-
-          {/* Evidence Note */}
-          <div>
-            <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, display:"block", marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>
-              Evidence Note (hashed and stored as permanent proof)
-            </label>
-            <input
-              value={form.evidenceNote}
-              onChange={e=>setForm(f=>({...f,evidenceNote:e.target.value}))}
-              placeholder="e.g. Field report #2025-001, signed by officer on 06/03/2025"
-              style={{ width:"100%", padding:"11px 14px", borderRadius:"8px", border:`1px solid ${C.ocean}`, background:C.abyss, color:C.white, fontSize:"13px", fontFamily:F.ui, boxSizing:"border-box" }}
-            />
-          </div>
-
-          {/* NDIDS checkbox */}
-          <label style={{ display:"flex", alignItems:"center", gap:"10px", cursor:"pointer", padding:"12px", background:C.abyss, borderRadius:"8px", border:`1px solid ${C.ocean}` }}>
-            <input
-              type="checkbox"
-              checked={form.ndids}
-              onChange={e=>setForm(f=>({...f,ndids:e.target.checked}))}
-              style={{ width:"16px", height:"16px", accentColor:C.seafoam }}
-            />
-            <div>
-              <div style={{ fontSize:"13px", fontWeight:700 }}>Verify citizen via NDIDS before recording</div>
-              <div style={{ fontSize:"11px", color:C.muted, marginTop:"2px" }}>
-                Confirms identity on-chain atomically — record only writes if citizen is registered
-              </div>
-            </div>
-          </label>
-
-          {/* Workflow preview */}
-          {wf && isMultiStep && (
-            <div style={{ padding:"10px 12px", background:C.amber+"14", border:`1px solid ${C.amber}33`, borderRadius:"8px" }}>
-              <div style={{ fontSize:"10px", fontWeight:700, color:C.amber, marginBottom:"4px" }}>MULTI-STEP WORKFLOW — {wf.workflowName}</div>
-              <div style={{ fontSize:"11px", color:C.silver }}>{wf.stepLabel}</div>
-              {wf.nextStep && <div style={{ fontSize:"11px", color:C.muted, marginTop:"3px" }}>Next: <strong style={{ color:C.white }}>{wf.nextStep.ministry}</strong> — {wf.nextStep.action}</div>}
-            </div>
-          )}
-
-          {/* Error */}
-          {status === "error" && (
-            <div style={{ padding:"10px 14px", background:C.danger+"18", border:`1px solid ${C.danger}44`, borderRadius:"8px", fontSize:"12px", color:C.danger }}>
-              ⚠ {errMsg}
-            </div>
-          )}
-
-          {/* Submit */}
-          <button
-            disabled={!form.citizenId || !form.serviceType || status === "submitting" || !provider}
-            onClick={submit}
-            style={{ ...btn("primary"), opacity:(!form.citizenId||!form.serviceType||!provider)?0.4:1, justifyContent:"center", padding:"13px 20px" }}
-          >
-            {status === "submitting" ? "⏳ Submitting to chain…" : "Submit & Generate Receipt →"}
-          </button>
-          {!provider && <div style={{ fontSize:"11px", color:C.amber, textAlign:"center" }}>⚠ Chain offline — start Anvil to submit</div>}
-        </div>
-
-        {/* Right — guidance panels */}
-        <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
-          <div style={{ ...card(), borderLeft:`3px solid ${ministry?.color||C.seafoam}` }}>
-            <div style={{ fontSize:"12px", fontWeight:800, color:C.white, marginBottom:"8px" }}>📋 Officer Checklist</div>
-            <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.8 }}>
-              ✓ Citizen ID matches person presenting<br/>
-              ✓ Service type reflects what was actually delivered<br/>
-              ✓ Reference or tracking number entered if applicable<br/>
-              ✓ Evidence note references any physical document<br/>
-              ✓ NDIDS ticked if identity was checked at counter
-            </div>
-          </div>
-          <div style={{ ...card(), borderLeft:`3px solid ${C.amber}` }}>
-            <div style={{ fontSize:"12px", fontWeight:800, color:C.white, marginBottom:"8px" }}>🔒 Privacy Guarantee</div>
-            <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.6 }}>
-              The citizen ID is hashed with keccak256 before it touches the chain. No name, date of birth, or personal information is stored. The hash cannot be reversed. This complies with Samoa's data protection principles and international privacy standards.
-            </div>
-          </div>
-          {wf && (
-            <div style={{ ...card(), borderLeft:`3px solid ${C.seafoam}` }}>
-              <div style={{ fontSize:"12px", fontWeight:800, color:C.white, marginBottom:"8px" }}>↔️ Workflow Context</div>
-              <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.6 }}>
-                {wf.notice}
-              </div>
-              {wf.nextStep && (
-                <div style={{ marginTop:"8px", fontSize:"11px", color:C.amber }}>
-                  After submitting, notify <strong>{wf.nextStep.ministry}</strong> that their action is required.
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// CROSS-MINISTRY RECORDS — fetches actual records from permitted nodes
-// ═══════════════════════════════════════════════════════════════════════
-function CrossMinistryRecords({ ministry, myPerms, provider }) {
-  const inboundPerms = myPerms.filter(p => p.toCode === ministry?.code);
-  const [allRecords, setAllRecords] = useState({});
-  const [loading, setLoading]       = useState(false);
-
-  useEffect(() => {
-    if (!provider || !inboundPerms.length) return;
-    setLoading(true);
-    const fetchAll = async () => {
-      const result = {};
-      for (const p of inboundPerms) {
-        const addr = MINISTRY_ADDRS[p.fromCode];
-        if (!addr) continue;
-        try {
-          const contract = new ethers.Contract(addr, ABI.MINISTRY, provider);
-          const total    = Number(await contract.totalRecords());
-          const records  = [];
-          for (let i = Math.max(0, total - 8); i < total; i++) {
-            const r = await contract.records(i);
-            records.push({
-              id: i,
-              citizenHash:  r[0],
-              serviceType:  r[1],
-              dataHash:     r[2],
-              timestamp:    Number(r[3]),
-              ndidsVerified:r[4],
-            });
-          }
-          result[p.fromCode] = { records, total };
-        } catch(e) {
-          result[p.fromCode] = { records: [], total: 0, error: e.message };
-        }
-      }
-      setAllRecords(result);
-      setLoading(false);
-    };
-    fetchAll();
-    const id = setInterval(fetchAll, CONFIG.POLL_MS);
-    return () => clearInterval(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [provider, ministry?.code, inboundPerms.length]);
-
-  if (inboundPerms.length === 0) return (
-    <>
-      <SectionHead title="Cross-Ministry Records" sub="Records from ministries that have granted you read access" />
-      <div style={{ ...card(), textAlign:"center", padding:"48px" }}>
-        <div style={{ fontSize:"40px", marginBottom:"12px" }}>🔒</div>
-        <div style={{ fontSize:"14px", color:C.silver, marginBottom:"8px" }}>
-          No inbound read permissions granted to {ministry?.code} yet.
-        </div>
-        <div style={{ fontSize:"12px", color:C.muted }}>
-          Another ministry admin must call <Mono>authoriseReader(address)</Mono> on their node, passing {ministry?.code}'s contract address.
-        </div>
-      </div>
-    </>
-  );
-
-  return (
-    <>
-      <SectionHead
-        title="Cross-Ministry Records"
-        sub={`${inboundPerms.length} ministry permission${inboundPerms.length>1?"s":""} active · auto-refreshing every ${CONFIG.POLL_MS/1000}s`}
-      />
-      {inboundPerms.map(p => {
-        const meta    = MINISTRY_META[p.fromCode] || { icon:"🏛️", color:C.wave, name:p.fromCode };
-        const data    = allRecords[p.fromCode];
-        const records = data?.records || [];
-        return (
-          <div key={p.fromCode} style={{ ...card(), marginBottom:"16px", borderLeft:`4px solid ${meta.color}` }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"14px" }}>
-              <div style={{ display:"flex", gap:"10px", alignItems:"center" }}>
-                <span style={{ fontSize:"22px" }}>{meta.icon}</span>
-                <div>
-                  <div style={{ fontWeight:800, fontSize:"13px", color:C.white }}>{meta.name}</div>
-                  <div style={{ fontSize:"10px", color:C.muted, fontFamily:F.mono }}>{MINISTRY_ADDRS[p.fromCode]?.slice(0,12)}…</div>
-                </div>
-              </div>
-              <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
-                <span style={{ ...badge(C.seafoam) }}>✓ Read Access</span>
-                <span style={{ fontSize:"10px", color:C.muted }}>{data?.total ?? "…"} total records</span>
-              </div>
-            </div>
-
-            {loading && !data && <div style={{ fontSize:"12px", color:C.muted, padding:"12px 0" }}>⏳ Fetching records from chain…</div>}
-            {data?.error && <div style={{ fontSize:"12px", color:C.danger, padding:"8px 12px", background:C.danger+"11", borderRadius:"6px" }}>⚠ {data.error}</div>}
-
-            {records.length === 0 && !loading && (
-              <div style={{ fontSize:"12px", color:C.muted, padding:"10px 0" }}>No records yet in {p.fromCode} node.</div>
-            )}
-
-            {records.map((r, i) => (
-              <div key={r.id} style={{ padding:"11px 0", borderBottom:i<records.length-1?`1px solid ${C.ocean}`:"none" }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                  <div>
-                    <div style={{ fontWeight:700, fontSize:"12px", color:C.white }}>
-                      #{r.id} — {serviceLabel(r.serviceType)}
-                    </div>
-                    <div style={{ fontSize:"11px", color:C.silver, marginTop:"2px" }}>{serviceDesc(r.serviceType)}</div>
-                    <div style={{ display:"flex", gap:"12px", marginTop:"5px", flexWrap:"wrap" }}>
-                      <span style={{ fontSize:"10px", color:C.muted }}>Citizen: <Mono color={C.muted}>{r.citizenHash.slice(0,10)}…</Mono></span>
-                      {r.dataHash && r.dataHash !== ethers.ZeroHash && (
-                        <span style={{ fontSize:"10px", color:C.muted }}>Evidence: <Mono color={C.wave}>{r.dataHash.slice(0,10)}…</Mono></span>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ display:"flex", gap:"6px", alignItems:"center", flexShrink:0, marginLeft:"12px" }}>
-                    {r.ndidsVerified && <span style={{ ...badge(C.seafoam) }}>✓ NDIDS</span>}
-                    <span style={{ fontSize:"10px", color:C.muted, fontFamily:F.mono }}>{fmtTs(r.timestamp)}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {records.length > 0 && (
-              <div style={{ paddingTop:"8px", fontSize:"10px", color:C.muted, textAlign:"right" }}>
-                Showing last {records.length} of {data?.total} records · <Mono color={C.muted}>{p.fromCode} node</Mono>
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════
 // DASHBOARD 2: MINISTRY OFFICER — live MinistryNode reads
 // ═══════════════════════════════════════════════════════════════════════
 function MinistryDashboard({ provider, connected, blockNumber, onBack }) {
   const [ministry, setMinistry] = useState(null);
   const [tab, setTab]           = useState("records");
   const [submitted, setSubmitted] = useState(false);
+  const [form, setForm] = useState({ citizenId:"", serviceType:"", ndids:false });
 
   // Hub data for ministry list
   const hubContract = useContract(ADDR.HUB, ABI.HUB, provider);
   const { data: hubData } = usePoll(async () => {
     if (!hubContract) return null;
-    const mins = await hubContract.getAllMinistries();
-    // Explicitly map to plain objects — ethers v6 Result objects need manual extraction
-    const mapped = Array.from(mins).map(m => ({
-      name:         String(m.name         ?? m[0] ?? ""),
-      code:         String(m.code         ?? m[1] ?? ""),
-      contractAddr: String(m.contractAddr ?? m[2] ?? ""),
-      active:       Boolean(m.active      ?? m[3] ?? true),
-      registeredAt: Number(m.registeredAt ?? m[4] ?? 0),
-    }));
-    return { ministries: mapped };
+    const [mins, perms] = await Promise.all([
+      hubContract.getAllMinistries(),
+      hubContract.getPermissions(),
+    ]);
+    return { ministries: mins, permissions: perms };
   }, [hubContract]);
 
   const ministryList = hubData?.ministries || MOCK.ministries;
-
-  // Read permissions directly from each node's authorisedReaders mapping
-  // This catches permissions set via authoriseReader() directly OR via hub
-  const { data: livePerms } = usePoll(async () => {
-    if (!provider || !ministryList?.length) return null;
-    const pairs = [];
-    const codes = Object.keys(MINISTRY_ADDRS);
-    for (const fromCode of codes) {
-      const fromContract = new ethers.Contract(MINISTRY_ADDRS[fromCode], ABI.MINISTRY, provider);
-      for (const toCode of codes) {
-        if (fromCode === toCode) continue;
-        try {
-          const hasAccess = await fromContract.authorisedReaders(MINISTRY_ADDRS[toCode]);
-          if (hasAccess) {
-            pairs.push({ fromCode, toCode, active: true, grantedAt: 0 });
-          }
-        } catch(e) { /* skip */ }
-      }
-    }
-    return pairs;
-  }, [provider, ministryList]);
-
-  const allPerms = livePerms || MOCK.permissions;
+  const allPerms     = hubData?.permissions || MOCK.permissions;
 
   // Ministry node contract for selected ministry
   const ministryContract = useContract(ministry?.contractAddr, ABI.MINISTRY, provider);
@@ -1451,7 +612,7 @@ function MinistryDashboard({ provider, connected, blockNumber, onBack }) {
                   <div style={{ fontSize:"14px", fontWeight:700, marginBottom:"8px", lineHeight:1.3 }}>{m.name}</div>
                   <div style={{ display:"flex", justifyContent:"space-between", fontSize:"11px", color:C.silver }}>
                     <span style={{ color:m.active?C.seafoam:C.danger, fontWeight:700 }}>● {m.active?"Active":"Inactive"}</span>
-                    <Mono color={C.muted}>{m.contractAddr?.slice(0,8)}...</Mono>
+                    <Mono color={C.muted}>{m.contractAddr.slice(0,8)}...</Mono>
                   </div>
                 </div>
               );
@@ -1471,7 +632,7 @@ function MinistryDashboard({ provider, connected, blockNumber, onBack }) {
 
   return (
     <div style={{ minHeight:"100vh", background:C.deep, fontFamily:F.ui, color:C.white }}>
-      <TopBar title={ministry.name} sub={ministry.contractAddr ? `${ministry.code} Node · ${ministry.contractAddr.slice(0,10)}...${ministry.contractAddr.slice(-6)}` : `${ministry.code} Node`} accent={ministry.color} blockNumber={blockNumber} onBack={onBack} />
+      <TopBar title={ministry.name} sub={`${ministry.code} Node · ${ministry.contractAddr.slice(0,10)}...${ministry.contractAddr.slice(-6)}`} accent={ministry.color} blockNumber={blockNumber} onBack={onBack} />
       <ConnectionBanner connected={connected} error={!connected?"Chain offline":null} network={CONFIG.NETWORK} />
       <div style={{ background:ministry.color+"22", borderBottom:`1px solid ${ministry.color}44`, padding:"10px 28px", display:"flex", gap:"28px", alignItems:"center" }}>
         <span style={{ fontSize:"22px" }}>{ministry.icon}</span>
@@ -1484,28 +645,92 @@ function MinistryDashboard({ provider, connected, blockNumber, onBack }) {
 
       <div style={{ maxWidth:"1080px", margin:"0 auto", padding:"28px" }}>
         {tab === "records" && (
-          <RecordsTab
-            records={liveRecords}
-            totalRecords={totalRecords}
-            loading={nodeLoading}
-            connected={connected}
-            ministry={ministry}
-          />
+          <>
+            <SectionHead title="Service Records" sub={connected ? `${totalRecords} records on-chain · showing last 10 · auto-refreshing` : "Demo records — connect chain for live data"} />
+            {nodeLoading && connected ? <LoadingCard msg="Reading records from contract…" /> : (
+              <div style={{ ...card() }}>
+                {liveRecords.length === 0 && (
+                  <div style={{ padding:"28px", textAlign:"center", color:C.muted, fontSize:"13px" }}>
+                    {connected ? "No records yet — use Record Service to add the first one" : "Connect Anvil to see live records"}
+                  </div>
+                )}
+                {liveRecords.map((r, i) => (
+                  <div key={r.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"13px 0", borderBottom:i<liveRecords.length-1?`1px solid ${C.ocean}`:"none" }}>
+                    <div style={{ display:"flex", gap:"12px", alignItems:"center" }}>
+                      <div style={{ width:"32px", height:"32px", borderRadius:"8px", background:ministry.color+"22", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"15px" }}>📋</div>
+                      <div>
+                        <div style={{ fontWeight:700, fontSize:"13px" }}>#{r.id} — {r.serviceType}</div>
+                        <Mono color={C.muted}>{short(r.citizenHash)}</Mono>
+                      </div>
+                    </div>
+                    <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
+                      {r.ndidsVerified && <span style={{ ...badge(C.seafoam) }}>✓ NDIDS</span>}
+                      <span style={{ fontSize:"10px", color:C.muted, fontFamily:F.mono }}>{fmtTs(r.timestamp)}</span>
+                    </div>
+                  </div>
+                ))}
+                <div style={{ padding:"10px 0 0", fontSize:"11px", color:C.muted, textAlign:"right" }}>
+                  Total on-chain: {totalRecords} records
+                </div>
+              </div>
+            )}
+          </>
         )}
+
         {tab === "record" && (
-          <RecordServiceForm
-            ministry={ministry}
-            provider={provider}
-            onSuccess={() => setTab("records")}
-            onNavigate={(code) => {
-              const target = ministryList?.find(m => m.code === code);
-              if (target) {
-                const meta = MINISTRY_META[code] || { icon:"🏛️", color:C.wave };
-                setMinistry({ ...target, ...meta });
-                setTab("record");
-              }
-            }}
-          />
+          <>
+            <SectionHead title="Record Service Delivery" sub="Creates a real on-chain transaction — reflected immediately in Records tab" />
+            {submitted ? (
+              <div style={{ ...card(), textAlign:"center", padding:"48px" }}>
+                <div style={{ fontSize:"52px", marginBottom:"16px" }}>✅</div>
+                <div style={{ fontSize:"18px", fontWeight:900, fontFamily:F.display, color:C.seafoam, marginBottom:"8px" }}>Service Recorded On Chain</div>
+                <div style={{ fontSize:"13px", color:C.silver, marginBottom:"20px" }}>The record is now immutable. Switch to the Records tab — it will appear within {CONFIG.POLL_MS/1000} seconds.</div>
+                <div style={{ fontSize:"11px", color:C.muted, marginBottom:"20px" }}>
+                  To actually write this transaction, call from the ministry admin wallet:<br/>
+                  <code style={{ fontFamily:F.mono, background:C.ocean, padding:"8px 12px", borderRadius:"6px", display:"block", marginTop:"8px", lineHeight:"1.8" }}>
+                    cast send {ministry.contractAddr} "recordService(bytes32,string,bytes32,bool)" \<br/>
+                    &nbsp;&nbsp;$(cast keccak "{form.citizenId}") "{form.serviceType}" 0x{Array(64).fill("0").join("")} {String(form.ndids)} \<br/>
+                    &nbsp;&nbsp;--private-key $MINISTRY_KEY --rpc-url {CONFIG.RPC_URL}
+                  </code>
+                </div>
+                <button onClick={() => { setSubmitted(false); setForm({ citizenId:"", serviceType:"", ndids:false }); }} style={{ ...btn() }}>Record Another →</button>
+              </div>
+            ) : (
+              <div style={{ ...card(), maxWidth:"580px" }}>
+                <div style={{ display:"flex", flexDirection:"column", gap:"16px" }}>
+                  <div>
+                    <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, display:"block", marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>Citizen ID (hashed before storing — zero PII)</label>
+                    <input value={form.citizenId} onChange={e=>setForm(f=>({...f,citizenId:e.target.value}))} placeholder="e.g. SAMOA-001"
+                      style={{ width:"100%", padding:"11px 14px", borderRadius:"8px", border:`1px solid ${C.ocean}`, background:C.abyss, color:C.white, fontSize:"14px", fontFamily:F.mono, boxSizing:"border-box" }} />
+                    {form.citizenId && (
+                      <div style={{ marginTop:"6px", fontSize:"10px", color:C.muted, fontFamily:F.mono }}>
+                        On-chain hash: {ethers.keccak256(ethers.toUtf8Bytes(form.citizenId)).slice(0,22)}...
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, display:"block", marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>Service Type</label>
+                    <select value={form.serviceType} onChange={e=>setForm(f=>({...f,serviceType:e.target.value}))}
+                      style={{ width:"100%", padding:"11px 14px", borderRadius:"8px", border:`1px solid ${C.ocean}`, background:C.abyss, color:form.serviceType?C.white:C.muted, fontSize:"13px", fontFamily:F.ui }}>
+                      <option value="">Select service type…</option>
+                      {["SCHOOL_ENROLMENT","BENEFIT_APPROVED","ACCOUNT_OPENED","SHIPMENT_CLEARED","LICENCE_UPDATED","DUTY_PROCESSED","TRADE_RECORD","REMITTANCE_RECORDED","SOCIAL_WELFARE_PAYMENT"].map(s=><option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <label style={{ display:"flex", alignItems:"center", gap:"10px", cursor:"pointer", padding:"12px", background:C.abyss, borderRadius:"8px", border:`1px solid ${C.ocean}` }}>
+                    <input type="checkbox" checked={form.ndids} onChange={e=>setForm(f=>({...f,ndids:e.target.checked}))} style={{ width:"16px", height:"16px", accentColor:C.seafoam }} />
+                    <div>
+                      <div style={{ fontSize:"13px", fontWeight:700 }}>Verify via NDIDS before recording</div>
+                      <div style={{ fontSize:"11px", color:C.muted, marginTop:"2px" }}>Calls NDIDS atomically — citizen confirmed before record is written</div>
+                    </div>
+                  </label>
+                  <button disabled={!form.citizenId||!form.serviceType} onClick={() => setSubmitted(true)}
+                    style={{ ...btn("primary"), opacity:(!form.citizenId||!form.serviceType)?0.4:1 }}>
+                    Generate Cast Command →
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {tab === "access" && (
@@ -1545,11 +770,26 @@ function MinistryDashboard({ provider, connected, blockNumber, onBack }) {
         )}
 
         {tab === "cross" && (
-          <CrossMinistryRecords
-            ministry={ministry}
-            myPerms={myPerms}
-            provider={provider}
-          />
+          <>
+            <SectionHead title="Cross-Ministry Records" sub="Records from other ministries you have been granted read access to" />
+            {myPerms.filter(p=>p.toCode===ministry.code).length===0 ? (
+              <div style={{ ...card(), textAlign:"center", padding:"48px" }}>
+                <div style={{ fontSize:"40px", marginBottom:"12px" }}>🔒</div>
+                <div style={{ fontSize:"14px", color:C.silver }}>No cross-ministry read permissions have been granted to {ministry.code} yet.</div>
+                <div style={{ fontSize:"12px", color:C.muted, marginTop:"8px" }}>Run the hub admin to grant access: <Mono>hub.grantPermission("EDUCATION","MOF")</Mono></div>
+              </div>
+            ) : myPerms.filter(p=>p.toCode===ministry.code).map((p,i)=>(
+              <div key={i} style={{ ...card(), marginBottom:"12px", borderLeft:`4px solid ${C.seafoam}` }}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"12px" }}>
+                  <div style={{ fontWeight:800, fontSize:"13px" }}>{p.fromCode} Records <span style={{ ...badge(C.seafoam), marginLeft:"10px", fontSize:"9px" }}>Read Access</span></div>
+                  <span style={{ fontSize:"10px", color:C.muted, fontFamily:F.mono }}>Granted: {fmtTs(p.grantedAt)}</span>
+                </div>
+                <div style={{ fontSize:"12px", color:C.silver, padding:"10px 12px", background:C.abyss, borderRadius:"7px" }}>
+                  Records readable via <Mono>{MINISTRY_ADDRS[p.fromCode]?.slice(0,10)}...</Mono> · Call <Mono>getRecord(id)</Mono> from this ministry's wallet to read individual records.
+                </div>
+              </div>
+            ))}
+          </>
         )}
       </div>
     </div>
@@ -1804,7 +1044,7 @@ function PublicDashboard({ provider, connected, blockNumber, onBack }) {
                       </div>
                       <div style={{ textAlign:"right" }}>
                         <StatusBadge status={m.active?"Active":"Inactive"} />
-                        <div style={{ marginTop:"4px" }}><Mono color={C.muted}>{m.contractAddr?.slice(0,8)}...{m.contractAddr?.slice(-5)}</Mono></div>
+                        <div style={{ marginTop:"4px" }}><Mono color={C.muted}>{m.contractAddr.slice(0,8)}...{m.contractAddr.slice(-5)}</Mono></div>
                       </div>
                     </div>
                   );
@@ -1972,7 +1212,7 @@ function Landing({ onSelect, blockNumber, connected, error }) {
           {roles.map(role=>(
             <div key={role.id} onClick={()=>onSelect(role.id)}
               onMouseEnter={()=>setHovered(role.id)} onMouseLeave={()=>setHovered(null)}
-              style={{ background:hovered===role.id?C.navy:C.deep, borderTop:`3px solid ${role.accent}`, borderLeft:`1px solid ${hovered===role.id?role.accent+"44":C.ocean}`, borderRight:`1px solid ${hovered===role.id?role.accent+"44":C.ocean}`, borderBottom:`1px solid ${hovered===role.id?role.accent+"44":C.ocean}`, borderRadius:"14px", padding:"26px 20px", cursor:"pointer", textAlign:"left", transition:"all 0.2s", transform:hovered===role.id?"translateY(-4px)":"none", boxShadow:hovered===role.id?`0 20px 40px ${role.accent}18`:"none" }}>
+              style={{ background:hovered===role.id?C.navy:C.deep, border:`1px solid ${hovered===role.id?role.accent+"66":C.ocean}`, borderTop:`3px solid ${role.accent}`, borderRadius:"14px", padding:"26px 20px", cursor:"pointer", textAlign:"left", transition:"all 0.2s", transform:hovered===role.id?"translateY(-4px)":"none", boxShadow:hovered===role.id?`0 20px 40px ${role.accent}18`:"none" }}>
               <div style={{ fontSize:"34px", marginBottom:"14px" }}>{role.icon}</div>
               <div style={{ fontSize:"16px", fontWeight:900, fontFamily:F.display, marginBottom:"3px" }}>{role.title}</div>
               <div style={{ fontSize:"10px", fontWeight:700, color:role.accent, letterSpacing:"1.2px", textTransform:"uppercase", marginBottom:"12px" }}>{role.sub}</div>

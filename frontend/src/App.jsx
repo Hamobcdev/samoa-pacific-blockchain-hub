@@ -1335,7 +1335,7 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
         </div>
       </div>
 
-        {/* ─── GRANT OVERVIEW (v7) ─────────────────────────────── */}
+      <div style={{ maxWidth:"1080px", margin:"0 auto", padding:"28px" }}>
         {tab === "overview" && (
           <>
             <div style={{ ...card(), borderTop:`3px solid ${C.gold}`, marginBottom:"20px", background:`linear-gradient(135deg, ${C.navy} 0%, ${C.ocean} 100%)` }}>

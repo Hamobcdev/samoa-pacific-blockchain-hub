@@ -783,9 +783,9 @@ function WorkflowProgress({ wf, currentStep }) {
         })}
       </div>
       <div style={{ display:"flex", justifyContent:"space-between", marginTop:"4px", fontSize:"9px", color:C.muted }}>
-        <span>{wf.prevSteps?.map(s=>s.ministry).join(" -> ") || "Start"}</span>
+        <span>{wf.prevSteps?.map(s=>s.ministry).join(" → ") || "Start"}</span>
         <span style={{ color:C.coral }}>{wf.stepLabel}</span>
-        {wf.nextStep && <span>{wf.nextStep.ministry} -></span>}
+        {wf.nextStep && <span>{wf.nextStep.ministry} →</span>}
       </div>
     </div>
   );
@@ -1360,7 +1360,7 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
                 <WfBar wfId={action.wfId} stepsCompleted={action.stepIndex} />
                 <div style={{ marginTop:"14px" }}>
                   <button onClick={() => handlePendingAction(action)} style={{ ...btn("primary") }}>
-                    ⚡ Action Now — Pre-filled Form ->
+                    ⚡ Action Now — Pre-filled Form →
                   </button>
                 </div>
               </div>
@@ -1508,7 +1508,7 @@ function CommunityIntelPanel({ tranches, grantRaw, onOpenCommunity }) {
           <div style={{ fontSize:"12px", color:C.silver }}>📍 {project.community} · PM: {project.pm} · Matai: {project.matai}</div>
         </div>
         <button onClick={onOpenCommunity} style={{ ...btn("ghost"), fontSize:"11px", padding:"5px 12px", border:`1px solid #4A9EE0`, color:"#4A9EE0" }}>
-          Open Community Dashboard ->
+          Open Community Dashboard →
         </button>
       </div>
 
@@ -1590,12 +1590,12 @@ function CommunityGrantView({ tranches, grantRaw, onOpenCommunity }) {
       <div style={{ ...card({ background:`linear-gradient(135deg, ${C.gold}18, #4A9EE018)`, borderColor:`${C.gold}44` }), marginBottom:"16px" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"12px" }}>
           <div>
-            <div style={{ fontSize:"13px", fontWeight:800, color:C.gold, marginBottom:"4px" }}>🔗 Grant #0 on chain -> {project.name}</div>
+            <div style={{ fontSize:"13px", fontWeight:800, color:C.gold, marginBottom:"4px" }}>🔗 Grant #0 on chain → {project.name}</div>
             <div style={{ fontSize:"12px", color:C.silver }}>AIDisbursementTracker: {ADDR.AID.slice(0,10)}… · Community: {project.community} · Donor: {project.donor}</div>
             <div style={{ fontSize:"12px", color:C.silver, marginTop:"2px" }}>Every tranche status below reflects live chain state. Expenditures are logged by the PM and approved by village matai.</div>
           </div>
           <button onClick={onOpenCommunity} style={{ ...btn("primary"), background:C.gold, flexShrink:0 }}>
-            🏘 Open Full Community Dashboard ->
+            🏘 Open Full Community Dashboard →
           </button>
         </div>
       </div>
@@ -1940,7 +1940,7 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
                       {sl==="Released" && !ev && (
                         <div style={{ marginTop:"10px" }}>
                           <button onClick={() => { setVerForm(f=>({...f,grantId:"0",trancheId:String(i)})); setTab("verify"); }} style={{ ...btn("success"), fontSize:"12px" }}>
-                            ✅ Verify This Tranche ->
+                            ✅ Verify This Tranche →
                           </button>
                         </div>
                       )}
@@ -2182,7 +2182,7 @@ function HubDashboard({ provider, connected, blockNumber, onBack, allRecords, al
                         <div style={{ padding:"3px 8px", background:C.abyss, borderRadius:"4px", fontSize:"10px", color:C.silver, border:`1px solid ${C.ocean}` }}>
                           {MINISTRY_META[step.ministry]?.icon} {step.ministry}
                         </div>
-                        {i<wf.steps.length-1 && <span style={{ color:C.muted, fontSize:"10px" }}>-></span>}
+                        {i<wf.steps.length-1 && <span style={{ color:C.muted, fontSize:"10px" }}>→</span>}
                       </div>
                     ))}
                   </div>
@@ -2201,7 +2201,7 @@ function HubDashboard({ provider, connected, blockNumber, onBack, allRecords, al
                 <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"12px 0", borderBottom:i<perms.length-1?`1px solid ${C.ocean}`:"none" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
                     <span style={{ fontFamily:F.mono, fontSize:"12px", color:C.white, fontWeight:700 }}>{p.fromCode}</span>
-                    <span style={{ color:C.seafoam }}>-></span>
+                    <span style={{ color:C.seafoam }}>→</span>
                     <span style={{ fontFamily:F.mono, fontSize:"12px", color:C.white, fontWeight:700 }}>{p.toCode}</span>
                     <span style={{ fontSize:"11px", color:C.muted }}>can read {p.toCode} records</span>
                   </div>
@@ -2326,7 +2326,7 @@ function Home({ provider, connected, blockNumber, allRecords, allLoading, onSele
                   {wf.steps.map((step, i) => (
                     <div key={i} style={{ display:"flex", alignItems:"center", gap:"3px" }}>
                       <span style={{ fontSize:"10px", color:C.silver }}>{MINISTRY_META[step.ministry]?.icon}{step.ministry}</span>
-                      {i<wf.steps.length-1 && <span style={{ color:C.muted, fontSize:"9px" }}>-></span>}
+                      {i<wf.steps.length-1 && <span style={{ color:C.muted, fontSize:"9px" }}>→</span>}
                     </div>
                   ))}
                 </div>
@@ -2674,7 +2674,7 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack, onOpenUN
                 </div>
                 {onOpenUNICEF && (
                   <button onClick={onOpenUNICEF} style={{ ...btn("ghost"), fontSize:"11px", padding:"6px 12px", border:`1px solid ${C.gold}`, color:C.gold, flexShrink:0 }}>
-                    🌐 Open UNICEF Donor Dashboard ->
+                    🌐 Open UNICEF Donor Dashboard →
                   </button>
                 )}
               </div>
@@ -2767,7 +2767,7 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack, onOpenUN
             ))}
             <div style={{ ...card({ marginTop:"16px" }) }}>
               <SectionHead title="How flags work" />
-              <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.8 }}>Flags are generated automatically: (1) No PM activity in 7+ days -> supply or resource warning; (2) Expenditures awaiting matai approval -> funds on hold alert; (3) Budget utilisation above 85% -> tranche limit warning. Thresholds are configurable per grant in the MOU. All flag events are logged immutably on chain.</div>
+              <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.8 }}>Flags are generated automatically: (1) No PM activity in 7+ days → supply or resource warning; (2) Expenditures awaiting matai approval → funds on hold alert; (3) Budget utilisation above 85% → tranche limit warning. Thresholds are configurable per grant in the MOU. All flag events are logged immutably on chain.</div>
             </div>
           </>
         )}

@@ -1,30 +1,181 @@
 /**
- * Samoa Pacific Blockchain Hub — Multi-Stakeholder Dashboard
- * Version 8 — Complete Workflow Interoperability
+ * SAMOA PACIFIC BLOCKCHAIN HUB -- FULL SYSTEM TEST CHECKLIST v9
+ * Run before UNICEF Venture Fund 2026 submission
  *
- * NEW IN V8 (built on v7 foundation):
- *   - 6 complete end-to-end workflows:
- *       1. Education Benefit:       EDUCATION → MOF → CBS → EDUCATION → UNICEF auto-updates
- *       2. Customs Trade Clearance: CUSTOMS → MCIL → MOF → CBS → CUSTOMS release
- *       3. Social Welfare Payment:  MOF → CBS → MOF confirm
- *       4. Business Licence:        MCIL → MOF fee → MCIT issue
- *       5. Foreign Investment:      MCIL → MOF → MCIT → MCIL certificate
- *       6. UNICEF Grant Tranche:    EDUCATION/MOF evidence → UNICEF verify → CBS confirm
- *   - Every ministry dashboard: Pending Actions | Active Workflows | Record Service | My Records
- *   - Pending Actions: cross-ministry step detection, pre-filled one-click action
- *   - Active Workflows: per-citizen progress bars, blocking ministry shown
- *   - Enhanced ReceiptCard: ref number, officer hash, all steps, amount/fee, print/download
- *   - UNICEF dashboard: verifyUsage() + releaseTranche() from browser, auto beneficiary count
- *   - All v7 dashboards preserved: UNICEF Donor, Hub, per-ministry with search
+ * PREREQUISITE:
+ *   pkill anvil && anvil &
+ *   sleep 2
+ *   cd ~/mvp/samoa-pacific-blockchain-hub/contracts
+ *   forge script script/Deploy.s.sol:DeploySamoaHub \
+ *     --rpc-url http://127.0.0.1:8545 \
+ *     --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
+ *     --broadcast -vvvv
+ *   npm run dev  -> http://localhost:5173
  *
- * SETUP:
- *   1. npm install  (adds ethers ^6.9.0)
- *   2. anvil
- *   3. forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8545 \
- *        --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
- *        --broadcast -vvvv
- *   4. npm run dev  → http://localhost:5173
+ * -------------------------------------------------------------------
+ * TEST 1 -- HOME SCREEN
+ * -------------------------------------------------------------------
+ * ( ) LIVE banner shows "reading from Anvil Local ? Polling every 3s"
+ * ( ) Block # increments every 3s
+ * ( ) Stats: 6 Government Ministries ? Records On Chain ? Active Workflows ? Citizens Registered
+ * ( ) Ministry cards visible: CBS (9 pending), MCIT, MOF (1 pending), EDUCATION, MCIL, CUSTOMS
+ * ( ) Special dashboards row: UNICEF Donor Dashboard ? Community Project Dashboard ? Interoperability Hub
+ * ( ) 6 Workflow Definitions visible with step chains
+ *
+ * -------------------------------------------------------------------
+ * TEST 2 -- UNICEF DONOR DASHBOARD
+ * -------------------------------------------------------------------
+ * ( ) Click "UNICEF Donor Dashboard" from home
+ * ( ) Grant Overview tab: Grant #0 title, 100,000 WST total, donor/recipient addresses shown
+ * ( ) Released/Verified progress bars reflect on-chain state
+ * ( ) Auto-beneficiary count reads from Education SCHOOL_ENROLMENT_2025 records
+ * ( ) Community Project tab: Opens cross-dashboard view
+ *     ( ) "Open Full Community Dashboard ->" button navigates to Community Dashboard
+ *     ( ) Milestone statuses sync from live chain tranches
+ *     ( ) Expenditure breakdown (EXP-001 to EXP-007) visible with receipt hashes
+ * ( ) Tranches tab: T0 Verified, T1 Released (awaiting verify), T2 Pending -- correct
+ * ( ) Verify Tranche tab:
+ *     ( ) grantId defaults to 0, trancheId defaults to 1
+ *     ( ) Submit verifyUsage() -- tx confirmed, T1 -> Verified
+ *     ( ) Success banner shows tx hash
+ * ( ) Release Tranche tab:
+ *     ( ) grantId 0, trancheId 2
+ *     ( ) Submit releaseTranche() -- T2 -> Released
+ * ( ) Audit Trail tab: entries appear after verify/release actions
+ * ( ) Impact tab: beneficiary count, cost-per-child, utilisation bars
+ *
+ * -------------------------------------------------------------------
+ * TEST 3 -- COMMUNITY PROJECT DASHBOARD
+ * -------------------------------------------------------------------
+ * ( ) Click "Community Project Dashboard" from home
+ * Role selector screen:
+ * ( ) Two projects listed: Vaiala Biogas (ON CHAIN) ? Savai'i Water (SETUP)
+ * ( ) Four role cards: Donor ? Project Manager ? Matai ? Community
+ *
+ * DONOR ROLE:
+ * ( ) Portfolio tab: KPI strip -- 70,000 received, 58,900 spent, 11,100 remaining, 84% utilisation
+ * ( ) (!) Inactivity flag (8 days) shown
+ * ( ) (i) EXP-007 pending approval flag shown
+ * ( ) Milestone progress bars: M1 Verified, M2 Released (in progress), M3 Pending
+ * ( ) Activity timeline shows 6 entries
+ * ( ) KPIs tab: 23 households, 68% timeline, 2/3 milestones, 6 receipts on chain
+ * ( ) " Open UNICEF Donor Dashboard ->" button navigates back to UNICEF dashboard
+ * ( ) Expenditure tab: category bars (Labour/Materials/Equipment/Training/Overhead) + milestone bars
+ * ( ) All 7 expenditures listed with status badges
+ * ( ) Flags tab: 2 flags (inactivity + pending approval) with recommendations
+ * ( ) Audit Trail: 7 entries, CHAIN/PM/MATAI actors
+ *
+ * PROJECT MANAGER ROLE:
+ * ( ) Status tab: same KPIs, milestones, activity log
+ * ( ) Evidence tab: form renders (milestone select, description, doc reference, beneficiaries)
+ * ( ) Log Expenditure tab:
+ *     ( ) Fill: recipient, amount, category, receipt ref
+ *     ( ) Receipt hash preview updates as you type
+ *     ( ) Submit -> new EXP appears in recent list with (pending) PENDING badge
+ *     ( ) Activity log gains new entry
+ * ( ) Receipts tab: 6 approved receipts with hashes
+ *
+ * MATAI ROLE:
+ * ( ) Account tab: KPIs correct
+ * ( ) Pending Approvals: EXP-007 shows (Piping & Fittings, 5,800 WST)
+ * ( ) (!) "Amount >= 5,000 WST -- visible to UNICEF" warning shown
+ * ( ) Click "? Approve" -> EXP-007 status flips to approved
+ * ( ) Activity log gains "MATAI" entry
+ * ( ) Spending tab: all approved expenditures listed
+ *
+ * COMMUNITY / PUBLIC ROLE:
+ * ( ) Overview: KPIs + milestone progress visible
+ * ( ) Money In/Out: 70,000 received, 58,900 spent, 11,100 remaining displayed simply
+ * ( ) All expenditures listed in plain language
+ * ( ) Impact: 23 households, ~115 members, 60% fuel reduction
+ * ( ) "Cannot be changed" statement visible
+ *
+ * Project switching:
+ * ( ) Change dropdown to "Savai'i Rural Water Access Programme"
+ * ( ) All milestones show Pending (no on-chain grant)
+ * ( ) Budget shows 250,000 WST
+ *
+ * -------------------------------------------------------------------
+ * TEST 4 -- MINISTRY DASHBOARDS
+ * -------------------------------------------------------------------
+ * For each of: CBS, MCIT, MOF, EDUCATION, MCIL, CUSTOMS
+ * ( ) Opens from home screen card
+ * ( ) Pending Actions tab: shows correct pending cross-ministry steps
+ * ( ) Pre-fill from pending action -> form populates citizenId, serviceType
+ * ( ) Pre-filled hash detected (0x prefix, 66 chars) -> used directly (no double-hash)
+ * ( ) Record Service tab: submit succeeds, tx hash shown
+ * ( ) My Records tab: newly submitted record appears
+ * ( ) Active Workflows tab: citizens with in-progress workflows shown
+ *
+ * CBS specific:
+ * ( ) 9 pending actions from EDU-BENEFIT, WELFARE, CUSTOMS-CLEAR workflows
+ * ( ) DIGITAL_PAYMENT_RECORDED service type auto-selected
+ * ( ) ndidsVerified = false enforced (CBS cross-sector policy), warning shown if user tries to set true
+ *
+ * MOF specific:
+ * ( ) BUDGET_ALLOCATION_RECORDED -> ndidsVerified = false (biz citizens, MOF not in bizHash grants)
+ * ( ) Other MOF services -> ndidsVerified = true
+ *
+ * -------------------------------------------------------------------
+ * TEST 5 -- FULL WORKFLOW END-TO-END: EDU-BENEFIT
+ * -------------------------------------------------------------------
+ * ( ) EDUCATION: Record SCHOOL_ENROLMENT_2025 for SAMOA-EDU-001
+ * ( ) MOF: Pending Actions shows EDUCATION_BENEFIT_ELIGIBLE_2025 for SAMOA-EDU-001
+ * ( ) MOF: Pre-fill from pending, submit EDUCATION_BENEFIT_ELIGIBLE_2025
+ * ( ) CBS: Pending Actions shows DIGITAL_PAYMENT_RECORDED for SAMOA-EDU-001
+ * ( ) CBS: Pre-fill, submit DIGITAL_PAYMENT_RECORDED (ndidsVerified=false, no revert)
+ * ( ) EDUCATION: Pending Actions shows ATTENDANCE_RECORD for SAMOA-EDU-001
+ * ( ) EDUCATION: Submit ATTENDANCE_RECORD -- workflow complete
+ * ( ) UNICEF dashboard beneficiary count increments
+ *
+ * -------------------------------------------------------------------
+ * TEST 6 -- FULL WORKFLOW END-TO-END: BIZ-LICENCE
+ * -------------------------------------------------------------------
+ * ( ) MCIL: Record COMPANY_REGISTRATION for SAMOA-BIZ-001
+ * ( ) MOF: Pending shows BUDGET_ALLOCATION_RECORDED -- submit (ndidsVerified=false)
+ * ( ) MCIT: Pending shows BUSINESS_LICENCE_DIGITAL -- submit (ndidsVerified=true)
+ * ( ) Hub: workflow appears in log as completed
+ *
+ * -------------------------------------------------------------------
+ * TEST 7 -- INTEROPERABILITY HUB
+ * -------------------------------------------------------------------
+ * ( ) Opens from home
+ * ( ) Ministries tab: all 6 ministries with contract addresses
+ * ( ) Workflows tab: recent cross-ministry events from chain
+ * ( ) Permissions tab: authorised ministry-to-ministry read pairs
+ * ( ) Click ministry card -> navigates to that ministry dashboard
+ *
+ * -------------------------------------------------------------------
+ * TEST 8 -- CROSS-DASHBOARD NAVIGATION
+ * -------------------------------------------------------------------
+ * ( ) UNICEF Dashboard -> Community tab -> "Open Full Community Dashboard" -> Community Dashboard opens
+ * ( ) Community Dashboard (Donor role, KPI tab) -> "Open UNICEF Donor Dashboard" -> UNICEF opens
+ * ( ) Both show same milestone statuses (M1 Verified, M2 Released, M3 Pending)
+ * ( ) verifyUsage() in UNICEF -> return to Community Dashboard -> M1 shows Verified ?
+ * ( ) releaseTranche() in UNICEF -> return to Community -> M2 shows Released 
+ *
+ * -------------------------------------------------------------------
+ * TEST 9 -- OFFLINE / DEMO MODE
+ * -------------------------------------------------------------------
+ * ( ) Stop Anvil (pkill anvil)
+ * ( ) Reload app -- banner shows offline warning
+ * ( ) All dashboards still render with MOCK data (no blank screens or crashes)
+ * ( ) Restart Anvil + redeploy -> app reconnects automatically within 3s
+ *
+ * -------------------------------------------------------------------
+ * SUBMISSION READINESS CHECKLIST
+ * -------------------------------------------------------------------
+ * ( ) All 9 test suites passing
+ * ( ) GitHub Pages live: https://hamobcdev.github.io/samoa-pacific-blockchain-hub/
+ * ( ) Clean redeploy tested on fresh Anvil (pkill, redeploy, all state correct)
+ * ( ) Video walkthrough recorded covering: home -> ministry -> workflow -> UNICEF -> community
+ * ( ) All 4 community roles demonstrated in video
+ * ( ) verifyUsage() + releaseTranche() shown live on chain in video
+ * ( ) UNICEF ? Community cross-navigation demonstrated
+ * ( ) Application text references: AIDisbursementTracker, NDIDSRegistry, InteroperabilityHub
+ * ( ) GitHub README updated with: contract addresses, deploy steps, test suite results
  */
+
 
 import { useState, useEffect, useRef } from "react";
 import { ethers } from "ethers";
@@ -46,7 +197,7 @@ function getSigner(provider) {
 }
 
 // ---
-// CONTRACT ADDRESSES — deterministic Anvil
+// CONTRACT ADDRESSES -- deterministic Anvil
 // ---
 const ADDR = {
   NDIDS:     "0x5FbDB2315678afecb367f032d93F642f64180aa3",
@@ -272,7 +423,7 @@ const WORKFLOW_DEFS = {
   },
 };
 
-// Build reverse lookup: serviceType → [{ workflowId, stepIndex }]
+// Build reverse lookup: serviceType -> [{ workflowId, stepIndex }]
 const SVC_TO_WF = {};
 Object.entries(WORKFLOW_DEFS).forEach(([wfId, wf]) => {
   wf.steps.forEach((step, idx) => {
@@ -281,7 +432,7 @@ Object.entries(WORKFLOW_DEFS).forEach(([wfId, wf]) => {
   });
 });
 
-// Build ministry → [workflowId] map
+// Build ministry -> [workflowId] map
 const MINISTRY_WFS = {};
 Object.entries(WORKFLOW_DEFS).forEach(([wfId, wf]) => {
   wf.steps.forEach(step => {
@@ -295,13 +446,13 @@ Object.entries(WORKFLOW_DEFS).forEach(([wfId, wf]) => {
 // Derived from Deploy.s.sol grantReadAccess assignments.
 // Each ministry only has NDIDS access to its OWN sector's citizens.
 // Cross-workflow steps (e.g. CBS processing a payment for an edu citizen)
-// must submit with verifyViaNDIDS=false — identity was verified upstream.
+// must submit with verifyViaNDIDS=false -- identity was verified upstream.
 //
 // Rule: true  = this ministry CAN verify this serviceType via NDIDS
-//       false = payment/processing step — identity already verified upstream
+//       false = payment/processing step -- identity already verified upstream
 // ---
 const NDIDS_POLICY = {
-  // EDUCATION — owns edu citizens, verifies all its own service types
+  // EDUCATION -- owns edu citizens, verifies all its own service types
   EDUCATION: {
     SCHOOL_ENROLMENT_2025:   true,   // step 1 EDU-BENEFIT — edu citizen, EDUCATION has access
     ATTENDANCE_RECORD:       true,   // step 4 EDU-BENEFIT — confirming receipt, still edu citizen
@@ -309,7 +460,7 @@ const NDIDS_POLICY = {
     GRADUATION_RECORD:       true,
     SPECIAL_NEEDS_SUPPORT:   true,
   },
-  // MOF — has access to edu + welfare + trade citizens
+  // MOF -- has access to edu + welfare + trade citizens
   MOF: {
     EDUCATION_BENEFIT_ELIGIBLE_2025: true,   // step 2 EDU-BENEFIT — MOF has eduHash access
     SOCIAL_WELFARE_PAYMENT_2025:     true,   // step 1 WELFARE — MOF has welfareHash access
@@ -317,9 +468,9 @@ const NDIDS_POLICY = {
     DUTY_PROCESSED:                  true,   // step 3 CUSTOMS-CLEAR — MOF has tradeHash access
     BUDGET_ALLOCATION_RECORDED:      false,  // step 2 BIZ-LICENCE — MOF NOT in bizHash grants
   },
-  // CBS — payment processor only, NO cross-sector NDIDS access
+  // CBS -- payment processor only, NO cross-sector NDIDS access
   // CBS owns cbsHashes (SAMOA-CBS-001/002/003) only
-  // All cross-workflow payments use citizens from other sectors → NO NDIDS verify
+  // All cross-workflow payments use citizens from other sectors -> NO NDIDS verify
   CBS: {
     DIGITAL_PAYMENT_RECORDED: false,  // used in EDU-BENEFIT/WELFARE/CUSTOMS — cross-sector
     REMITTANCE_RECEIVED:       true,  // CBS own sector citizen (SAMOA-CBS-xxx)
@@ -327,7 +478,7 @@ const NDIDS_POLICY = {
     LOAN_APPROVED:             true,  // CBS own sector citizen
     STABLECOIN_ISSUANCE:       true,  // CBS own sector citizen
   },
-  // CUSTOMS — owns trade citizens
+  // CUSTOMS -- owns trade citizens
   CUSTOMS: {
     SHIPMENT_CLEARED_2025:     true,
     TRADE_FACILITATION_RECORD: true,
@@ -335,7 +486,7 @@ const NDIDS_POLICY = {
     PROHIBITED_GOODS_FLAGGED:  true,
     BOND_WAREHOUSE_RECORD:     true,
   },
-  // MCIL — owns biz + trade citizens
+  // MCIL -- owns biz + trade citizens
   MCIL: {
     COMPANY_REGISTRATION:        true,
     FOREIGN_INVESTMENT_APPROVED: true,
@@ -343,7 +494,7 @@ const NDIDS_POLICY = {
     TRADE_LICENCE_UPDATED:       true,
     DISPUTE_RESOLUTION_RECORDED: true,
   },
-  // MCIT — owns biz citizens [4,5,6]
+  // MCIT -- owns biz citizens [4,5,6]
   MCIT: {
     BUSINESS_LICENCE_DIGITAL: true,
     ICT_REGISTRATION:         true,
@@ -362,7 +513,7 @@ function shouldVerifyNDIDS(ministryCode, serviceType) {
 }
 
 // ---
-// LEGACY WORKFLOW DEFINITIONS (v7 — kept for ReceiptCard compatibility)
+// LEGACY WORKFLOW DEFINITIONS (v7 -- kept for ReceiptCard compatibility)
 // ---
 const WORKFLOWS = {
   SCHOOL_ENROLMENT_2025:          { workflowName:"Education Benefit & UNICEF Grant", workflowId:"EDU-BENEFIT",   step:1, totalSteps:4, owner:"EDUCATION", stepLabel:"Step 1 of 4 — Enrolment Recorded",         nextStep:{ ministry:"MOF",       action:"Approve school fee benefit",        serviceType:"EDUCATION_BENEFIT_ELIGIBLE_2025" }, prevSteps:[],                                                                                  receipt:{ label:"Enrolment Reference",             prefix:"EDU"       }, notice:"MOF will see this in their Pending Actions and must approve the benefit payment." },
@@ -557,7 +708,7 @@ function TopBar({ title, sub, accent, blockNumber, onBack }) {
       </div>
       <div style={{ padding:"22px 28px 20px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
         <div style={{ display:"flex", gap:"14px", alignItems:"center" }}>
-          <div style={{ width:"46px", height:"46px", borderRadius:"10px", background:accent+"22", border:`2px solid ${accent}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"24px" }}>🏝️</div>
+          <div style={{ width:"46px", height:"46px", borderRadius:"10px", background:accent+"22", border:`2px solid ${accent}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"24px" }}>🏝</div>
           <div>
             <div style={{ fontSize:"10px", fontWeight:700, letterSpacing:"2.5px", textTransform:"uppercase", color:accent, marginBottom:"4px", fontFamily:F.ui }}>Samoa Pacific Blockchain Hub</div>
             <div style={{ fontSize:"21px", fontWeight:900, fontFamily:F.display, color:C.white, lineHeight:1 }}>{title}</div>
@@ -590,7 +741,7 @@ function ErrorCard({ msg }) {
   return <div style={{ ...card(), borderTop:`3px solid ${C.danger}`, padding:"20px" }}><div style={{ fontSize:"12px", fontWeight:700, color:C.danger }}>⚠ Chain read error</div><div style={{ fontSize:"11px", color:C.silver, marginTop:"4px" }}>{msg}</div></div>;
 }
 
-// Workflow step bar — shows progress across N steps
+// Workflow step bar -- shows progress across N steps
 function WfBar({ wfId, stepsCompleted }) {
   const wf = WORKFLOW_DEFS[wfId];
   if (!wf) return null;
@@ -608,7 +759,7 @@ function WfBar({ wfId, stepsCompleted }) {
 }
 
 // ---
-// ENHANCED RECEIPT CARD — v8
+// ENHANCED RECEIPT CARD -- v8
 // Shows reference number, officer hash, amount/fee, all steps, print/download
 // ---
 function WorkflowProgress({ wf, currentStep }) {
@@ -632,9 +783,9 @@ function WorkflowProgress({ wf, currentStep }) {
         })}
       </div>
       <div style={{ display:"flex", justifyContent:"space-between", marginTop:"4px", fontSize:"9px", color:C.muted }}>
-        <span>{wf.prevSteps?.map(s=>s.ministry).join(" → ") || "Start"}</span>
+        <span>{wf.prevSteps?.map(s=>s.ministry).join(" -> ") || "Start"}</span>
         <span style={{ color:C.coral }}>{wf.stepLabel}</span>
-        {wf.nextStep && <span>{wf.nextStep.ministry} →</span>}
+        {wf.nextStep && <span>{wf.nextStep.ministry} -></span>}
       </div>
     </div>
   );
@@ -649,7 +800,7 @@ function ReceiptCard({ txHash, citizenId, serviceType, evidenceNote, timestamp, 
   const handlePrint = () => {
     const w = window.open("", "_blank", "width=700,height=900,scrollbars=yes");
     if (!w) {
-      // Popup blocked — fall back to a printable blob URL
+      // Popup blocked -- fall back to a printable blob URL
       const html = getPrintHtml(ref, wf, serviceType, ministry, citizenId, oHash, txHash, timestamp, amount, fee, evidenceNote);
       const blob = new Blob([html], { type:"text/html" });
       const url  = URL.createObjectURL(blob);
@@ -856,7 +1007,7 @@ async function fetchAllRecords(provider) {
 }
 
 // ---
-// RECORDS TAB — shared by all ministry dashboards (v7 preserved)
+// RECORDS TAB -- shared by all ministry dashboards (v7 preserved)
 // ---
 function RecordsTab({ records, totalRecords, loading, connected, ministry }) {
   const [search,   setSearch]   = useState("");
@@ -939,7 +1090,7 @@ function RecordsTab({ records, totalRecords, loading, connected, ministry }) {
 }
 
 // ---
-// RECORD SERVICE TAB — submits to chain via ethers.js
+// RECORD SERVICE TAB -- submits to chain via ethers.js
 // ---
 function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefill }) {
   const meta         = MINISTRY_META[ministryCode];
@@ -974,7 +1125,7 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
 
   const handleSubmit = async () => {
     if (!form.citizenId || !form.serviceType) { setTxMsg({ type:"error", text:"Citizen ID and service type are required." }); return; }
-    // Guard: warn if NDIDS is ON but policy says this ministry has no access — will revert on chain
+    // Guard: warn if NDIDS is ON but policy says this ministry has no access -- will revert on chain
     if (form.ndidsVerified && !shouldVerifyNDIDS(ministryCode, form.serviceType)) {
       setTxMsg({ type:"error", text:`⚠ NDIDS verification is ON but ${ministryCode} does not have NDIDS access for ${form.serviceType} citizens. Uncheck "Verify identity via NDIDS" and resubmit.` });
       return;
@@ -1114,7 +1265,7 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
 }
 
 // ---
-// MINISTRY DASHBOARD — v8: 4 tabs per ministry
+// MINISTRY DASHBOARD -- v8: 4 tabs per ministry
 // ---
 function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onBack, allRecords, allLoading }) {
   const meta    = MINISTRY_META[ministryCode];
@@ -1209,7 +1360,7 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
                 <WfBar wfId={action.wfId} stepsCompleted={action.stepIndex} />
                 <div style={{ marginTop:"14px" }}>
                   <button onClick={() => handlePendingAction(action)} style={{ ...btn("primary") }}>
-                    ⚡ Action Now — Pre-filled Form →
+                    ⚡ Action Now — Pre-filled Form ->
                   </button>
                 </div>
               </div>
@@ -1315,21 +1466,256 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
 }
 
 // ---
-// UNICEF DONOR DASHBOARD — v7 preserved + v8 verifyUsage/releaseTranche
+// COMMUNITY INTEL PANEL -- embedded in UNICEF overview + standalone tab
+// Reads from the same COMMUNITY_PROJECTS seed + tranches from chain
 // ---
-function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords, allLoading }) {
+function CommunityIntelPanel({ tranches, grantRaw, onOpenCommunity }) {
+  const project = COMMUNITY_PROJECTS[0]; // Grant #0 = Biogas Vaiala
+  const SEED_EXP = [
+    { id:"EXP-001", milestoneId:0, recipient:"Samoa Plumbing Ltd",    amount:8500,  category:"Materials", status:"approved" },
+    { id:"EXP-002", milestoneId:0, recipient:"Community Labour Team", amount:6200,  category:"Labour",    status:"approved" },
+    { id:"EXP-003", milestoneId:0, recipient:"Pacific Training Co",   amount:4800,  category:"Training",  status:"approved" },
+    { id:"EXP-004", milestoneId:0, recipient:"Project Overhead Q1",   amount:2100,  category:"Overhead",  status:"approved" },
+    { id:"EXP-005", milestoneId:1, recipient:"Biogas Equipment NZ",   amount:22000, category:"Equipment", status:"approved" },
+    { id:"EXP-006", milestoneId:1, recipient:"Installation Labour",   amount:9400,  category:"Labour",    status:"approved" },
+    { id:"EXP-007", milestoneId:1, recipient:"Piping & Fittings",     amount:5800,  category:"Materials", status:"pending"  },
+  ];
+  const approved   = SEED_EXP.filter(e=>e.status==="approved");
+  const totalSpent = approved.reduce((s,e)=>s+e.amount,0);
+  const pending    = SEED_EXP.filter(e=>e.status==="pending");
+
+  // Sync milestone statuses from live chain tranche data
+  const syncedMilestones = project.milestones.map((m, i) => {
+    const tr = tranches && tranches[i];
+    if (!tr) return m;
+    const chainStatus = [null,"released","verified"][tr.status] || m.status;
+    return { ...m, status: chainStatus || m.status };
+  });
+  const daysSince = 8;
+  const flags = [
+    ...(daysSince>=7     ? [{ level:"warning", msg:`No PM activity for ${daysSince} days — possible supply delay` }] : []),
+    ...(pending.length>0 ? [{ level:"info",    msg:`${pending.length} expenditure awaiting matai approval — ${pending.reduce((s,e)=>s+e.amount,0).toLocaleString()} WST on hold` }] : []),
+  ];
+
+  return (
+    <div style={{ ...card({ borderLeft:`4px solid #4A9EE0`, marginTop:"20px", marginBottom:"0" }) }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"16px" }}>
+        <div>
+          <div style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"6px" }}>
+            <span style={{ fontSize:"18px" }}>🏘</span>
+            <span style={{ fontWeight:900, fontSize:"15px", fontFamily:F.display }}>Community Project — {project.name}</span>
+          </div>
+          <div style={{ fontSize:"12px", color:C.silver }}>📍 {project.community} · PM: {project.pm} · Matai: {project.matai}</div>
+        </div>
+        <button onClick={onOpenCommunity} style={{ ...btn("ghost"), fontSize:"11px", padding:"5px 12px", border:`1px solid #4A9EE0`, color:"#4A9EE0" }}>
+          Open Community Dashboard ->
+        </button>
+      </div>
+
+      {/* Flags */}
+      {flags.map((f,i) => (
+        <div key={i} style={{ display:"flex", gap:"10px", alignItems:"center", padding:"9px 12px", borderRadius:"8px", background:f.level==="warning"?C.amber+"18":C.ocean, border:`1px solid ${f.level==="warning"?C.amber+"44":C.wave}`, marginBottom:"10px" }}>
+          <span>{f.level==="warning"?"⚠":"ℹ"}</span>
+          <span style={{ fontSize:"12px", fontWeight:700, color:f.level==="warning"?C.amber:C.silver }}>{f.msg}</span>
+        </div>
+      ))}
+
+      {/* KPI strip */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"10px", marginBottom:"14px" }}>
+        {[
+          ["💰","70,000","WST received on-chain",C.gold],
+          ["💸",totalSpent.toLocaleString(),"WST approved & spent",C.seafoam],
+          ["🏦",(70000-totalSpent).toLocaleString(),"WST remaining",  "#4A9EE0"],
+          ["🧾",String(approved.length),"Receipts on chain",C.amber],
+        ].map(([icon,val,label,color])=>(
+          <div key={label} style={{ background:C.abyss, borderRadius:"10px", padding:"12px", textAlign:"center" }}>
+            <div style={{ fontSize:"18px", marginBottom:"4px" }}>{icon}</div>
+            <div style={{ fontSize:"16px", fontWeight:900, color, fontFamily:F.display }}>{val}</div>
+            <div style={{ fontSize:"10px", color:C.muted, marginTop:"2px" }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Milestone sync — live from chain */}
+      <div style={{ marginBottom:"4px" }}>
+        <div style={{ fontSize:"11px", fontWeight:800, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", marginBottom:"8px" }}>Milestone Status — Live from Chain</div>
+        <div style={{ display:"flex", gap:"8px" }}>
+          {syncedMilestones.map((m,i)=>{
+            const sc = { verified:C.seafoam, released:"#4A9EE0", pending:C.amber }[m.status]||C.muted;
+            const sl = { verified:"✅ Verified", released:"🔵 Released", pending:"⏳ Pending" }[m.status]||m.status;
+            return (
+              <div key={i} style={{ flex:1, background:C.abyss, borderRadius:"8px", padding:"10px", borderTop:`3px solid ${sc}` }}>
+                <div style={{ fontSize:"10px", fontWeight:800, color:sc, marginBottom:"4px" }}>M{i+1}</div>
+                <div style={{ fontSize:"10px", color:C.silver, marginBottom:"4px", lineHeight:1.4 }}>{m.label.slice(0,40)}…</div>
+                <div style={{ fontSize:"9px", ...badge(sc), display:"inline-flex" }}>{sl}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CommunityGrantView({ tranches, grantRaw, onOpenCommunity }) {
+  const project = COMMUNITY_PROJECTS[0];
+  const SEED_EXP = [
+    { id:"EXP-001", milestoneId:0, recipient:"Samoa Plumbing Ltd",    amount:8500,  category:"Materials", receiptRef:"INV-SPL-2025-089",   date:"2025-02-10", status:"approved" },
+    { id:"EXP-002", milestoneId:0, recipient:"Community Labour Team", amount:6200,  category:"Labour",    receiptRef:"TIMESHEET-FEB-2025", date:"2025-02-28", status:"approved" },
+    { id:"EXP-003", milestoneId:0, recipient:"Pacific Training Co",   amount:4800,  category:"Training",  receiptRef:"TRAIN-PAC-2025-12",  date:"2025-03-05", status:"approved" },
+    { id:"EXP-004", milestoneId:0, recipient:"Project Overhead Q1",   amount:2100,  category:"Overhead",  receiptRef:"OVERHEAD-Q1-2025",   date:"2025-03-15", status:"approved" },
+    { id:"EXP-005", milestoneId:1, recipient:"Biogas Equipment NZ",   amount:22000, category:"Equipment", receiptRef:"INV-BENZ-2025-441",  date:"2025-06-01", status:"approved" },
+    { id:"EXP-006", milestoneId:1, recipient:"Installation Labour",   amount:9400,  category:"Labour",    receiptRef:"TIMESHEET-JUN-2025", date:"2025-06-30", status:"approved" },
+    { id:"EXP-007", milestoneId:1, recipient:"Piping & Fittings",     amount:5800,  category:"Materials", receiptRef:"INV-SPL-2025-210",   date:"2025-07-12", status:"pending"  },
+  ];
+  const approved   = SEED_EXP.filter(e=>e.status==="approved");
+  const pending    = SEED_EXP.filter(e=>e.status==="pending");
+  const totalSpent = approved.reduce((s,e)=>s+e.amount,0);
+
+  const syncedMilestones = project.milestones.map((m, i) => {
+    const tr = tranches && tranches[i];
+    if (!tr) return m;
+    const chainStatus = [null,"released","verified"][tr.status] || m.status;
+    return { ...m, status: chainStatus || m.status, trancheAmount: tr.amount, releasedAt: tr.releasedAt, verifiedAt: tr.verifiedAt };
+  });
+
+  const byCategory = {};
+  approved.forEach(e=>{ byCategory[e.category]=(byCategory[e.category]||0)+e.amount; });
+
+  return (
+    <>
+      <SectionHead title="🏘 Community Project — Live Intelligence" sub="Real-time link between donor grant and community project execution" />
+
+      {/* Grant ↔ Community bridge banner */}
+      <div style={{ ...card({ background:`linear-gradient(135deg, ${C.gold}18, #4A9EE018)`, borderColor:`${C.gold}44` }), marginBottom:"16px" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"12px" }}>
+          <div>
+            <div style={{ fontSize:"13px", fontWeight:800, color:C.gold, marginBottom:"4px" }}>🔗 Grant #0 on chain -> {project.name}</div>
+            <div style={{ fontSize:"12px", color:C.silver }}>AIDisbursementTracker: {ADDR.AID.slice(0,10)}… · Community: {project.community} · Donor: {project.donor}</div>
+            <div style={{ fontSize:"12px", color:C.silver, marginTop:"2px" }}>Every tranche status below reflects live chain state. Expenditures are logged by the PM and approved by village matai.</div>
+          </div>
+          <button onClick={onOpenCommunity} style={{ ...btn("primary"), background:C.gold, flexShrink:0 }}>
+            🏘 Open Full Community Dashboard ->
+          </button>
+        </div>
+      </div>
+
+      {/* Side-by-side: Chain tranches vs Community spend */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"16px", marginBottom:"16px" }}>
+        {/* Left: on-chain tranche status */}
+        <div style={{ ...card({ borderTop:`3px solid ${C.gold}` }) }}>
+          <SectionHead title="On-Chain Tranche Status" sub="Direct from AIDisbursementTracker" />
+          {syncedMilestones.map((m,i)=>{
+            const sc = { verified:C.seafoam, released:"#4A9EE0", pending:C.amber }[m.status]||C.muted;
+            const sl = { verified:"✅ Verified", released:"🔵 Released", pending:"⏳ Pending" }[m.status]||"—";
+            const spent = SEED_EXP.filter(e=>e.milestoneId===i&&e.status==="approved").reduce((s,e)=>s+e.amount,0);
+            return (
+              <div key={i} style={{ padding:"12px 0", borderBottom:i<syncedMilestones.length-1?`1px solid ${C.ocean}`:"none" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"4px" }}>
+                  <span style={{ fontWeight:700, fontSize:"12px" }}>M{i+1}: {m.label.slice(0,32)}…</span>
+                  <span style={{ ...badge(sc), fontSize:"9px" }}>{sl}</span>
+                </div>
+                <div style={{ fontSize:"11px", color:C.silver }}>
+                  Budget: {m.targetWST.toLocaleString()} WST
+                  {m.releasedAt>0 && <span style={{ color:C.muted }}> · Released: {fmtTs(m.releasedAt)}</span>}
+                  {m.verifiedAt>0 && <span style={{ color:C.seafoam }}> · Verified: {fmtTs(m.verifiedAt)}</span>}
+                </div>
+                {spent>0 && (
+                  <div style={{ marginTop:"6px" }}>
+                    <div style={{ background:C.abyss, borderRadius:"99px", height:"5px" }}>
+                      <div style={{ background:sc, borderRadius:"99px", height:"5px", width:`${Math.min(100,Math.round((spent/m.targetWST)*100))}%` }} />
+                    </div>
+                    <div style={{ fontSize:"10px", color:C.muted, marginTop:"2px" }}>{spent.toLocaleString()} WST spent ({Math.round((spent/m.targetWST)*100)}%)</div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Right: community expenditure breakdown */}
+        <div style={{ ...card({ borderTop:`3px solid #4A9EE0` }) }}>
+          <SectionHead title="Community Expenditure" sub="PM-logged, matai-approved, receipt-hashed" />
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", marginBottom:"14px" }}>
+            {[["💰","70,000","Received (WST)",C.gold],["💸",totalSpent.toLocaleString(),"Spent (WST)",C.seafoam]].map(([icon,v,l,c])=>(
+              <div key={l} style={{ background:C.abyss, borderRadius:"8px", padding:"10px", textAlign:"center" }}>
+                <div style={{ fontSize:"16px" }}>{icon}</div>
+                <div style={{ fontSize:"15px", fontWeight:900, color:c, fontFamily:F.display }}>{v}</div>
+                <div style={{ fontSize:"10px", color:C.muted }}>{l}</div>
+              </div>
+            ))}
+          </div>
+          {/* Category breakdown */}
+          {Object.entries(byCategory).map(([cat,amt])=>{
+            const meta = EXP_CATEGORIES[cat]||EXP_CATEGORIES.Other;
+            const pct  = totalSpent>0 ? Math.round((amt/totalSpent)*100) : 0;
+            return (
+              <div key={cat} style={{ marginBottom:"8px" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", fontSize:"11px", marginBottom:"3px" }}>
+                  <span>{meta.icon} {cat}</span>
+                  <span style={{ color:meta.color, fontWeight:700 }}>{amt.toLocaleString()} ({pct}%)</span>
+                </div>
+                <div style={{ background:C.abyss, borderRadius:"99px", height:"5px" }}>
+                  <div style={{ background:meta.color, borderRadius:"99px", height:"5px", width:`${pct}%` }} />
+                </div>
+              </div>
+            );
+          })}
+          {pending.length>0 && (
+            <div style={{ marginTop:"10px", padding:"8px 10px", background:C.amber+"18", borderRadius:"6px", fontSize:"11px", color:C.amber, fontWeight:700 }}>
+              ⏳ {pending.length} expenditure pending matai approval — {pending.reduce((s,e)=>s+e.amount,0).toLocaleString()} WST
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Full expenditure log */}
+      <div style={{ ...card() }}>
+        <SectionHead title="Full Expenditure Log" sub={`${SEED_EXP.length} records · ${approved.length} approved · ${pending.length} pending`} />
+        {SEED_EXP.map(e=>{
+          const meta = EXP_CATEGORIES[e.category]||EXP_CATEGORIES.Other;
+          const rHash = ethers.keccak256(ethers.toUtf8Bytes(e.receiptRef+"|"+e.recipient+"|"+e.amount));
+          return (
+            <div key={e.id} style={{ display:"flex", gap:"12px", padding:"12px 0", borderBottom:`1px solid ${C.ocean}`, alignItems:"center", flexWrap:"wrap" }}>
+              <span style={{ ...badge(e.status==="approved"?C.seafoam:C.amber), fontSize:"9px", flexShrink:0 }}>{e.status==="approved"?"✓ APPROVED":"⏳ PENDING"}</span>
+              <div style={{ flex:1, minWidth:"150px" }}>
+                <div style={{ fontWeight:700, fontSize:"13px" }}>{e.recipient}</div>
+                <div style={{ fontSize:"10px", color:C.muted, fontFamily:F.mono }}>Receipt: {e.receiptRef} · Hash: {rHash.slice(0,16)}…</div>
+              </div>
+              <span style={{ ...badge(meta.color), fontSize:"9px" }}>{meta.icon} {e.category}</span>
+              <div style={{ fontWeight:800, fontSize:"14px", color:C.gold }}>{e.amount.toLocaleString()} WST</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Immutability statement */}
+      <div style={{ ...card({ background:C.seafoam+"0A", borderColor:C.seafoam+"33", marginTop:"14px" }) }}>
+        <div style={{ fontSize:"12px", fontWeight:700, color:C.seafoam, marginBottom:"4px" }}>🔒 Why this data is trustworthy to {project.donor}</div>
+        <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.8 }}>
+          Every tranche status is enforced by the AIDisbursementTracker smart contract — funds cannot be released without on-chain verification. Every expenditure is logged by the project manager with a receipt hash, then approved by village leadership. No record can be altered after confirmation. {project.donor} can independently query the contract at any time from any device, anywhere in the world.
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ---
+// UNICEF DONOR DASHBOARD -- v7 preserved + v8 verifyUsage/releaseTranche
+// ---
+function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords, allLoading, onOpenCommunity }) {
   const [tab, setTab] = useState("overview");
   const aidContract = useContract(ADDR.AID, ABI.AID, provider);
 
   // Live AID contract reads (v7)
-  // ── All state declarations first (must be before any usePoll that references them) ──
+  // ?? All state declarations first (must be before any usePoll that references them) ??
   const [selectedGrant, setSelectedGrant] = useState(0);
   const [verForm,     setVerForm]    = useState({ grantId:"0", trancheId:"1", evidence:"", beneficiaries:"" });
   const [relForm,     setRelForm]    = useState({ grantId:"0", trancheId:"2" });
   const [txMsg,       setTxMsg]      = useState(null);
   const [submitting,  setSubmitting] = useState(false);
 
-  // ── Live AID contract reads ───────────────────────────────────
+  // ?? Live AID contract reads ???????????????????????????????????
   const { data:totals,    loading:totalsLoading    } = usePoll(async () => {
     if (!aidContract) return null;
     const [grants, disbursed, verified] = await Promise.all([aidContract.totalGrants(), aidContract.totalDisbursed(), aidContract.totalVerified()]);
@@ -1396,6 +1782,7 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
 
   const tabs = [
     { id:"overview",   icon:"📊", label:"Grant Overview"    },
+    { id:"community",  icon:"🏘", label:"Community Project" },
     { id:"tranches",   icon:"💰", label:"Tranches"          },
     { id:"verify",     icon:"✅", label:"Verify Tranche"    },
     { id:"release",    icon:"🚀", label:"Release Tranche"   },
@@ -1509,6 +1896,16 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
           </>
         )}
 
+        {/* --- COMMUNITY PROJECT INTELLIGENCE PANEL (overview inline) --- */}
+        {tab === "overview" && (
+          <CommunityIntelPanel tranches={tranches} grantRaw={g} onOpenCommunity={onOpenCommunity} />
+        )}
+
+        {/* --- COMMUNITY PROJECT TAB (full cross-dashboard view) --- */}
+        {tab === "community" && (
+          <CommunityGrantView tranches={tranches} grantRaw={g} onOpenCommunity={onOpenCommunity} />
+        )}
+
         {/* ─── TRANCHES (v7) ───────────────────────────────────── */}
         {tab === "tranches" && (
           <>
@@ -1543,7 +1940,7 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
                       {sl==="Released" && !ev && (
                         <div style={{ marginTop:"10px" }}>
                           <button onClick={() => { setVerForm(f=>({...f,grantId:"0",trancheId:String(i)})); setTab("verify"); }} style={{ ...btn("success"), fontSize:"12px" }}>
-                            ✅ Verify This Tranche →
+                            ✅ Verify This Tranche ->
                           </button>
                         </div>
                       )}
@@ -1682,7 +2079,7 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
 }
 
 // ---
-// HUB DASHBOARD — overview of all ministries + workflows (v7 preserved)
+// HUB DASHBOARD -- overview of all ministries + workflows (v7 preserved)
 // ---
 function HubDashboard({ provider, connected, blockNumber, onBack, allRecords, allLoading, onSelectMinistry }) {
   const [tab, setTab] = useState("ministries");
@@ -1785,7 +2182,7 @@ function HubDashboard({ provider, connected, blockNumber, onBack, allRecords, al
                         <div style={{ padding:"3px 8px", background:C.abyss, borderRadius:"4px", fontSize:"10px", color:C.silver, border:`1px solid ${C.ocean}` }}>
                           {MINISTRY_META[step.ministry]?.icon} {step.ministry}
                         </div>
-                        {i<wf.steps.length-1 && <span style={{ color:C.muted, fontSize:"10px" }}>→</span>}
+                        {i<wf.steps.length-1 && <span style={{ color:C.muted, fontSize:"10px" }}>-></span>}
                       </div>
                     ))}
                   </div>
@@ -1804,7 +2201,7 @@ function HubDashboard({ provider, connected, blockNumber, onBack, allRecords, al
                 <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"12px 0", borderBottom:i<perms.length-1?`1px solid ${C.ocean}`:"none" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
                     <span style={{ fontFamily:F.mono, fontSize:"12px", color:C.white, fontWeight:700 }}>{p.fromCode}</span>
-                    <span style={{ color:C.seafoam }}>→</span>
+                    <span style={{ color:C.seafoam }}>-></span>
                     <span style={{ fontFamily:F.mono, fontSize:"12px", color:C.white, fontWeight:700 }}>{p.toCode}</span>
                     <span style={{ fontSize:"11px", color:C.muted }}>can read {p.toCode} records</span>
                   </div>
@@ -1823,7 +2220,7 @@ function HubDashboard({ provider, connected, blockNumber, onBack, allRecords, al
 }
 
 // ---
-// HOME — landing page with all ministry cards + entry points
+// HOME -- landing page with all ministry cards + entry points
 // ---
 function Home({ provider, connected, blockNumber, allRecords, allLoading, onSelect }) {
   const regCount = MOCK.totalRegistered;
@@ -1929,7 +2326,7 @@ function Home({ provider, connected, blockNumber, allRecords, allLoading, onSele
                   {wf.steps.map((step, i) => (
                     <div key={i} style={{ display:"flex", alignItems:"center", gap:"3px" }}>
                       <span style={{ fontSize:"10px", color:C.silver }}>{MINISTRY_META[step.ministry]?.icon}{step.ministry}</span>
-                      {i<wf.steps.length-1 && <span style={{ color:C.muted, fontSize:"9px" }}>→</span>}
+                      {i<wf.steps.length-1 && <span style={{ color:C.muted, fontSize:"9px" }}>-></span>}
                     </div>
                   ))}
                 </div>
@@ -1945,8 +2342,8 @@ function Home({ provider, connected, blockNumber, allRecords, allLoading, onSele
 
 
 // ---
-// COMMUNITY DASHBOARD — Path A (uses existing AIDisbursementTracker)
-// 4 role views: Donor · Project Manager · Matai/Leadership · Community
+// COMMUNITY DASHBOARD -- Path A (uses existing AIDisbursementTracker)
+// 4 role views: Donor ? Project Manager ? Matai/Leadership ? Community
 // Real-time project intelligence: KPIs, expenditure tracking, flags
 // ---
 
@@ -1995,7 +2392,7 @@ const COMMUNITY_PROJECTS = [
 const EXP_CATEGORIES = {
   Labour:    { icon:"👷", color:"#4A9EE0" },
   Materials: { icon:"🪵", color:"#D4860A" },
-  Equipment: { icon:"⚙️",  color:"#0FB894" },
+  Equipment: { icon:"⚙",  color:"#0FB894" },
   Training:  { icon:"📚", color:"#9B59B6" },
   Consulting:{ icon:"💼", color:"#E8552A" },
   Overhead:  { icon:"🏢", color:"#5A7A9A" },
@@ -2029,7 +2426,7 @@ const SEED_ACTIVITY = [
   { ts: Date.now()-40*86400000, actor:"CHAIN", action:"Grant #0 created on chain — UNICEF Samoa Education Access Programme 2025 — 100,000 WST",           flag:false },
 ];
 
-function CommunityDashboard({ provider, connected, blockNumber, onBack }) {
+function CommunityDashboard({ provider, connected, blockNumber, onBack, onOpenUNICEF }) {
   const [role,            setRole]            = useState(null);
   const [tab,             setTab]             = useState("overview");
   const [selectedProject, setSelectedProject] = useState("BIOGAS-VAIALA-2025");
@@ -2092,7 +2489,7 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack }) {
 
   const inStyle = { width:"100%", background:C.abyss, border:`1px solid ${C.ocean}`, borderRadius:"8px", padding:"10px 14px", color:C.white, fontSize:"13px", fontFamily:F.ui, boxSizing:"border-box" };
 
-  // ── Role selector ────────────────────────────────────────────────────
+  // ?? Role selector ????????????????????????????????????????????????????
   if (!role) return (
     <div style={{ minHeight:"100vh", background:C.deep, fontFamily:F.ui, color:C.white }}>
       <TopBar title="Community Project Dashboard" sub="Donor-funded community accountability — real-time project intelligence" accent="#4A9EE0" blockNumber={blockNumber} onBack={onBack} />
@@ -2155,7 +2552,7 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack }) {
       { id:"spending",  icon:"📊", label:"Spending"           },
     ],
     public: [
-      { id:"overview",  icon:"👁️",  label:"Overview"          },
+      { id:"overview",  icon:"👁",  label:"Overview"          },
       { id:"money",     icon:"💵", label:"Money In/Out"       },
       { id:"impact",    icon:"🌱", label:"Impact"             },
     ],
@@ -2194,7 +2591,7 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack }) {
             </div>
             {flags.length>0 && flags.map((f,i)=>(
               <div key={i} style={{ ...card({ background:f.level==="warning"?C.amber+"18":C.ocean+"88", borderColor:f.level==="warning"?C.amber+"55":C.wave }), marginBottom:"10px", display:"flex", gap:"12px", alignItems:"flex-start", padding:"14px 16px" }}>
-                <span style={{ fontSize:"18px", flexShrink:0 }}>{f.level==="warning"?"⚠️":"ℹ️"}</span>
+                <span style={{ fontSize:"18px", flexShrink:0 }}>{f.level==="warning"?"⚠":"ℹ"}</span>
                 <div>
                   <div style={{ fontSize:"13px", fontWeight:700, color:f.level==="warning"?C.amber:C.silver }}>{f.msg}</div>
                   {f.level==="warning"&&f.msg.includes("activity")&&<div style={{ fontSize:"11px", color:C.muted, marginTop:"4px" }}>Recommendation: Contact PM to confirm project status. Consider releasing contingency or approving scope change if supply chain issue confirmed.</div>}
@@ -2270,8 +2667,17 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack }) {
               ))}
             </div>
             <div style={{ ...card({ background:C.seafoam+"0A", borderColor:C.seafoam+"33" }) }}>
-              <div style={{ fontSize:"12px", fontWeight:700, color:C.seafoam, marginBottom:"6px" }}>🔒 Why this data is trustworthy</div>
-              <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.8 }}>Every expenditure, receipt hash, and approval is permanently recorded on the Samoa Pacific Blockchain. No one can alter records after confirmation. {project.donor} can independently verify every transaction by querying the AIDisbursementTracker contract directly.</div>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:"12px" }}>
+                <div>
+                  <div style={{ fontSize:"12px", fontWeight:700, color:C.seafoam, marginBottom:"6px" }}>🔒 Why this data is trustworthy</div>
+                  <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.8 }}>Every expenditure, receipt hash, and approval is permanently recorded on the Samoa Pacific Blockchain. No one can alter records after confirmation. {project.donor} can independently verify every transaction by querying the AIDisbursementTracker contract directly.</div>
+                </div>
+                {onOpenUNICEF && (
+                  <button onClick={onOpenUNICEF} style={{ ...btn("ghost"), fontSize:"11px", padding:"6px 12px", border:`1px solid ${C.gold}`, color:C.gold, flexShrink:0 }}>
+                    🌐 Open UNICEF Donor Dashboard ->
+                  </button>
+                )}
+              </div>
             </div>
           </>
         )}
@@ -2351,7 +2757,7 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack }) {
             ):flags.map((f,i)=>(
               <div key={i} style={{ ...card({ background:f.level==="warning"?C.amber+"18":C.ocean+"88", borderColor:f.level==="warning"?C.amber+"55":C.wave }), marginBottom:"14px" }}>
                 <div style={{ display:"flex", gap:"14px" }}>
-                  <span style={{ fontSize:"28px" }}>{f.level==="warning"?"⚠️":"ℹ️"}</span>
+                  <span style={{ fontSize:"28px" }}>{f.level==="warning"?"⚠":"ℹ"}</span>
                   <div>
                     <div style={{ fontWeight:800, fontSize:"13px", color:f.level==="warning"?C.amber:C.silver, marginBottom:"6px" }}>{f.msg}</div>
                     <div style={{ fontSize:"12px", color:C.muted }}>Auto-generated · {fmtTs(Date.now()/1000)}</div>
@@ -2361,7 +2767,7 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack }) {
             ))}
             <div style={{ ...card({ marginTop:"16px" }) }}>
               <SectionHead title="How flags work" />
-              <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.8 }}>Flags are generated automatically: (1) No PM activity in 7+ days → supply or resource warning; (2) Expenditures awaiting matai approval → funds on hold alert; (3) Budget utilisation above 85% → tranche limit warning. Thresholds are configurable per grant in the MOU. All flag events are logged immutably on chain.</div>
+              <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.8 }}>Flags are generated automatically: (1) No PM activity in 7+ days -> supply or resource warning; (2) Expenditures awaiting matai approval -> funds on hold alert; (3) Budget utilisation above 85% -> tranche limit warning. Thresholds are configurable per grant in the MOU. All flag events are logged immutably on chain.</div>
             </div>
           </>
         )}
@@ -2635,7 +3041,7 @@ export default function App() {
     return () => clearInterval(id);
   }, [provider]);
 
-  // Global all-ministry records — feeds cross-ministry workflow engine
+  // Global all-ministry records -- feeds cross-ministry workflow engine
   const { data:allRecords, loading:allLoading } = usePoll(
     () => provider ? fetchAllRecords(provider) : Promise.resolve([]),
     [provider],
@@ -2665,6 +3071,7 @@ export default function App() {
         <CommunityDashboard
           {...sharedProps}
           onBack={() => setView("home")}
+          onOpenUNICEF={() => setView("unicef")}
         />
       )}
 
@@ -2672,6 +3079,7 @@ export default function App() {
         <UNICEFDashboard
           {...sharedProps}
           onBack={() => setView("home")}
+          onOpenCommunity={() => setView("community")}
         />
       )}
 

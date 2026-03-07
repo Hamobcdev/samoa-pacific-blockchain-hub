@@ -291,6 +291,77 @@ Object.entries(WORKFLOW_DEFS).forEach(([wfId, wf]) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
+// NDIDS VERIFICATION POLICY
+// Derived from Deploy.s.sol grantReadAccess assignments.
+// Each ministry only has NDIDS access to its OWN sector's citizens.
+// Cross-workflow steps (e.g. CBS processing a payment for an edu citizen)
+// must submit with verifyViaNDIDS=false — identity was verified upstream.
+//
+// Rule: true  = this ministry CAN verify this serviceType via NDIDS
+//       false = payment/processing step — identity already verified upstream
+// ═══════════════════════════════════════════════════════════════════════
+const NDIDS_POLICY = {
+  // EDUCATION — owns edu citizens, verifies all its own service types
+  EDUCATION: {
+    SCHOOL_ENROLMENT_2025:   true,   // step 1 EDU-BENEFIT — edu citizen, EDUCATION has access
+    ATTENDANCE_RECORD:       true,   // step 4 EDU-BENEFIT — confirming receipt, still edu citizen
+    SCHOLARSHIP_AWARDED:     true,
+    GRADUATION_RECORD:       true,
+    SPECIAL_NEEDS_SUPPORT:   true,
+  },
+  // MOF — has access to edu + welfare + trade citizens
+  MOF: {
+    EDUCATION_BENEFIT_ELIGIBLE_2025: true,   // step 2 EDU-BENEFIT — MOF has eduHash access
+    SOCIAL_WELFARE_PAYMENT_2025:     true,   // step 1 WELFARE — MOF has welfareHash access
+    TAX_COMPLIANCE_VERIFIED:         true,   // step 3 WELFARE / step 2 FOREIGN-INV — trade/welfare
+    DUTY_PROCESSED:                  true,   // step 3 CUSTOMS-CLEAR — MOF has tradeHash access
+    BUDGET_ALLOCATION_RECORDED:      false,  // step 2 BIZ-LICENCE — MOF NOT in bizHash grants
+  },
+  // CBS — payment processor only, NO cross-sector NDIDS access
+  // CBS owns cbsHashes (SAMOA-CBS-001/002/003) only
+  // All cross-workflow payments use citizens from other sectors → NO NDIDS verify
+  CBS: {
+    DIGITAL_PAYMENT_RECORDED: false,  // used in EDU-BENEFIT/WELFARE/CUSTOMS — cross-sector
+    REMITTANCE_RECEIVED:       true,  // CBS own sector citizen (SAMOA-CBS-xxx)
+    ACCOUNT_OPENED:            true,  // CBS own sector citizen
+    LOAN_APPROVED:             true,  // CBS own sector citizen
+    STABLECOIN_ISSUANCE:       true,  // CBS own sector citizen
+  },
+  // CUSTOMS — owns trade citizens
+  CUSTOMS: {
+    SHIPMENT_CLEARED_2025:     true,
+    TRADE_FACILITATION_RECORD: true,
+    TARIFF_CLASSIFICATION:     true,
+    PROHIBITED_GOODS_FLAGGED:  true,
+    BOND_WAREHOUSE_RECORD:     true,
+  },
+  // MCIL — owns biz + trade citizens
+  MCIL: {
+    COMPANY_REGISTRATION:        true,
+    FOREIGN_INVESTMENT_APPROVED: true,
+    LABOUR_CONTRACT_RECORDED:    true,
+    TRADE_LICENCE_UPDATED:       true,
+    DISPUTE_RESOLUTION_RECORDED: true,
+  },
+  // MCIT — owns biz citizens [4,5,6]
+  MCIT: {
+    BUSINESS_LICENCE_DIGITAL: true,
+    ICT_REGISTRATION:         true,
+    SPECTRUM_LICENCE_ISSUED:  true,
+    DIGITAL_ID_ISSUED:        true,
+    CYBERSECURITY_AUDIT:      true,
+  },
+};
+
+// Helper: should this ministry verify NDIDS for this serviceType?
+function shouldVerifyNDIDS(ministryCode, serviceType) {
+  const policy = NDIDS_POLICY[ministryCode];
+  if (!policy) return false; // unknown ministry — safe default
+  if (policy[serviceType] === undefined) return false; // unknown service — safe default
+  return policy[serviceType];
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // LEGACY WORKFLOW DEFINITIONS (v7 — kept for ReceiptCard compatibility)
 // ═══════════════════════════════════════════════════════════════════════
 const WORKFLOWS = {
@@ -882,14 +953,18 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
     amount:       prefill?.amount       || "",
     fee:          prefill?.fee          || "",
     officerId:    "OFFICER-001",
-    ndidsVerified:true,
+    ndidsVerified: shouldVerifyNDIDS(ministryCode, prefill?.serviceType || serviceTypes[0]?.value || ""),
   });
   const [submitting, setSubmitting] = useState(false);
   const [txMsg,      setTxMsg]      = useState(null);
 
   // Apply prefill when it changes (from Pending Actions one-click)
   useEffect(() => {
-    if (prefill) setForm(f => ({ ...f, ...prefill }));
+    if (prefill) setForm(f => ({
+      ...f,
+      ...prefill,
+      ndidsVerified: shouldVerifyNDIDS(ministryCode, prefill.serviceType || f.serviceType),
+    }));
   }, [prefill]);
 
   const selectedWf = (SVC_TO_WF[form.serviceType] || [])[0];
@@ -899,6 +974,11 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
 
   const handleSubmit = async () => {
     if (!form.citizenId || !form.serviceType) { setTxMsg({ type:"error", text:"Citizen ID and service type are required." }); return; }
+    // Guard: warn if NDIDS is ON but policy says this ministry has no access — will revert on chain
+    if (form.ndidsVerified && !shouldVerifyNDIDS(ministryCode, form.serviceType)) {
+      setTxMsg({ type:"error", text:`⚠ NDIDS verification is ON but ${ministryCode} does not have NDIDS access for ${form.serviceType} citizens. Uncheck "Verify identity via NDIDS" and resubmit.` });
+      return;
+    }
     setSubmitting(true);
     setTxMsg({ type:"info", text:"Broadcasting to "+CONFIG.NETWORK+"…" });
     try {
@@ -967,7 +1047,11 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
       {/* Service type */}
       <div style={{ marginBottom:"14px" }}>
         <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>Service Type *</label>
-        <select value={form.serviceType} onChange={e=>setForm(f=>({...f,serviceType:e.target.value}))} style={inStyle}>
+        <select value={form.serviceType} onChange={e => setForm(f => ({
+          ...f,
+          serviceType: e.target.value,
+          ndidsVerified: shouldVerifyNDIDS(ministryCode, e.target.value),
+        }))} style={inStyle}>
           {serviceTypes.map(st=><option key={st.value} value={st.value}>{st.label}</option>)}
         </select>
         {form.serviceType && <div style={{ fontSize:"11px", color:C.muted, marginTop:"4px" }}>{serviceDesc(form.serviceType)}</div>}
@@ -1001,9 +1085,25 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
       </div>
 
       {/* NDIDS toggle */}
-      <div style={{ marginBottom:"18px", display:"flex", alignItems:"center", gap:"10px" }}>
-        <input type="checkbox" id="ndids" checked={form.ndidsVerified} onChange={e=>setForm(f=>({...f,ndidsVerified:e.target.checked}))} style={{ width:"16px", height:"16px", accentColor:C.seafoam }} />
-        <label htmlFor="ndids" style={{ fontSize:"12px", color:C.silver, cursor:"pointer" }}>Identity verified via NDIDS (National Digital Identity System)</label>
+      <div style={{ marginBottom:"18px", padding:"10px 12px", background:C.ocean, borderRadius:"8px", border:`1px solid ${C.wave}` }}>
+        <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"4px" }}>
+          <input type="checkbox" id="ndids" checked={form.ndidsVerified} onChange={e=>setForm(f=>({...f,ndidsVerified:e.target.checked}))} style={{ width:"16px", height:"16px", accentColor:C.seafoam }} />
+          <label htmlFor="ndids" style={{ fontSize:"12px", color:C.silver, cursor:"pointer", fontWeight:700 }}>Verify identity via NDIDS</label>
+          <span style={{ ...badge(form.ndidsVerified ? C.seafoam : C.amber), fontSize:"9px" }}>
+            {form.ndidsVerified ? "✓ NDIDS ON" : "PAYMENT ONLY"}
+          </span>
+        </div>
+        <div style={{ fontSize:"11px", color:C.muted, marginLeft:"26px" }}>
+          {form.ndidsVerified
+            ? `${ministryCode} has NDIDS read access for this service — identity will be verified on chain.`
+            : `Identity verification not required for this step — upstream ministry already verified. Submitting as payment/processing record only.`
+          }
+        </div>
+        {!shouldVerifyNDIDS(ministryCode, form.serviceType) && form.ndidsVerified && (
+          <div style={{ fontSize:"11px", color:C.danger, marginTop:"6px", marginLeft:"26px", fontWeight:700 }}>
+            ⚠ Warning: {ministryCode} does not have NDIDS access for {form.serviceType} citizens — this transaction will revert. Uncheck NDIDS above.
+          </div>
+        )}
       </div>
 
       <button onClick={handleSubmit} disabled={submitting || !connected} style={{ ...btn(submitting||!connected?"ghost":"primary"), width:"100%", justifyContent:"center", padding:"13px 20px", fontSize:"14px", opacity:!connected?0.5:submitting?0.7:1 }}>
@@ -1787,13 +1887,20 @@ function Home({ provider, connected, blockNumber, allRecords, allLoading, onSele
         </div>
 
         {/* Special dashboards */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px", marginBottom:"28px" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"14px", marginBottom:"28px" }}>
           <div onClick={() => onSelect("unicef")} style={{ ...card(), cursor:"pointer", borderTop:`3px solid ${C.gold}` }}
             onMouseEnter={e=>e.currentTarget.style.background=C.ocean}
             onMouseLeave={e=>e.currentTarget.style.background=C.navy}>
             <div style={{ fontSize:"28px", marginBottom:"8px" }}>🌐</div>
             <div style={{ fontWeight:800, fontSize:"14px", fontFamily:F.display, marginBottom:"4px" }}>UNICEF Donor Dashboard</div>
             <div style={{ fontSize:"12px", color:C.silver }}>Grant lifecycle · verifyUsage() · releaseTranche() · beneficiary auto-count from Education</div>
+          </div>
+          <div onClick={() => onSelect("community")} style={{ ...card(), cursor:"pointer", borderTop:`3px solid ${C.coral}` }}
+            onMouseEnter={e=>e.currentTarget.style.background=C.ocean}
+            onMouseLeave={e=>e.currentTarget.style.background=C.navy}>
+            <div style={{ fontSize:"28px", marginBottom:"8px" }}>🏘</div>
+            <div style={{ fontWeight:800, fontSize:"14px", fontFamily:F.display, marginBottom:"4px" }}>Community Project Dashboard</div>
+            <div style={{ fontSize:"12px", color:C.silver }}>PM · Matai · Public views · Real-time spend tracking · Receipt logging · Donor-visible audit trail</div>
           </div>
           <div onClick={() => onSelect("hub")} style={{ ...card(), cursor:"pointer", borderTop:`3px solid ${C.seafoam}` }}
             onMouseEnter={e=>e.currentTarget.style.background=C.ocean}
@@ -1836,6 +1943,677 @@ function Home({ provider, connected, blockNumber, allRecords, allLoading, onSele
   );
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════
+// COMMUNITY DASHBOARD — Path A (uses existing AIDisbursementTracker)
+// 4 role views: Donor · Project Manager · Matai/Leadership · Community
+// Real-time project intelligence: KPIs, expenditure tracking, flags
+// ═══════════════════════════════════════════════════════════════════════
+
+const COMMUNITY_PROJECTS = [
+  {
+    id: "BIOGAS-VAIALA-2025",
+    name: "Vaiala Village Biogas Project",
+    donor: "UNICEF",
+    community: "Vaiala, Upolu",
+    pm: "COMMUNITY-PM-001",
+    matai: "COMMUNITY-MATAI-001",
+    grantId: 0,
+    totalBudget: 100000,
+    description: "Installation of biogas units for 23 households. Reduces reliance on imported fuel, cuts household energy costs by 60%, improves cooking conditions.",
+    startDate: "2025-01-15",
+    targetDate: "2025-12-31",
+    milestones: [
+      { id:0, label:"Site assessment & community training",          targetWST:30000, status:"verified" },
+      { id:1, label:"Equipment procurement & installation",          targetWST:40000, status:"released" },
+      { id:2, label:"Commissioning & end-of-term outcomes",          targetWST:30000, status:"pending"  },
+    ],
+    categories: ["Labour","Materials","Equipment","Training","Overhead"],
+  },
+  {
+    id: "WATER-SAVAII-2026",
+    name: "Savai'i Rural Water Access Programme",
+    donor: "World Bank",
+    community: "Fagamalo, Savai'i",
+    pm: "COMMUNITY-PM-002",
+    matai: "COMMUNITY-MATAI-002",
+    grantId: null,
+    totalBudget: 250000,
+    description: "Piped water infrastructure for 4 villages. Target: 850 beneficiaries with clean water access within 18 months.",
+    startDate: "2026-03-01",
+    targetDate: "2027-09-01",
+    milestones: [
+      { id:0, label:"Survey, design & community consultation",        targetWST:50000,  status:"pending" },
+      { id:1, label:"Pipeline installation phase 1",                  targetWST:100000, status:"pending" },
+      { id:2, label:"Pipeline installation phase 2 & connections",    targetWST:75000,  status:"pending" },
+      { id:3, label:"Commissioning & handover",                       targetWST:25000,  status:"pending" },
+    ],
+    categories: ["Labour","Materials","Equipment","Consulting","Overhead"],
+  },
+];
+
+const EXP_CATEGORIES = {
+  Labour:    { icon:"👷", color:"#4A9EE0" },
+  Materials: { icon:"🪵", color:"#D4860A" },
+  Equipment: { icon:"⚙️",  color:"#0FB894" },
+  Training:  { icon:"📚", color:"#9B59B6" },
+  Consulting:{ icon:"💼", color:"#E8552A" },
+  Overhead:  { icon:"🏢", color:"#5A7A9A" },
+  Other:     { icon:"📦", color:"#9EB3CC" },
+};
+
+const COMMUNITY_ROLES = {
+  donor:  { label:"Donor View",         icon:"🌐", color:"#C9920E", desc:"Real-time project intelligence & KPI dashboard" },
+  pm:     { label:"Project Manager",    icon:"📋", color:"#0FB894", desc:"Submit evidence, log expenditures, upload receipts" },
+  matai:  { label:"Matai / Leadership", icon:"🏛️",  color:"#4A9EE0", desc:"Approve expenditures, community governance" },
+  public: { label:"Community / Public", icon:"👥", color:"#9EB3CC", desc:"Transparent view — money in vs money spent" },
+};
+
+const SEED_EXPENDITURES = [
+  { id:"EXP-001", projectId:"BIOGAS-VAIALA-2025", milestoneId:0, recipient:"Samoa Plumbing Ltd",      amount:8500,  category:"Materials", receiptRef:"INV-SPL-2025-089",   date:"2025-02-10", approvedBy:"COMMUNITY-MATAI-001", status:"approved", confirmedBy:null },
+  { id:"EXP-002", projectId:"BIOGAS-VAIALA-2025", milestoneId:0, recipient:"Community Labour Team",   amount:6200,  category:"Labour",    receiptRef:"TIMESHEET-FEB-2025", date:"2025-02-28", approvedBy:"COMMUNITY-MATAI-001", status:"approved", confirmedBy:"COMMUNITY-MEMBER-003" },
+  { id:"EXP-003", projectId:"BIOGAS-VAIALA-2025", milestoneId:0, recipient:"Pacific Training Co",    amount:4800,  category:"Training",  receiptRef:"TRAIN-PAC-2025-12",  date:"2025-03-05", approvedBy:"COMMUNITY-MATAI-001", status:"approved", confirmedBy:null },
+  { id:"EXP-004", projectId:"BIOGAS-VAIALA-2025", milestoneId:0, recipient:"Project Overhead Q1",    amount:2100,  category:"Overhead",  receiptRef:"OVERHEAD-Q1-2025",   date:"2025-03-15", approvedBy:"COMMUNITY-MATAI-001", status:"approved", confirmedBy:null },
+  { id:"EXP-005", projectId:"BIOGAS-VAIALA-2025", milestoneId:1, recipient:"Biogas Equipment NZ",    amount:22000, category:"Equipment", receiptRef:"INV-BENZ-2025-441",  date:"2025-06-01", approvedBy:"COMMUNITY-MATAI-001", status:"approved", confirmedBy:null },
+  { id:"EXP-006", projectId:"BIOGAS-VAIALA-2025", milestoneId:1, recipient:"Installation Labour",    amount:9400,  category:"Labour",    receiptRef:"TIMESHEET-JUN-2025", date:"2025-06-30", approvedBy:"COMMUNITY-MATAI-001", status:"approved", confirmedBy:null },
+  { id:"EXP-007", projectId:"BIOGAS-VAIALA-2025", milestoneId:1, recipient:"Piping & Fittings",      amount:5800,  category:"Materials", receiptRef:"INV-SPL-2025-210",   date:"2025-07-12", approvedBy:null,                  status:"pending",  confirmedBy:null },
+];
+
+const SEED_ACTIVITY = [
+  { ts: Date.now()-8*86400000,  actor:"PM",    action:"Expenditure EXP-007 submitted — Piping & Fittings 5,800 WST — awaiting matai approval",            flag:true  },
+  { ts: Date.now()-9*86400000,  actor:"CHAIN", action:"Tranche 1 released on chain — 40,000 WST — Grant #0 Milestone 2",                                  flag:false },
+  { ts: Date.now()-12*86400000, actor:"MATAI", action:"Expenditure EXP-006 approved — Installation Labour 9,400 WST",                                     flag:false },
+  { ts: Date.now()-15*86400000, actor:"CHAIN", action:"verifyUsage() confirmed — Tranche 1 verified by UNICEF officer. Beneficiaries: 23",                flag:false },
+  { ts: Date.now()-20*86400000, actor:"PM",    action:"Milestone 1 evidence submitted — 23 households capacity training complete. Ref: REPORT-M1-FINAL",  flag:false },
+  { ts: Date.now()-35*86400000, actor:"CHAIN", action:"Tranche 0 verified — 30,000 WST — Site assessment complete",                                       flag:false },
+  { ts: Date.now()-40*86400000, actor:"CHAIN", action:"Grant #0 created on chain — UNICEF Samoa Education Access Programme 2025 — 100,000 WST",           flag:false },
+];
+
+function CommunityDashboard({ provider, connected, blockNumber, onBack }) {
+  const [role,            setRole]            = useState(null);
+  const [tab,             setTab]             = useState("overview");
+  const [selectedProject, setSelectedProject] = useState("BIOGAS-VAIALA-2025");
+  const [expenditures,    setExpenditures]    = useState(SEED_EXPENDITURES);
+  const [activityLog,     setActivityLog]     = useState(SEED_ACTIVITY);
+  const [pendingExp,      setPendingExp]      = useState({ recipient:"", amount:"", category:"Labour", receiptRef:"", notes:"", milestoneId:"0" });
+  const [expTxMsg,        setExpTxMsg]        = useState(null);
+  const [submitting,      setSubmitting]      = useState(false);
+
+  const project    = COMMUNITY_PROJECTS.find(p => p.id === selectedProject) || COMMUNITY_PROJECTS[0];
+  const projExps   = expenditures.filter(e => e.projectId === project.id);
+  const approved   = projExps.filter(e => e.status === "approved");
+  const pending    = projExps.filter(e => e.status === "pending");
+
+  const totalReceived = project.milestones.filter(m => m.status==="released"||m.status==="verified").reduce((s,m)=>s+m.targetWST,0);
+  const totalVerified = project.milestones.filter(m => m.status==="verified").reduce((s,m)=>s+m.targetWST,0);
+  const totalSpent    = approved.reduce((s,e)=>s+e.amount,0);
+  const totalPending  = pending.reduce((s,e)=>s+e.amount,0);
+  const remaining     = totalReceived - totalSpent;
+  const burnRate      = totalReceived>0 ? Math.round((totalSpent/totalReceived)*100) : 0;
+
+  const daysSinceLast = Math.floor((Date.now()-activityLog[0].ts)/86400000);
+  const flags = [
+    ...(daysSinceLast>=7  ? [{ level:"warning", msg:`No activity logged in ${daysSinceLast} days — possible supply or resource delay. Recommend contacting project manager.` }] : []),
+    ...(pending.length>0  ? [{ level:"info",    msg:`${pending.length} expenditure${pending.length>1?"s":""} awaiting matai approval — ${totalPending.toLocaleString()} WST on hold` }] : []),
+    ...(burnRate>85       ? [{ level:"warning", msg:`Budget utilisation at ${burnRate}% — approaching tranche limit. Review remaining commitments.` }] : []),
+  ];
+
+  const byCategory = {};
+  approved.forEach(e => { byCategory[e.category]=(byCategory[e.category]||0)+e.amount; });
+  const byMilestone = {};
+  approved.forEach(e => { byMilestone[e.milestoneId]=(byMilestone[e.milestoneId]||0)+e.amount; });
+
+  const handleSubmitExp = () => {
+    if (!pendingExp.recipient||!pendingExp.amount) { setExpTxMsg({ type:"error", text:"Recipient and amount are required." }); return; }
+    const amt = parseFloat(pendingExp.amount);
+    if (isNaN(amt)||amt<=0) { setExpTxMsg({ type:"error", text:"Enter a valid amount." }); return; }
+    setSubmitting(true);
+    const rHash = ethers.keccak256(ethers.toUtf8Bytes(`${pendingExp.receiptRef}|${pendingExp.recipient}|${amt}|${Date.now()}`));
+    const newExp = {
+      id: `EXP-${String(expenditures.length+1).padStart(3,"0")}`,
+      projectId: project.id, milestoneId: parseInt(pendingExp.milestoneId),
+      recipient: pendingExp.recipient, amount: amt, category: pendingExp.category,
+      receiptRef: pendingExp.receiptRef, receiptHash: rHash.slice(0,22)+"…",
+      date: new Date().toISOString().slice(0,10), approvedBy:null, status:"pending", confirmedBy:null,
+    };
+    setTimeout(() => {
+      setExpenditures(p=>[...p,newExp]);
+      setActivityLog(p=>[{ ts:Date.now(), actor:"PM", action:`${newExp.id} submitted — ${pendingExp.recipient} ${amt.toLocaleString()} WST (${pendingExp.category}) — awaiting matai approval`, flag:false },...p]);
+      setPendingExp({ recipient:"", amount:"", category:"Labour", receiptRef:"", notes:"", milestoneId:"0" });
+      setExpTxMsg({ type:"success", text:`✓ ${newExp.id} recorded. Receipt hash: ${rHash.slice(0,20)}… Awaiting matai approval.` });
+      setSubmitting(false);
+    }, 800);
+  };
+
+  const handleApprove = (expId) => {
+    setExpenditures(p=>p.map(e=>e.id===expId?{...e,status:"approved",approvedBy:"COMMUNITY-MATAI-001"}:e));
+    setActivityLog(p=>[{ ts:Date.now(), actor:"MATAI", action:`${expId} approved by matai — funds cleared for disbursement`, flag:false },...p]);
+  };
+
+  const inStyle = { width:"100%", background:C.abyss, border:`1px solid ${C.ocean}`, borderRadius:"8px", padding:"10px 14px", color:C.white, fontSize:"13px", fontFamily:F.ui, boxSizing:"border-box" };
+
+  // ── Role selector ────────────────────────────────────────────────────
+  if (!role) return (
+    <div style={{ minHeight:"100vh", background:C.deep, fontFamily:F.ui, color:C.white }}>
+      <TopBar title="Community Project Dashboard" sub="Donor-funded community accountability — real-time project intelligence" accent="#4A9EE0" blockNumber={blockNumber} onBack={onBack} />
+      <div style={{ maxWidth:"960px", margin:"0 auto", padding:"40px 28px" }}>
+        <div style={{ textAlign:"center", marginBottom:"36px" }}>
+          <div style={{ fontSize:"36px", marginBottom:"12px" }}>🌺</div>
+          <div style={{ fontSize:"22px", fontWeight:900, fontFamily:F.display, marginBottom:"8px" }}>Samoa Pacific Blockchain Hub</div>
+          <div style={{ fontSize:"14px", color:C.silver, maxWidth:"560px", margin:"0 auto" }}>Every dollar tracked from donor to community. Real-time intelligence for everyone involved in the project.</div>
+        </div>
+        <div style={{ fontSize:"11px", fontWeight:800, color:C.silver, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:"12px" }}>Active Projects</div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:"14px", marginBottom:"32px" }}>
+          {COMMUNITY_PROJECTS.map(p=>(
+            <div key={p.id} onClick={()=>setSelectedProject(p.id)}
+              style={{ ...card({ borderColor:selectedProject===p.id?"#4A9EE0":C.ocean, background:selectedProject===p.id?C.ocean:C.navy }), cursor:"pointer" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"8px" }}>
+                <span style={{ ...badge("#4A9EE0"), fontSize:"9px" }}>{p.donor}</span>
+                <span style={{ ...badge(p.grantId!==null?C.seafoam:C.amber), fontSize:"9px" }}>{p.grantId!==null?"ON CHAIN":"SETUP"}</span>
+              </div>
+              <div style={{ fontWeight:800, fontSize:"14px", marginBottom:"4px" }}>{p.name}</div>
+              <div style={{ fontSize:"12px", color:C.silver, marginBottom:"6px" }}>📍 {p.community}</div>
+              <div style={{ fontSize:"12px", color:C.gold, fontWeight:700 }}>{p.totalBudget.toLocaleString()} WST total grant</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize:"11px", fontWeight:800, color:C.silver, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:"12px" }}>Select Your Role</div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:"14px" }}>
+          {Object.entries(COMMUNITY_ROLES).map(([key,r])=>(
+            <div key={key} onClick={()=>{ setRole(key); setTab("overview"); }}
+              style={{ ...card({ borderTop:`3px solid ${r.color}` }), cursor:"pointer" }}
+              onMouseEnter={e=>e.currentTarget.style.background=C.ocean}
+              onMouseLeave={e=>e.currentTarget.style.background=C.navy}>
+              <div style={{ fontSize:"32px", marginBottom:"10px" }}>{r.icon}</div>
+              <div style={{ fontWeight:800, fontSize:"15px", fontFamily:F.display, color:r.color, marginBottom:"6px" }}>{r.label}</div>
+              <div style={{ fontSize:"12px", color:C.silver }}>{r.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const roleMeta = COMMUNITY_ROLES[role];
+  const tabsByRole = {
+    donor:  [
+      { id:"overview",  icon:"📊", label:"Portfolio"           },
+      { id:"kpi",       icon:"🎯", label:"KPIs"                },
+      { id:"spend",     icon:"💸", label:"Expenditure"         },
+      { id:"flags",     icon:"🚩", label:"Flags", badge:flags.length||null },
+      { id:"audit",     icon:"🔍", label:"Audit Trail"         },
+    ],
+    pm:     [
+      { id:"overview",   icon:"📋", label:"Status"            },
+      { id:"evidence",   icon:"📸", label:"Evidence"          },
+      { id:"expenditure",icon:"💰", label:"Log Expenditure"   },
+      { id:"receipts",   icon:"🧾", label:"Receipts", badge:approved.length||null },
+    ],
+    matai:  [
+      { id:"overview",  icon:"🏛️",  label:"Account"           },
+      { id:"approve",   icon:"✅", label:"Approvals", badge:pending.length||null },
+      { id:"spending",  icon:"📊", label:"Spending"           },
+    ],
+    public: [
+      { id:"overview",  icon:"👁️",  label:"Overview"          },
+      { id:"money",     icon:"💵", label:"Money In/Out"       },
+      { id:"impact",    icon:"🌱", label:"Impact"             },
+    ],
+  };
+  const tabs = tabsByRole[role]||[];
+
+  return (
+    <div style={{ minHeight:"100vh", background:C.deep, fontFamily:F.ui, color:C.white }}>
+      <TopBar title={`${roleMeta.icon} ${roleMeta.label} — ${project.name}`} sub={`${project.community} · ${project.donor} · ${project.totalBudget.toLocaleString()} WST`} accent={roleMeta.color} blockNumber={blockNumber} onBack={()=>setRole(null)} />
+      <ConnectionBanner connected={connected} error={null} network="Anvil Local" />
+      <div style={{ maxWidth:"1080px", margin:"0 auto", padding:"10px 28px 0", display:"flex", gap:"10px", alignItems:"center", flexWrap:"wrap" }}>
+        <select value={selectedProject} onChange={e=>{setSelectedProject(e.target.value);setTab("overview");}}
+          style={{ background:C.ocean, color:C.white, border:`1px solid ${roleMeta.color}44`, borderRadius:"6px", padding:"5px 10px", fontSize:"12px", fontWeight:700, cursor:"pointer" }}>
+          {COMMUNITY_PROJECTS.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        <div style={{ display:"flex", gap:"4px" }}>
+          {Object.entries(COMMUNITY_ROLES).map(([key,r])=>(
+            <button key={key} onClick={()=>{ setRole(key); setTab("overview"); }}
+              style={{ ...btn(key===role?"primary":"ghost"), padding:"4px 10px", fontSize:"11px", background:key===role?r.color:"transparent", border:key===role?"none":`1px solid ${C.ocean}` }}>
+              {r.icon}
+            </button>
+          ))}
+        </div>
+      </div>
+      <TabNav tabs={tabs} active={tab} onChange={setTab} accent={roleMeta.color} />
+      <div style={{ maxWidth:"1080px", margin:"0 auto", padding:"28px" }}>
+
+        {/* OVERVIEW — all roles */}
+        {tab==="overview" && (
+          <>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"12px", marginBottom:"20px" }}>
+              <StatPill icon="💰" value={totalReceived.toLocaleString()}  label="WST received"       color={C.gold}    />
+              <StatPill icon="💸" value={totalSpent.toLocaleString()}      label="WST spent"          color={C.seafoam} />
+              <StatPill icon="🏦" value={remaining.toLocaleString()}       label="WST remaining"      color="#4A9EE0"   />
+              <StatPill icon="🔥" value={`${burnRate}%`}                   label="Budget utilisation" color={burnRate>85?C.coral:C.amber} />
+            </div>
+            {flags.length>0 && flags.map((f,i)=>(
+              <div key={i} style={{ ...card({ background:f.level==="warning"?C.amber+"18":C.ocean+"88", borderColor:f.level==="warning"?C.amber+"55":C.wave }), marginBottom:"10px", display:"flex", gap:"12px", alignItems:"flex-start", padding:"14px 16px" }}>
+                <span style={{ fontSize:"18px", flexShrink:0 }}>{f.level==="warning"?"⚠️":"ℹ️"}</span>
+                <div>
+                  <div style={{ fontSize:"13px", fontWeight:700, color:f.level==="warning"?C.amber:C.silver }}>{f.msg}</div>
+                  {f.level==="warning"&&f.msg.includes("activity")&&<div style={{ fontSize:"11px", color:C.muted, marginTop:"4px" }}>Recommendation: Contact PM to confirm project status. Consider releasing contingency or approving scope change if supply chain issue confirmed.</div>}
+                </div>
+              </div>
+            ))}
+            <div style={{ ...card(), marginBottom:"16px" }}>
+              <SectionHead title="Milestone Progress" sub="Tranche release tied to milestone verification on chain" />
+              {project.milestones.map((m,i)=>{
+                const spent=byMilestone[i]||0;
+                const pct=m.targetWST>0?Math.min(100,Math.round((spent/m.targetWST)*100)):0;
+                const sc={ verified:C.seafoam, released:"#4A9EE0", pending:C.amber }[m.status]||C.muted;
+                const sl={ verified:"✅ Verified & Complete", released:"🔵 Released — field work in progress", pending:"⏳ Pending — not yet released" }[m.status]||m.status;
+                return (
+                  <div key={i} style={{ marginBottom:"18px", paddingBottom:"18px", borderBottom:i<project.milestones.length-1?`1px solid ${C.ocean}`:"none" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"8px" }}>
+                      <div>
+                        <div style={{ fontWeight:700, fontSize:"13px" }}>M{i+1}: {m.label}</div>
+                        <div style={{ fontSize:"11px", color:C.silver, marginTop:"2px" }}>Budget: {m.targetWST.toLocaleString()} WST · Spent: {spent.toLocaleString()} WST</div>
+                      </div>
+                      <span style={{ ...badge(sc), fontSize:"9px" }}>{sl}</span>
+                    </div>
+                    <div style={{ background:C.abyss, borderRadius:"99px", height:"8px" }}>
+                      <div style={{ background:sc, borderRadius:"99px", height:"8px", width:`${pct}%`, transition:"width 0.6s" }} />
+                    </div>
+                    <div style={{ fontSize:"10px", color:C.muted, marginTop:"3px" }}>{pct}% of milestone budget utilised</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ ...card() }}>
+              <SectionHead title="Activity Timeline" sub="Live — updates as events occur" />
+              {activityLog.slice(0,6).map((ev,i)=>(
+                <div key={i} style={{ display:"flex", gap:"12px", padding:"10px 0", borderBottom:i<5?`1px solid ${C.ocean}`:"none", alignItems:"flex-start" }}>
+                  <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:ev.actor==="CHAIN"?C.seafoam+"22":ev.actor==="MATAI"?"#4A9EE0"+"22":C.amber+"22", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px", flexShrink:0 }}>
+                    {ev.actor==="CHAIN"?"⛓️":ev.actor==="MATAI"?"🏛️":"📋"}
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:"12px", color:C.silver }}>{ev.action}</div>
+                    <div style={{ fontSize:"10px", color:C.muted, marginTop:"2px" }}>{fmtTs(ev.ts/1000)} · {ev.actor}</div>
+                  </div>
+                  {ev.flag&&<span style={{ ...badge(C.amber), fontSize:"9px" }}>ACTION</span>}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* DONOR: KPIs */}
+        {tab==="kpi"&&role==="donor"&&(
+          <>
+            <SectionHead title="🎯 KPI Dashboard" sub="Real-time project performance indicators" />
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"14px", marginBottom:"20px" }}>
+              <StatPill icon="👥" value="23"    label="Households benefiting"         color={C.seafoam} />
+              <StatPill icon="📅" value="68%"   label="Timeline on track"             color={C.gold}    />
+              <StatPill icon="✅" value={`${project.milestones.filter(m=>m.status==="verified").length}/${project.milestones.length}`} label="Milestones verified" color="#4A9EE0" />
+              <StatPill icon="🧾" value={String(approved.length)} label="Receipts on chain"           color={C.seafoam} />
+              <StatPill icon="⏳" value={String(pending.length)}  label="Awaiting approval"           color={pending.length>0?C.amber:C.seafoam} />
+              <StatPill icon="💡" value={`${Math.round((totalSpent/project.totalBudget)*100)}%`} label="Total grant utilisation" color={C.coral} />
+            </div>
+            <div style={{ ...card(), marginBottom:"16px" }}>
+              <SectionHead title="Cost Efficiency" />
+              {[["Funds received",totalReceived,project.totalBudget,"#4A9EE0"],["Donor-verified",totalVerified,project.totalBudget,C.seafoam],["Expenditure approved",totalSpent,Math.max(totalReceived,1),C.gold]].map(([l,v,t,col])=>(
+                <div key={l} style={{ marginBottom:"14px" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", fontSize:"12px", marginBottom:"4px" }}>
+                    <span style={{ fontWeight:700 }}>{l}</span>
+                    <span style={{ color:col, fontWeight:800 }}>{Math.round((v/t)*100)}% — {v.toLocaleString()} WST</span>
+                  </div>
+                  <div style={{ background:C.abyss, borderRadius:"99px", height:"7px" }}>
+                    <div style={{ background:col, borderRadius:"99px", height:"7px", width:`${Math.min(100,Math.round((v/t)*100))}%`, transition:"width 0.6s" }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ ...card({ background:C.seafoam+"0A", borderColor:C.seafoam+"33" }) }}>
+              <div style={{ fontSize:"12px", fontWeight:700, color:C.seafoam, marginBottom:"6px" }}>🔒 Why this data is trustworthy</div>
+              <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.8 }}>Every expenditure, receipt hash, and approval is permanently recorded on the Samoa Pacific Blockchain. No one can alter records after confirmation. {project.donor} can independently verify every transaction by querying the AIDisbursementTracker contract directly.</div>
+            </div>
+          </>
+        )}
+
+        {/* DONOR: EXPENDITURE */}
+        {tab==="spend"&&role==="donor"&&(
+          <>
+            <SectionHead title="💸 Expenditure Analysis" sub="Full breakdown — category, milestone, receipt coverage" />
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px", marginBottom:"20px" }}>
+              <div style={{ ...card() }}>
+                <SectionHead title="By Category" />
+                {Object.entries(byCategory).map(([cat,amt])=>{
+                  const m=EXP_CATEGORIES[cat]||EXP_CATEGORIES.Other;
+                  const pct=totalSpent>0?Math.round((amt/totalSpent)*100):0;
+                  return (
+                    <div key={cat} style={{ marginBottom:"12px" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:"12px", marginBottom:"4px" }}>
+                        <span>{m.icon} {cat}</span>
+                        <span style={{ color:m.color, fontWeight:700 }}>{amt.toLocaleString()} WST ({pct}%)</span>
+                      </div>
+                      <div style={{ background:C.abyss, borderRadius:"99px", height:"6px" }}>
+                        <div style={{ background:m.color, borderRadius:"99px", height:"6px", width:`${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ ...card() }}>
+                <SectionHead title="By Milestone" />
+                {project.milestones.map((m,i)=>{
+                  const spent=byMilestone[i]||0;
+                  const pct=m.targetWST>0?Math.min(100,Math.round((spent/m.targetWST)*100)):0;
+                  return (
+                    <div key={i} style={{ marginBottom:"12px" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:"12px", marginBottom:"4px" }}>
+                        <span>M{i+1}: {m.label.length>28?m.label.slice(0,28)+"…":m.label}</span>
+                        <span style={{ color:C.gold, fontWeight:700 }}>{spent.toLocaleString()}/{m.targetWST.toLocaleString()}</span>
+                      </div>
+                      <div style={{ background:C.abyss, borderRadius:"99px", height:"6px" }}>
+                        <div style={{ background:C.gold, borderRadius:"99px", height:"6px", width:`${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div style={{ ...card() }}>
+              <SectionHead title="All Expenditures" sub={`${projExps.length} records · ${totalSpent.toLocaleString()} WST approved · ${totalPending.toLocaleString()} WST pending`} />
+              {projExps.map(e=>{
+                const cm=EXP_CATEGORIES[e.category]||EXP_CATEGORIES.Other;
+                return (
+                  <div key={e.id} style={{ display:"flex", gap:"12px", padding:"12px 0", borderBottom:`1px solid ${C.ocean}`, alignItems:"center", flexWrap:"wrap" }}>
+                    <span style={{ ...badge(e.status==="approved"?C.seafoam:C.amber), fontSize:"9px", flexShrink:0 }}>{e.status==="approved"?"✓ APPROVED":"⏳ PENDING"}</span>
+                    <div style={{ flex:1, minWidth:"160px" }}>
+                      <div style={{ fontWeight:700, fontSize:"13px" }}>{e.recipient}</div>
+                      <div style={{ fontSize:"11px", color:C.muted }}>M{e.milestoneId+1} · {e.date} · {e.receiptRef||"—"}</div>
+                    </div>
+                    <span style={{ ...badge(cm.color), fontSize:"9px" }}>{cm.icon} {e.category}</span>
+                    <div style={{ fontWeight:800, fontSize:"14px", color:C.gold, flexShrink:0 }}>{e.amount.toLocaleString()} WST</div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* DONOR: FLAGS */}
+        {tab==="flags"&&role==="donor"&&(
+          <>
+            <SectionHead title="🚩 Flags & Alerts" sub="Automated project health monitoring" />
+            {flags.length===0?(
+              <div style={{ ...card(), textAlign:"center", padding:"48px" }}>
+                <div style={{ fontSize:"32px", marginBottom:"10px" }}>✅</div>
+                <div style={{ color:C.seafoam, fontSize:"14px", fontWeight:700 }}>All systems normal</div>
+                <div style={{ color:C.muted, fontSize:"12px", marginTop:"6px" }}>No flags or alerts at this time.</div>
+              </div>
+            ):flags.map((f,i)=>(
+              <div key={i} style={{ ...card({ background:f.level==="warning"?C.amber+"18":C.ocean+"88", borderColor:f.level==="warning"?C.amber+"55":C.wave }), marginBottom:"14px" }}>
+                <div style={{ display:"flex", gap:"14px" }}>
+                  <span style={{ fontSize:"28px" }}>{f.level==="warning"?"⚠️":"ℹ️"}</span>
+                  <div>
+                    <div style={{ fontWeight:800, fontSize:"13px", color:f.level==="warning"?C.amber:C.silver, marginBottom:"6px" }}>{f.msg}</div>
+                    <div style={{ fontSize:"12px", color:C.muted }}>Auto-generated · {fmtTs(Date.now()/1000)}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div style={{ ...card({ marginTop:"16px" }) }}>
+              <SectionHead title="How flags work" />
+              <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.8 }}>Flags are generated automatically: (1) No PM activity in 7+ days → supply or resource warning; (2) Expenditures awaiting matai approval → funds on hold alert; (3) Budget utilisation above 85% → tranche limit warning. Thresholds are configurable per grant in the MOU. All flag events are logged immutably on chain.</div>
+            </div>
+          </>
+        )}
+
+        {/* DONOR: AUDIT */}
+        {tab==="audit"&&role==="donor"&&(
+          <>
+            <SectionHead title="🔍 Immutable Audit Trail" sub="Every event permanently recorded — tamper-proof by blockchain consensus" />
+            <div style={{ ...card(), marginBottom:"14px" }}>
+              {activityLog.map((ev,i)=>(
+                <div key={i} style={{ display:"flex", gap:"14px", padding:"14px 0", borderBottom:i<activityLog.length-1?`1px solid ${C.ocean}`:"none" }}>
+                  <div style={{ width:"36px", height:"36px", borderRadius:"50%", background:ev.actor==="CHAIN"?C.seafoam+"22":ev.actor==="MATAI"?"#4A9EE0"+"22":C.amber+"22", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0 }}>
+                    {ev.actor==="CHAIN"?"⛓️":ev.actor==="MATAI"?"🏛️":"📋"}
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:"13px", color:C.silver }}>{ev.action}</div>
+                    <div style={{ fontSize:"10px", color:C.muted, fontFamily:F.mono, marginTop:"3px" }}>{fmtTs(ev.ts/1000)} · {ev.actor}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ ...card({ background:C.seafoam+"0A", borderColor:C.seafoam+"33" }) }}>
+              <div style={{ fontSize:"11px", color:C.seafoam, fontWeight:700 }}>🔒 AIDisbursementTracker: {ADDR.AID} · Independently verifiable on any Polygon explorer after mainnet deployment</div>
+            </div>
+          </>
+        )}
+
+        {/* PM: EVIDENCE */}
+        {tab==="evidence"&&role==="pm"&&(
+          <>
+            <SectionHead title="📸 Submit Milestone Evidence" sub="Document hash permanently stored on chain — file stored via IPFS after funding" />
+            <div style={{ ...card(), maxWidth:"600px" }}>
+              {[["Milestone",null,"select"],["Evidence Description",null,"textarea"],["Document / Photo Reference","e.g. PHOTO-SITE-2025-03-07.jpg","input"],["Beneficiaries This Milestone","23","number"]].map(([label,ph,type])=>(
+                <div key={label} style={{ marginBottom:"14px" }}>
+                  <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>{label}</label>
+                  {type==="select"?<select style={inStyle}>{project.milestones.map((m,i)=><option key={i}>M{i+1}: {m.label}</option>)}</select>
+                  :type==="textarea"?<textarea rows={4} style={{ ...inStyle, resize:"vertical" }} />
+                  :<input type={type} placeholder={ph||""} style={inStyle} />}
+                </div>
+              ))}
+              <div style={{ ...card({ background:C.amber+"14", borderColor:C.amber+"33" }), marginBottom:"14px" }}>
+                <div style={{ fontSize:"11px", color:C.amber, fontWeight:700 }}>ℹ After submission, evidence hash is sent to {project.donor} for verification. Tranche will not be released until donor confirms evidence meets MOU standards.</div>
+              </div>
+              <button style={{ ...btn("success"), width:"100%", justifyContent:"center", padding:"13px" }}>📸 Submit Evidence to Blockchain</button>
+            </div>
+          </>
+        )}
+
+        {/* PM: EXPENDITURE */}
+        {tab==="expenditure"&&role==="pm"&&(
+          <>
+            <SectionHead title="💰 Log Expenditure" sub="Record every payment from the community account — receipt hash on chain" />
+            {expTxMsg&&<div style={{ marginBottom:"14px", padding:"12px 16px", borderRadius:"8px", background:expTxMsg.type==="error"?C.danger+"22":C.seafoam+"22", border:`1px solid ${expTxMsg.type==="error"?C.danger:C.seafoam}44`, color:expTxMsg.type==="error"?"#F88":C.seafoam, fontSize:"13px" }}>{expTxMsg.text}</div>}
+            <div style={{ display:"grid", gridTemplateColumns:"3fr 2fr", gap:"20px" }}>
+              <div style={{ ...card() }}>
+                {[["Milestone","select"],["Recipient / Supplier *","input-text"],["Amount (WST) *","input-number"],["Category","select-cat"],["Receipt / Invoice Reference","input-text-ref"],["Notes","textarea"]].map(([label,type])=>(
+                  <div key={label} style={{ marginBottom:"14px" }}>
+                    <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>{label.replace(" *","")}{label.includes("*")&&<span style={{ color:C.coral }}> *</span>}</label>
+                    {type==="select"&&<select value={pendingExp.milestoneId} onChange={e=>setPendingExp(f=>({...f,milestoneId:e.target.value}))} style={inStyle}>{project.milestones.map((m,i)=><option key={i} value={i}>M{i+1}: {m.label}</option>)}</select>}
+                    {type==="input-text"&&<input value={pendingExp.recipient} onChange={e=>setPendingExp(f=>({...f,recipient:e.target.value}))} placeholder="e.g. Samoa Plumbing Ltd" style={inStyle} />}
+                    {type==="input-number"&&<input type="number" value={pendingExp.amount} onChange={e=>setPendingExp(f=>({...f,amount:e.target.value}))} placeholder="0.00" style={inStyle} />}
+                    {type==="select-cat"&&<select value={pendingExp.category} onChange={e=>setPendingExp(f=>({...f,category:e.target.value}))} style={inStyle}>{project.categories.map(c=><option key={c} value={c}>{EXP_CATEGORIES[c]?.icon} {c}</option>)}</select>}
+                    {type==="input-text-ref"&&(
+                      <>
+                        <input value={pendingExp.receiptRef} onChange={e=>setPendingExp(f=>({...f,receiptRef:e.target.value}))} placeholder="e.g. INV-SPL-2025-089" style={inStyle} />
+                        {pendingExp.receiptRef&&<div style={{ fontSize:"10px", color:C.muted, marginTop:"4px", fontFamily:F.mono }}>Hash: {ethers.keccak256(ethers.toUtf8Bytes(pendingExp.receiptRef+"|"+pendingExp.recipient+"|"+pendingExp.amount)).slice(0,22)}…</div>}
+                      </>
+                    )}
+                    {type==="textarea"&&<textarea value={pendingExp.notes} onChange={e=>setPendingExp(f=>({...f,notes:e.target.value}))} placeholder="Delivery confirmation, context…" rows={3} style={{ ...inStyle, resize:"vertical" }} />}
+                  </div>
+                ))}
+                <div style={{ ...card({ background:C.amber+"14", borderColor:C.amber+"33" }), marginBottom:"14px", padding:"10px 14px" }}>
+                  <div style={{ fontSize:"11px", color:C.amber, fontWeight:700 }}>ℹ Requires matai approval before confirmed as disbursed. Amounts ≥ 5,000 WST visible to donor.</div>
+                </div>
+                <button onClick={handleSubmitExp} disabled={submitting} style={{ ...btn("success"), width:"100%", justifyContent:"center", padding:"13px", opacity:submitting?0.7:1 }}>
+                  {submitting?"⏳ Recording…":"💰 Log Expenditure — Submit to Chain"}
+                </button>
+              </div>
+              <div style={{ ...card() }}>
+                <SectionHead title="Recent" sub={`${pending.length} awaiting approval`} />
+                {projExps.slice(-6).reverse().map(e=>(
+                  <div key={e.id} style={{ padding:"10px 0", borderBottom:`1px solid ${C.ocean}` }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"2px" }}>
+                      <span style={{ fontWeight:700, fontSize:"12px" }}>{e.recipient}</span>
+                      <span style={{ ...badge(e.status==="approved"?C.seafoam:C.amber), fontSize:"8px" }}>{e.status==="approved"?"✓":"⏳"}</span>
+                    </div>
+                    <div style={{ fontSize:"11px", color:C.gold, fontWeight:700 }}>{e.amount.toLocaleString()} WST · {e.category}</div>
+                    <div style={{ fontSize:"10px", color:C.muted }}>{e.date}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* PM: RECEIPTS */}
+        {tab==="receipts"&&role==="pm"&&(
+          <>
+            <SectionHead title="🧾 Receipt Log" sub="All approved expenditures with receipt hashes on chain" />
+            <div style={{ ...card() }}>
+              {approved.map(e=>{
+                const cm=EXP_CATEGORIES[e.category]||EXP_CATEGORIES.Other;
+                return (
+                  <div key={e.id} style={{ padding:"14px 0", borderBottom:`1px solid ${C.ocean}` }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"6px" }}>
+                      <div>
+                        <div style={{ fontWeight:700, fontSize:"13px" }}>{e.id} · {e.recipient}</div>
+                        <div style={{ fontSize:"11px", color:C.silver }}>M{e.milestoneId+1} · {e.date} · {cm.icon} {e.category}</div>
+                      </div>
+                      <div style={{ fontWeight:800, fontSize:"15px", color:C.gold }}>{e.amount.toLocaleString()} WST</div>
+                    </div>
+                    <div style={{ fontSize:"10px", color:C.muted, fontFamily:F.mono }}>Receipt ref: {e.receiptRef||"—"} · Hash: {e.receiptHash||ethers.keccak256(ethers.toUtf8Bytes(e.receiptRef||e.id)).slice(0,18)+"…"}</div>
+                    {e.approvedBy&&<div style={{ fontSize:"10px", color:C.seafoam, marginTop:"3px" }}>✓ Approved by {short(e.approvedBy)}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* MATAI: APPROVALS */}
+        {tab==="approve"&&role==="matai"&&(
+          <>
+            <SectionHead title="✅ Pending Approvals" sub={`${pending.length} expenditure${pending.length!==1?"s":""} awaiting matai sign-off`} />
+            {pending.length===0?(
+              <div style={{ ...card(), textAlign:"center", padding:"48px" }}>
+                <div style={{ fontSize:"32px", marginBottom:"10px" }}>✅</div>
+                <div style={{ color:C.seafoam, fontSize:"14px", fontWeight:700 }}>No pending approvals</div>
+              </div>
+            ):pending.map(e=>{
+              const cm=EXP_CATEGORIES[e.category]||EXP_CATEGORIES.Other;
+              return (
+                <div key={e.id} style={{ ...card({ borderLeft:`4px solid ${C.amber}` }), marginBottom:"14px" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"12px" }}>
+                    <div>
+                      <div style={{ fontWeight:800, fontSize:"15px" }}>{e.recipient}</div>
+                      <div style={{ fontSize:"12px", color:C.silver, marginTop:"2px" }}>M{e.milestoneId+1} · {e.date} · {e.receiptRef||"No ref"}</div>
+                    </div>
+                    <div style={{ fontSize:"24px", fontWeight:900, color:C.gold }}>{e.amount.toLocaleString()} WST</div>
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"8px", marginBottom:"14px" }}>
+                    {[["Category",`${cm.icon} ${e.category}`],["Submitted by","Project Manager"],["Receipt",e.receiptRef||"—"]].map(([l,v])=>(
+                      <div key={l} style={{ background:C.abyss, borderRadius:"6px", padding:"8px 10px" }}>
+                        <div style={{ fontSize:"9px", color:C.muted, marginBottom:"2px", textTransform:"uppercase" }}>{l}</div>
+                        <div style={{ fontSize:"12px", color:C.silver }}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {e.amount>=5000&&<div style={{ ...card({ background:C.amber+"18", borderColor:C.amber+"44", padding:"10px 14px" }), marginBottom:"12px" }}><div style={{ fontSize:"11px", color:C.amber, fontWeight:700 }}>⚠ Amount ≥ 5,000 WST — this approval will be visible to {project.donor}</div></div>}
+                  <div style={{ display:"flex", gap:"10px" }}>
+                    <button onClick={()=>handleApprove(e.id)} style={{ ...btn("success"), flex:1, justifyContent:"center" }}>✅ Approve</button>
+                    <button style={{ ...btn("ghost"), flex:1, justifyContent:"center" }}>❌ Reject</button>
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {/* MATAI: SPENDING */}
+        {tab==="spending"&&role==="matai"&&(
+          <>
+            <SectionHead title="📊 Community Account Spending" sub="Full breakdown of grant fund usage" />
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"12px", marginBottom:"20px" }}>
+              <StatPill icon="📥" value={totalReceived.toLocaleString()} label="Received from donor"   color={C.seafoam} />
+              <StatPill icon="📤" value={totalSpent.toLocaleString()}    label="Approved & disbursed" color={C.gold}    />
+              <StatPill icon="🏦" value={remaining.toLocaleString()}     label="Remaining in account" color="#4A9EE0"   />
+            </div>
+            <div style={{ ...card() }}>
+              <SectionHead title="Approved Expenditures" />
+              {approved.map(e=>{
+                const cm=EXP_CATEGORIES[e.category]||EXP_CATEGORIES.Other;
+                return (
+                  <div key={e.id} style={{ display:"flex", gap:"12px", padding:"12px 0", borderBottom:`1px solid ${C.ocean}`, alignItems:"center" }}>
+                    <span style={{ fontSize:"20px" }}>{cm.icon}</span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontWeight:700, fontSize:"13px" }}>{e.recipient}</div>
+                      <div style={{ fontSize:"11px", color:C.muted }}>{e.date} · {e.receiptRef||"—"}</div>
+                    </div>
+                    <span style={{ ...badge(cm.color), fontSize:"9px" }}>{e.category}</span>
+                    <div style={{ fontWeight:800, fontSize:"14px", color:C.gold }}>{e.amount.toLocaleString()} WST</div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* PUBLIC: MONEY */}
+        {tab==="money"&&role==="public"&&(
+          <>
+            <SectionHead title="💵 Money In / Money Out" sub="Simple transparent view of community grant funds" />
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px", marginBottom:"16px" }}>
+              <div style={{ ...card({ borderTop:`3px solid ${C.seafoam}` }) }}>
+                <div style={{ fontSize:"11px", color:C.seafoam, fontWeight:800, textTransform:"uppercase", marginBottom:"8px" }}>💚 Money Received</div>
+                <div style={{ fontSize:"32px", fontWeight:900, fontFamily:F.display, color:C.seafoam }}>{totalReceived.toLocaleString()}</div>
+                <div style={{ fontSize:"12px", color:C.silver }}>WST from {project.donor}</div>
+                <div style={{ fontSize:"11px", color:C.muted, marginTop:"8px" }}>{project.milestones.filter(m=>m.status!=="pending").length} tranches · Verified on blockchain</div>
+              </div>
+              <div style={{ ...card({ borderTop:`3px solid ${C.gold}` }) }}>
+                <div style={{ fontSize:"11px", color:C.gold, fontWeight:800, textTransform:"uppercase", marginBottom:"8px" }}>💛 Money Spent</div>
+                <div style={{ fontSize:"32px", fontWeight:900, fontFamily:F.display, color:C.gold }}>{totalSpent.toLocaleString()}</div>
+                <div style={{ fontSize:"12px", color:C.silver }}>WST to suppliers & labour</div>
+                <div style={{ fontSize:"11px", color:C.muted, marginTop:"8px" }}>{approved.length} payments · Approved by village leadership</div>
+              </div>
+            </div>
+            <div style={{ ...card({ background:C.ocean, borderColor:"#4A9EE044" }), marginBottom:"16px", textAlign:"center", padding:"24px" }}>
+              <div style={{ fontSize:"13px", color:C.silver, marginBottom:"6px" }}>Remaining in community account</div>
+              <div style={{ fontSize:"40px", fontWeight:900, fontFamily:F.display, color:"#4A9EE0" }}>{remaining.toLocaleString()} WST</div>
+            </div>
+            <div style={{ ...card() }}>
+              <SectionHead title="What was the money spent on?" />
+              {approved.map(e=>{
+                const cm=EXP_CATEGORIES[e.category]||EXP_CATEGORIES.Other;
+                return (
+                  <div key={e.id} style={{ display:"flex", justifyContent:"space-between", padding:"10px 0", borderBottom:`1px solid ${C.ocean}`, alignItems:"center" }}>
+                    <div style={{ display:"flex", gap:"10px", alignItems:"center" }}>
+                      <span style={{ fontSize:"18px" }}>{cm.icon}</span>
+                      <div>
+                        <div style={{ fontSize:"13px", fontWeight:700 }}>{e.recipient}</div>
+                        <div style={{ fontSize:"11px", color:C.muted }}>{e.date} · {e.category}</div>
+                      </div>
+                    </div>
+                    <div style={{ fontWeight:800, color:C.gold }}>{e.amount.toLocaleString()} WST</div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* PUBLIC: IMPACT */}
+        {tab==="impact"&&role==="public"&&(
+          <>
+            <SectionHead title="🌱 Community Impact" sub="What this project means for the village" />
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"12px", marginBottom:"20px" }}>
+              <StatPill icon="🏠" value="23"   label="Households with biogas"      color={C.seafoam} />
+              <StatPill icon="👨‍👩‍👧" value="~115" label="Community members benefiting" color="#4A9EE0"   />
+              <StatPill icon="⛽" value="60%"  label="Reduction in fuel costs"     color={C.gold}    />
+            </div>
+            <div style={{ ...card({ background:C.seafoam+"0A", borderColor:C.seafoam+"33" }), marginBottom:"16px" }}>
+              <div style={{ fontSize:"14px", fontWeight:800, color:C.seafoam, marginBottom:"8px" }}>About this project</div>
+              <div style={{ fontSize:"13px", color:C.silver, lineHeight:1.8 }}>{project.description}</div>
+            </div>
+            <div style={{ ...card({ background:C.gold+"0A", borderColor:C.gold+"33" }) }}>
+              <div style={{ fontSize:"12px", fontWeight:700, color:C.gold, marginBottom:"4px" }}>🔒 This data cannot be changed</div>
+              <div style={{ fontSize:"12px", color:C.silver }}>Every transaction and approval is permanently recorded on the Samoa Pacific Blockchain. Village leadership and {project.donor} can independently verify all records at any time.</div>
+            </div>
+          </>
+        )}
+
+
 // ═══════════════════════════════════════════════════════════════════════
 // ROOT APP
 // ═══════════════════════════════════════════════════════════════════════
@@ -1875,6 +2653,13 @@ export default function App() {
         <MinistryDashboard
           {...sharedProps}
           ministryCode={ministry}
+          onBack={() => setView("home")}
+        />
+      )}
+
+      {view === "community" && (
+        <CommunityDashboard
+          {...sharedProps}
           onBack={() => setView("home")}
         />
       )}

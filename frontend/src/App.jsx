@@ -904,7 +904,11 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
     try {
       const signer   = getSigner(provider);
       const contract = new ethers.Contract(addr, ABI.MINISTRY, signer);
-      const cHash    = ethers.keccak256(ethers.toUtf8Bytes(form.citizenId.trim()));
+      const rawId    = form.citizenId.trim();
+      // If citizenId is already a bytes32 hex (from pending action prefill), use directly
+      const cHash    = (rawId.startsWith("0x") && rawId.length === 66)
+        ? rawId
+        : ethers.keccak256(ethers.toUtf8Bytes(rawId));
       const evidence = form.evidenceNote?.trim() || `${form.serviceType}|${form.officerId}|${Date.now()}`;
       const dHash    = ethers.keccak256(ethers.toUtf8Bytes(evidence));
       const tx       = await contract.recordService(cHash, form.serviceType, dHash, form.ndidsVerified);
@@ -940,14 +944,24 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
       {prefill && (
         <div style={{ marginBottom:"14px", padding:"10px 12px", background:C.seafoam+"14", border:`1px solid ${C.seafoam}33`, borderRadius:"8px" }}>
           <div style={{ fontSize:"11px", fontWeight:700, color:C.seafoam }}>⚡ Pre-filled from Pending Actions — review and submit</div>
+          {prefill.citizenLabel && <div style={{ fontSize:"11px", color:C.silver, marginTop:"4px" }}>👤 {prefill.citizenLabel}</div>}
         </div>
       )}
 
       {/* Citizen ID */}
       <div style={{ marginBottom:"14px" }}>
         <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>Citizen / Business ID *</label>
-        <input value={form.citizenId} onChange={e=>setForm(f=>({...f,citizenId:e.target.value}))} placeholder="e.g. CITIZEN-WS-001" style={inStyle} />
-        {form.citizenId && <div style={{ fontSize:"10px", color:C.muted, marginTop:"4px", fontFamily:F.mono }}>On-chain hash: {ethers.keccak256(ethers.toUtf8Bytes(form.citizenId.trim())).slice(0,22)}…</div>}
+        {(form.citizenId?.startsWith("0x") && form.citizenId?.length === 66) ? (
+          <div style={{ ...inStyle, background:C.abyss+"88", color:C.seafoam, fontFamily:F.mono, fontSize:"12px" }}>
+            {form.citizenId.slice(0,22)}…{form.citizenId.slice(-6)}
+            <div style={{ fontSize:"10px", color:C.muted, marginTop:"4px", fontFamily:F.ui }}>Pre-hashed citizen identity from chain — submitted directly</div>
+          </div>
+        ) : (
+          <>
+            <input value={form.citizenId} onChange={e=>setForm(f=>({...f,citizenId:e.target.value}))} placeholder="e.g. CITIZEN-WS-001" style={inStyle} />
+            {form.citizenId && <div style={{ fontSize:"10px", color:C.muted, marginTop:"4px", fontFamily:F.mono }}>On-chain hash: {ethers.keccak256(ethers.toUtf8Bytes(form.citizenId.trim())).slice(0,22)}…</div>}
+          </>
+        )}
       </div>
 
       {/* Service type */}
@@ -1035,7 +1049,8 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
 
   const handlePendingAction = (action) => {
     setPrefill({
-      citizenId:    action.citizenHash,
+      citizenId:    action.citizenHash,  // raw bytes32 — detected and used directly on submit
+      citizenLabel: `Citizen ${short(action.citizenHash)} · from ${action.prevStep.ministry} ${action.prevStep.label}`,
       serviceType:  action.step.serviceType,
       evidenceNote: `Cross-ministry workflow step. Prev step: "${action.prevStep.label}" completed by ${action.prevStep.ministry}. Workflow: ${action.wfName}.`,
       amount: "", fee: "",

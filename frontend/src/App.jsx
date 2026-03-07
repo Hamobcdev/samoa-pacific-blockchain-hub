@@ -29,9 +29,9 @@
 import { useState, useEffect, useRef } from "react";
 import { ethers } from "ethers";
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // NETWORK CONFIG
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 const CONFIG = {
   RPC_URL: "http://127.0.0.1:8545",   // Anvil local
   NETWORK: "Anvil Local",
@@ -45,9 +45,9 @@ function getSigner(provider) {
   return new ethers.Wallet(DEPLOYER_KEY, provider);
 }
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // CONTRACT ADDRESSES — deterministic Anvil
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 const ADDR = {
   NDIDS:     "0x5FbDB2315678afecb367f032d93F642f64180aa3",
   AID:       "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
@@ -60,9 +60,9 @@ const ADDR = {
   CUSTOMS:   "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
 };
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // ABIs
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 const ABI = {
   NDIDS: [
     "function totalRegistered() view returns (uint256)",
@@ -102,9 +102,9 @@ const ABI = {
   ],
 };
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // DESIGN SYSTEM
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 const C = {
   abyss: "#070D1A", deep: "#0B1628", navy: "#0F2044", ocean: "#163258",
   wave: "#1B4A7A", coral: "#E8552A", gold: "#C9920E", seafoam: "#0FB894",
@@ -126,9 +126,9 @@ const card  = (x={}) => ({ background:C.navy, border:`1px solid ${C.ocean}`, bor
 const badge = (c)    => ({ display:"inline-flex", alignItems:"center", gap:"5px", background:c+"22", color:c, border:`1px solid ${c}44`, borderRadius:"20px", padding:"2px 10px", fontSize:"10px", fontWeight:700, fontFamily:F.ui, letterSpacing:"0.8px", textTransform:"uppercase" });
 const btn   = (v="primary") => ({ display:"inline-flex", alignItems:"center", gap:"6px", background:v==="primary"?C.coral:v==="success"?C.seafoam:v==="amber"?C.amber:"transparent", color:v==="ghost"?C.silver:C.white, border:v==="ghost"?`1px solid ${C.ocean}`:"none", borderRadius:"8px", padding:"9px 18px", fontSize:"13px", fontWeight:700, fontFamily:F.ui, cursor:"pointer" });
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // MINISTRY METADATA
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 const MINISTRY_META = {
   CBS:       { icon:"🏦", color:"#1B6CA8", name:"Central Bank of Samoa" },
   MCIT:      { icon:"💻", color:"#2E8B57", name:"Ministry of Communications & IT" },
@@ -143,9 +143,9 @@ const MINISTRY_ADDRS = {
   MCIL:ADDR.MCIL, EDUCATION:ADDR.EDUCATION, CUSTOMS:ADDR.CUSTOMS,
 };
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // SERVICE TYPES PER MINISTRY
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 const SERVICE_TYPES = {
   EDUCATION: [
     { value:"SCHOOL_ENROLMENT_2025",   label:"School Enrolment",          desc:"Child enrolled in school — identity verified via NDIDS" },
@@ -206,11 +206,11 @@ function serviceDesc(code) {
   return "";
 }
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // WORKFLOW ENGINE
 // 6 end-to-end workflows defined as ordered step arrays
 // Each step: { ministry, serviceType, label, fee }
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 const WORKFLOW_DEFS = {
   "EDU-BENEFIT": {
     name: "Education Benefit & UNICEF Grant",
@@ -290,7 +290,7 @@ Object.entries(WORKFLOW_DEFS).forEach(([wfId, wf]) => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // NDIDS VERIFICATION POLICY
 // Derived from Deploy.s.sol grantReadAccess assignments.
 // Each ministry only has NDIDS access to its OWN sector's citizens.
@@ -299,7 +299,7 @@ Object.entries(WORKFLOW_DEFS).forEach(([wfId, wf]) => {
 //
 // Rule: true  = this ministry CAN verify this serviceType via NDIDS
 //       false = payment/processing step — identity already verified upstream
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 const NDIDS_POLICY = {
   // EDUCATION — owns edu citizens, verifies all its own service types
   EDUCATION: {
@@ -361,9 +361,9 @@ function shouldVerifyNDIDS(ministryCode, serviceType) {
   return policy[serviceType];
 }
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // LEGACY WORKFLOW DEFINITIONS (v7 — kept for ReceiptCard compatibility)
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 const WORKFLOWS = {
   SCHOOL_ENROLMENT_2025:          { workflowName:"Education Benefit & UNICEF Grant", workflowId:"EDU-BENEFIT",   step:1, totalSteps:4, owner:"EDUCATION", stepLabel:"Step 1 of 4 — Enrolment Recorded",         nextStep:{ ministry:"MOF",       action:"Approve school fee benefit",        serviceType:"EDUCATION_BENEFIT_ELIGIBLE_2025" }, prevSteps:[],                                                                                  receipt:{ label:"Enrolment Reference",             prefix:"EDU"       }, notice:"MOF will see this in their Pending Actions and must approve the benefit payment." },
   EDUCATION_BENEFIT_ELIGIBLE_2025:{ workflowName:"Education Benefit & UNICEF Grant", workflowId:"EDU-BENEFIT",   step:2, totalSteps:4, owner:"MOF",       stepLabel:"Step 2 of 4 — Benefit Approved by MOF",    nextStep:{ ministry:"CBS",       action:"Process benefit payment to family", serviceType:"DIGITAL_PAYMENT_RECORDED"         }, prevSteps:[{ ministry:"EDUCATION", label:"Enrolment recorded"          }],  receipt:{ label:"Benefit Approval Reference",      prefix:"MOF-BEN"   }, notice:"CBS must now process the payment. Amount and CBS ref required." },
@@ -398,9 +398,9 @@ const WORKFLOWS = {
   BOND_WAREHOUSE_RECORD: { workflowName:"Bond Warehouse",    workflowId:"CST-BOND",   step:1, totalSteps:1, owner:"CUSTOMS",   stepLabel:"Standalone", nextStep:null, prevSteps:[], receipt:{ label:"Warehouse Reference",   prefix:"CST-BOND" }, notice:"Bond warehouse entry recorded on chain." },
 };
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // FALLBACK MOCK DATA
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 const MOCK = {
   totalRegistered:25, totalDisbursed:70000, totalVerified:30000, totalGrants:1, ministryCount:6,
   grant:{ id:0, title:"UNICEF Samoa Education Access Programme 2025", donor:"UNICEF Pacific", recipient:"Ministry of Education", totalAmount:100000, releasedAmount:70000, verifiedAmount:30000, status:0, targetBeneficiaries:50, actualBeneficiaries:23, sector:"EDUCATION" },
@@ -422,9 +422,9 @@ const MOCK = {
   ],
 };
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // HELPERS
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 function generateRef(txHash, prefix) {
   if (!txHash) return `${prefix}-PENDING`;
   const short = txHash.slice(2, 10).toUpperCase();
@@ -448,9 +448,9 @@ function officerHashFor(officerId) {
   return ethers.keccak256(ethers.toUtf8Bytes(`OFFICER:${officerId}:${DEPLOYER_KEY.slice(2,10)}`));
 }
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // CROSS-MINISTRY WORKFLOW ENGINE
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 
 // Detect pending actions: for a given ministry, which workflow steps are
 // ready (prev step complete on chain) but not yet done by this ministry?
@@ -500,9 +500,9 @@ function getActiveWorkflows(ministryCode, allRecords) {
   }).filter(w => w.citizens.length > 0);
 }
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // SHARED UI COMPONENTS
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 function Mono({ children, color }) {
   return <span style={{ fontFamily:F.mono, fontSize:"11px", color:color||C.seafoam, background:C.seafoam+"14", padding:"2px 7px", borderRadius:"4px" }}>{children}</span>;
 }
@@ -607,10 +607,10 @@ function WfBar({ wfId, stepsCompleted }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // ENHANCED RECEIPT CARD — v8
 // Shows reference number, officer hash, amount/fee, all steps, print/download
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 function WorkflowProgress({ wf, currentStep }) {
   if (!wf || wf.totalSteps <= 1) return null;
   return (
@@ -784,9 +784,9 @@ function ReceiptCard({ txHash, citizenId, serviceType, evidenceNote, timestamp, 
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // ETHERS HOOKS
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 function useProvider() {
   const [provider,  setProvider]  = useState(null);
   const [connected, setConnected] = useState(false);
@@ -855,9 +855,9 @@ async function fetchAllRecords(provider) {
   return all;
 }
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // RECORDS TAB — shared by all ministry dashboards (v7 preserved)
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 function RecordsTab({ records, totalRecords, loading, connected, ministry }) {
   const [search,   setSearch]   = useState("");
   const [filterWf, setFilterWf] = useState("all");
@@ -938,9 +938,9 @@ function RecordsTab({ records, totalRecords, loading, connected, ministry }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // RECORD SERVICE TAB — submits to chain via ethers.js
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefill }) {
   const meta         = MINISTRY_META[ministryCode];
   const addr         = MINISTRY_ADDRS[ministryCode];
@@ -1113,9 +1113,9 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // MINISTRY DASHBOARD — v8: 4 tabs per ministry
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onBack, allRecords, allLoading }) {
   const meta    = MINISTRY_META[ministryCode];
   const addr    = MINISTRY_ADDRS[ministryCode];
@@ -1314,9 +1314,9 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // UNICEF DONOR DASHBOARD — v7 preserved + v8 verifyUsage/releaseTranche
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords, allLoading }) {
   const [tab, setTab] = useState("overview");
   const aidContract = useContract(ADDR.AID, ABI.AID, provider);
@@ -1681,9 +1681,9 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // HUB DASHBOARD — overview of all ministries + workflows (v7 preserved)
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 function HubDashboard({ provider, connected, blockNumber, onBack, allRecords, allLoading, onSelectMinistry }) {
   const [tab, setTab] = useState("ministries");
   const hubContract = useContract(ADDR.HUB, ABI.HUB, provider);
@@ -1822,9 +1822,9 @@ function HubDashboard({ provider, connected, blockNumber, onBack, allRecords, al
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // HOME — landing page with all ministry cards + entry points
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 function Home({ provider, connected, blockNumber, allRecords, allLoading, onSelect }) {
   const regCount = MOCK.totalRegistered;
 
@@ -1944,11 +1944,11 @@ function Home({ provider, connected, blockNumber, allRecords, allLoading, onSele
 }
 
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // COMMUNITY DASHBOARD — Path A (uses existing AIDisbursementTracker)
 // 4 role views: Donor · Project Manager · Matai/Leadership · Community
 // Real-time project intelligence: KPIs, expenditure tracking, flags
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 
 const COMMUNITY_PROJECTS = [
   {
@@ -2005,7 +2005,7 @@ const EXP_CATEGORIES = {
 const COMMUNITY_ROLES = {
   donor:  { label:"Donor View",         icon:"🌐", color:"#C9920E", desc:"Real-time project intelligence & KPI dashboard" },
   pm:     { label:"Project Manager",    icon:"📋", color:"#0FB894", desc:"Submit evidence, log expenditures, upload receipts" },
-  matai:  { label:"Matai / Leadership", icon:"🏛️",  color:"#4A9EE0", desc:"Approve expenditures, community governance" },
+  matai:  { label:"Matai / Leadership", icon:"🏛",  color:"#4A9EE0", desc:"Approve expenditures, community governance" },
   public: { label:"Community / Public", icon:"👥", color:"#9EB3CC", desc:"Transparent view — money in vs money spent" },
 };
 
@@ -2150,7 +2150,7 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack }) {
       { id:"receipts",   icon:"🧾", label:"Receipts", badge:approved.length||null },
     ],
     matai:  [
-      { id:"overview",  icon:"🏛️",  label:"Account"           },
+      { id:"overview",  icon:"🏛",  label:"Account"           },
       { id:"approve",   icon:"✅", label:"Approvals", badge:pending.length||null },
       { id:"spending",  icon:"📊", label:"Spending"           },
     ],
@@ -2230,7 +2230,7 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack }) {
               {activityLog.slice(0,6).map((ev,i)=>(
                 <div key={i} style={{ display:"flex", gap:"12px", padding:"10px 0", borderBottom:i<5?`1px solid ${C.ocean}`:"none", alignItems:"flex-start" }}>
                   <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:ev.actor==="CHAIN"?C.seafoam+"22":ev.actor==="MATAI"?"#4A9EE0"+"22":C.amber+"22", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px", flexShrink:0 }}>
-                    {ev.actor==="CHAIN"?"⛓️":ev.actor==="MATAI"?"🏛️":"📋"}
+                    {ev.actor==="CHAIN"?"⛓":ev.actor==="MATAI"?"🏛":"📋"}
                   </div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:"12px", color:C.silver }}>{ev.action}</div>
@@ -2374,7 +2374,7 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack }) {
               {activityLog.map((ev,i)=>(
                 <div key={i} style={{ display:"flex", gap:"14px", padding:"14px 0", borderBottom:i<activityLog.length-1?`1px solid ${C.ocean}`:"none" }}>
                   <div style={{ width:"36px", height:"36px", borderRadius:"50%", background:ev.actor==="CHAIN"?C.seafoam+"22":ev.actor==="MATAI"?"#4A9EE0"+"22":C.amber+"22", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0 }}>
-                    {ev.actor==="CHAIN"?"⛓️":ev.actor==="MATAI"?"🏛️":"📋"}
+                    {ev.actor==="CHAIN"?"⛓":ev.actor==="MATAI"?"🏛":"📋"}
                   </div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:"13px", color:C.silver }}>{ev.action}</div>
@@ -2599,7 +2599,7 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack }) {
             <SectionHead title="🌱 Community Impact" sub="What this project means for the village" />
             <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"12px", marginBottom:"20px" }}>
               <StatPill icon="🏠" value="23"   label="Households with biogas"      color={C.seafoam} />
-              <StatPill icon="👨‍👩‍👧" value="~115" label="Community members benefiting" color="#4A9EE0"   />
+              <StatPill icon="🏘" value="~115" label="Community members benefiting" color="#4A9EE0"   />
               <StatPill icon="⛽" value="60%"  label="Reduction in fuel costs"     color={C.gold}    />
             </div>
             <div style={{ ...card({ background:C.seafoam+"0A", borderColor:C.seafoam+"33" }), marginBottom:"16px" }}>
@@ -2613,10 +2613,14 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack }) {
           </>
         )}
 
+      </div>
+    </div>
+  );
+}
 
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 // ROOT APP
-// ═══════════════════════════════════════════════════════════════════════
+// ---
 export default function App() {
   const { provider, connected, error } = useProvider();
   const [view,        setView]        = useState("home");

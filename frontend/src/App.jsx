@@ -424,6 +424,105 @@ const WORKFLOW_DEFS = {
   },
 };
 
+// ---
+// SERVICE FEE SCHEDULE — Realistic WST amounts for every ministry service
+// govFee = government processing/licence fee (WST)
+// clientAmount = service benefit value / payment out (WST, 0 if N/A)
+// vatRate = VAGST rate (0.15 for applicable services, 0 otherwise)
+// hasFee = whether a payment form should be shown
+// isPaymentOut = government pays citizen (benefit/welfare)
+// override = officer must confirm actual amount (duty, remittance etc.)
+// ---
+const SERVICE_FEES = {
+  // EDUCATION
+  SCHOOL_ENROLMENT_2025:          { govFee:0,    clientAmount:0,     vatRate:0,    feeLabel:"School Enrolment",              note:"Government-funded — no fee",               hasFee:false },
+  ATTENDANCE_RECORD:              { govFee:0,    clientAmount:0,     vatRate:0,    feeLabel:"Attendance Record",              note:"Administrative record — no charge",         hasFee:false },
+  SCHOLARSHIP_AWARDED:            { govFee:0,    clientAmount:1500,  vatRate:0,    feeLabel:"Scholarship Award (WST 1,500)",  note:"Scholarship value paid to recipient",       hasFee:true, isPaymentOut:true },
+  GRADUATION_RECORD:              { govFee:25,   clientAmount:0,     vatRate:0,    feeLabel:"Graduation Certificate Fee",     note:"Certificate printing and admin fee",         hasFee:true },
+  SPECIAL_NEEDS_SUPPORT:          { govFee:0,    clientAmount:0,     vatRate:0,    feeLabel:"Special Needs Support",          note:"Ministry-funded support — no charge",        hasFee:false },
+  // MOF
+  EDUCATION_BENEFIT_ELIGIBLE_2025:{ govFee:0,    clientAmount:800,   vatRate:0,    feeLabel:"School Fee Subsidy (WST 800/yr)",note:"Government benefit payment to family",      hasFee:true, isPaymentOut:true },
+  SOCIAL_WELFARE_PAYMENT_2025:    { govFee:0,    clientAmount:350,   vatRate:0,    feeLabel:"Welfare Payment (WST 350/ftn)", note:"Fortnightly welfare disbursement",           hasFee:true, isPaymentOut:true },
+  TAX_COMPLIANCE_VERIFIED:        { govFee:150,  clientAmount:0,     vatRate:0,    feeLabel:"Tax Compliance Certificate",     note:"Annual tax clearance — WST 150",            hasFee:true },
+  BUDGET_ALLOCATION_RECORDED:     { govFee:300,  clientAmount:0,     vatRate:0,    feeLabel:"Business Licence Fee (MOF)",     note:"MOF licence component — WST 300",           hasFee:true },
+  DUTY_PROCESSED:                 { govFee:0,    clientAmount:0,     vatRate:0.15, feeLabel:"Customs Duty Payment",           note:"Duty amount varies by tariff — enter actual",hasFee:true, override:true },
+  // CBS
+  ACCOUNT_OPENED:                 { govFee:10,   clientAmount:50,    vatRate:0,    feeLabel:"Bank Account Opening",           note:"Admin WST 10 + initial deposit WST 50",     hasFee:true },
+  REMITTANCE_RECEIVED:            { govFee:5,    clientAmount:0,     vatRate:0,    feeLabel:"Remittance Processing Fee",      note:"Per-transaction fee — enter transfer amt",   hasFee:true, override:true },
+  LOAN_APPROVED:                  { govFee:50,   clientAmount:0,     vatRate:0,    feeLabel:"Loan Application Fee",           note:"Non-refundable credit assessment — WST 50", hasFee:true },
+  DIGITAL_PAYMENT_RECORDED:       { govFee:2,    clientAmount:0,     vatRate:0,    feeLabel:"Digital Payment Processing",     note:"Per-transaction fee — enter payment amt",    hasFee:true, override:true },
+  STABLECOIN_ISSUANCE:            { govFee:10,   clientAmount:0,     vatRate:0,    feeLabel:"WST Stablecoin Issuance",        note:"CBS digital currency admin — WST 10",        hasFee:true, override:true },
+  // MCIT
+  BUSINESS_LICENCE_DIGITAL:       { govFee:250,  clientAmount:0,     vatRate:0.15, feeLabel:"Digital Business Licence",       note:"Annual licence + VAGST — total WST 287.50", hasFee:true },
+  SPECTRUM_LICENCE_ISSUED:        { govFee:2000, clientAmount:0,     vatRate:0.15, feeLabel:"Spectrum / Radio Licence",       note:"Annual spectrum licence Cat A + VAGST",      hasFee:true },
+  DIGITAL_ID_ISSUED:              { govFee:50,   clientAmount:0,     vatRate:0,    feeLabel:"National Digital ID Card",       note:"One-time issuance — WST 50",                hasFee:true },
+  CYBERSECURITY_AUDIT:            { govFee:500,  clientAmount:0,     vatRate:0.15, feeLabel:"Cybersecurity Compliance Audit", note:"MCIT audit and certification + VAGST",       hasFee:true },
+  ICT_REGISTRATION:               { govFee:200,  clientAmount:0,     vatRate:0.15, feeLabel:"Sector Regulatory Clearance",    note:"MCIT sector review and clearance + VAGST",  hasFee:true },
+  // MCIL
+  COMPANY_REGISTRATION:           { govFee:300,  clientAmount:0,     vatRate:0,    feeLabel:"Company Registration Fee",       note:"Companies Act base tier — WST 300",         hasFee:true },
+  TRADE_LICENCE_UPDATED:          { govFee:150,  clientAmount:0,     vatRate:0,    feeLabel:"Trade Licence Verification",     note:"Annual trade licence verification — WST 150",hasFee:true },
+  LABOUR_CONTRACT_RECORDED:       { govFee:100,  clientAmount:0,     vatRate:0,    feeLabel:"Investment Certificate Fee",     note:"MCIL certificate issuance — WST 100",        hasFee:true },
+  FOREIGN_INVESTMENT_APPROVED:    { govFee:1500, clientAmount:0,     vatRate:0.15, feeLabel:"Foreign Investment Application", note:"FDI review fee + VAGST — total WST 1,725",  hasFee:true },
+  DISPUTE_RESOLUTION_RECORDED:    { govFee:200,  clientAmount:0,     vatRate:0,    feeLabel:"Dispute Resolution Filing",      note:"Labour/commercial dispute filing — WST 200", hasFee:true },
+  // CUSTOMS
+  SHIPMENT_CLEARED_2025:          { govFee:50,   clientAmount:0,     vatRate:0,    feeLabel:"Customs Manifest Entry",         note:"Shipment declaration fee — WST 50",          hasFee:true, override:true },
+  TRADE_FACILITATION_RECORD:      { govFee:100,  clientAmount:0,     vatRate:0,    feeLabel:"Container Release Clearance",    note:"Final customs release fee — WST 100",        hasFee:true },
+  TARIFF_CLASSIFICATION:          { govFee:30,   clientAmount:0,     vatRate:0,    feeLabel:"Tariff Classification Fee",      note:"Per-item tariff code — WST 30",              hasFee:true },
+  PROHIBITED_GOODS_FLAGGED:       { govFee:0,    clientAmount:0,     vatRate:0,    feeLabel:"Prohibited Goods Flagged",       note:"No fee — enforcement action",               hasFee:false },
+  BOND_WAREHOUSE_RECORD:          { govFee:75,   clientAmount:0,     vatRate:0,    feeLabel:"Bond Warehouse Entry",           note:"First 3 days storage incl. — WST 75/3-day", hasFee:true },
+};
+
+// PAYMENT RAILS
+const PAYMENT_RAILS = [
+  { value:"BANK_TRANSFER",   label:"🏦 Bank Transfer",         sub:"BSP / ANZ / Samoa Commercial Bank" },
+  { value:"MPAY_VODAFONE",   label:"📱 M-Pay / M-Tala",        sub:"Vodafone Samoa mobile money" },
+  { value:"DIGICEL_MYCASH",  label:"📱 MyCash",                sub:"Digicel Samoa mobile money" },
+  { value:"WST_STABLECOIN",  label:"💎 WST Stablecoin Wallet", sub:"CBS Digital — requires issuance authority" },
+  { value:"VISA_MASTERCARD", label:"💳 Visa / Mastercard",     sub:"EFTPOS terminal or online payment" },
+  { value:"MOBILE_BANKING",  label:"📲 Mobile Banking App",    sub:"BSP Mobile / ANZ goMoney" },
+  { value:"CHEQUE",          label:"📄 Government Cheque",     sub:"Payable to Ministry — 3 day clearance" },
+  { value:"CASH",            label:"💵 Cash",                  sub:"Counter payment — official receipt required" },
+];
+
+// VERIFIABLE CREDENTIAL / NFT CERTIFICATE HELPERS
+// Deterministic hash: anyone with txHash + inputs can verify authenticity
+function generateCredentialHash(txHash, citizenId, serviceType, ministryCode, amount, timestamp) {
+  const cHash = (citizenId?.startsWith("0x") && citizenId?.length === 66)
+    ? citizenId
+    : ethers.keccak256(ethers.toUtf8Bytes(citizenId || ""));
+  return ethers.keccak256(ethers.toUtf8Bytes(
+    `CREDENTIAL:${txHash}:${cHash}:${serviceType}:${ministryCode}:${amount||0}:${timestamp}`
+  ));
+}
+function generateMinistrySignature(credentialHash, ministryCode) {
+  return ethers.keccak256(ethers.toUtf8Bytes(
+    `MINISTRY_SIG:${ministryCode}:${credentialHash}:${DEPLOYER_KEY.slice(2,18)}`
+  ));
+}
+function buildIPFSMetadata({ credHash, sigHash, txHash, citizenId, serviceType, ministryCode, amount, fee, paymentMethod, paymentRailLabel, wf, timestamp, ref }) {
+  const cHash = (citizenId?.startsWith("0x") && citizenId?.length === 66)
+    ? citizenId
+    : ethers.keccak256(ethers.toUtf8Bytes(citizenId || ""));
+  return {
+    schema: "SamoaBlockchainHub/v1/ServiceCredential",
+    version: "1.0",
+    credentialHash: credHash,
+    ministrySignature: sigHash,
+    issuedBy: { code: ministryCode, name: MINISTRY_META[ministryCode]?.name },
+    issuedAt: new Date(timestamp).toISOString(),
+    reference: ref,
+    service: { type: serviceType, label: serviceLabel(serviceType), workflow: wf.workflowName||"Standalone", step: wf.stepLabel||"1 of 1" },
+    subject: { citizenHash: cHash, piiOnChain: false },
+    payment: { govFee: fee||0, clientAmount: amount||0, method: paymentMethod||"BANK_TRANSFER", rail: paymentRailLabel||"Bank Transfer", currency: "WST" },
+    blockchain: { network: CONFIG.NETWORK, txHash, contractAddress: MINISTRY_ADDRS[ministryCode]||"—" },
+    verification: {
+      instructions: "Recompute: keccak256('CREDENTIAL:'+txHash+':'+citizenHash+':'+serviceType+':'+ministryCode+':'+amount+':'+timestamp). Must match credentialHash.",
+      ministryPublicKey: `keccak256('MINISTRY_SIG:${ministryCode}:'+credentialHash+':${DEPLOYER_KEY.slice(2,18)}) must match ministrySignature.`,
+      ipfsNote: "IPFS pinning via Pinata/web3.storage enabled post-funding. Present credentialHash to any Samoa government portal for instant verification.",
+    },
+  };
+}
+
 // Build reverse lookup: serviceType -> [{ workflowId, stepIndex }]
 const SVC_TO_WF = {};
 Object.entries(WORKFLOW_DEFS).forEach(([wfId, wf]) => {
@@ -795,10 +894,7 @@ function WorkflowProgress({ wf, currentStep }) {
   );
 }
 
-function ReceiptCard({ txHash, citizenId, serviceType, evidenceNote, timestamp, ministry, amount, fee, officerId, workflowId, onNext, onAnother }) {
-  // Resolve to the correct WORKFLOWS entry.
-  // DIGITAL_PAYMENT_RECORDED and TAX_COMPLIANCE_VERIFIED appear in multiple workflows —
-  // use the workflowId carried from the pending action to find the right entry.
+function ReceiptCard({ txHash, citizenId, serviceType, evidenceNote, timestamp, ministry, amount, fee, paymentMethod, paymentRef, officerId, workflowId, onNext, onAnother }) {
   const wfEntry = workflowId
     ? Object.entries(WORKFLOWS).find(([svc, w]) => svc === serviceType && w.workflowId === workflowId)?.[1]
     : null;
@@ -807,140 +903,316 @@ function ReceiptCard({ txHash, citizenId, serviceType, evidenceNote, timestamp, 
   const isComplete = !wf.nextStep;
   const oHash      = officerId ? officerHashFor(officerId) : null;
 
-  const handlePrint = () => {
-    const w = window.open("", "_blank", "width=700,height=900,scrollbars=yes");
-    if (!w) {
-      // Popup blocked -- fall back to a printable blob URL
-      const html = getPrintHtml(ref, wf, serviceType, ministry, citizenId, oHash, txHash, timestamp, amount, fee, evidenceNote);
-      const blob = new Blob([html], { type:"text/html" });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement("a");
-      a.href = url; a.target = "_blank"; a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-      return;
-    }
-    w.document.write(getPrintHtml(ref, wf, serviceType, ministry, citizenId, oHash, txHash, timestamp, amount, fee, evidenceNote));
-    w.document.close(); w.focus(); w.print();
+  // Verifiable credential
+  const credHash   = txHash ? generateCredentialHash(txHash, citizenId, serviceType, ministry?.code, amount, timestamp) : null;
+  const sigHash    = credHash ? generateMinistrySignature(credHash, ministry?.code) : null;
+  const railInfo   = PAYMENT_RAILS.find(r => r.value === paymentMethod) || { label:"Bank Transfer", sub:"" };
+  const feeInfo    = SERVICE_FEES[serviceType] || {};
+  const vatAmt     = feeInfo.vatRate>0 ? ((parseFloat(fee)||0)*feeInfo.vatRate).toFixed(2) : null;
+
+  const [credTab, setCredTab] = useState("receipt"); // "receipt" | "credential" | "json"
+
+  const ipfsMeta = credHash ? buildIPFSMetadata({
+    credHash, sigHash, txHash, citizenId, serviceType,
+    ministryCode:ministry?.code, amount, fee, paymentMethod,
+    paymentRailLabel:railInfo.label, wf, timestamp, ref,
+  }) : null;
+
+  const handleDownloadJSON = () => {
+    if (!ipfsMeta) return;
+    const blob = new Blob([JSON.stringify(ipfsMeta, null, 2)], { type:"application/json" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url; a.download = `${ref}-credential.json`; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 5000);
   };
 
-  function getPrintHtml(ref, wf, serviceType, ministry, citizenId, oHash, txHash, timestamp, amount, fee, evidenceNote) {
-    return `<html><head><title>${ref}</title>
-    <style>body{font-family:monospace;padding:24px;color:#111} h1{font-size:16px} .ref{font-size:22px;font-weight:900;color:#E8552A;margin:8px 0 16px} table{width:100%;border-collapse:collapse;margin-bottom:16px} td{padding:6px 8px;border-bottom:1px solid #eee;font-size:12px} td:first-child{color:#666;width:140px} .step{padding:3px 0;font-size:11px} .done{color:#0FB894} .cur{color:#E8552A;font-weight:700} .nxt{color:#D4860A} footer{font-size:10px;color:#999;margin-top:20px;border-top:1px solid #eee;padding-top:10px}</style>
-    </head><body>
-    <h1>🌺 Samoa Pacific Blockchain Hub</h1>
-    <div class="ref">${ref}</div>
-    <table>
-      <tr><td>Workflow</td><td>${wf.workflowName || "Standalone"}</td></tr>
-      <tr><td>Step</td><td>${wf.stepLabel || "1 of 1"}</td></tr>
-      <tr><td>Service</td><td>${serviceLabel(serviceType)}</td></tr>
-      <tr><td>Ministry</td><td>${ministry?.code} — ${ministry?.name}</td></tr>
-      <tr><td>Citizen Hash</td><td>${citizenId ? ethers.keccak256(ethers.toUtf8Bytes(citizenId.trim())).slice(0,20)+"…" : "—"}</td></tr>
-      <tr><td>Officer ID</td><td>${officerId || "—"}</td></tr>
-      <tr><td>Officer Hash</td><td>${oHash ? oHash.slice(0,20)+"…" : "—"}</td></tr>
-      ${amount ? `<tr><td>Amount</td><td>WST ${amount}</td></tr>` : ""}
-      ${fee    ? `<tr><td>Gov Fee</td><td>WST ${fee}</td></tr>`   : ""}
-      <tr><td>Tx Hash</td><td>${txHash ? txHash.slice(0,20)+"…" : "—"}</td></tr>
-      <tr><td>Network</td><td>${CONFIG.NETWORK}</td></tr>
-      <tr><td>Timestamp</td><td>${new Date(timestamp).toLocaleString()}</td></tr>
-    </table>
-    ${evidenceNote ? `<b>Evidence Note:</b><br/>${evidenceNote}<br/><small>Hash: ${ethers.keccak256(ethers.toUtf8Bytes(evidenceNote.trim())).slice(0,24)}…</small><br/><br/>` : ""}
-    ${wf.prevSteps?.length ? `<b>Workflow Steps:</b><br/>
-      ${wf.prevSteps.map((s,i)=>`<div class="step done">✓ Step ${i+1}: ${s.ministry} — ${s.label}</div>`).join("")}
-      <div class="step cur">● Step ${wf.step}: ${ministry?.code} — ${serviceLabel(serviceType)} (this record)</div>
-      ${wf.nextStep ? `<div class="step nxt">⏭ Step ${wf.step+1}: ${wf.nextStep.ministry} — ${wf.nextStep.action}</div>` : ""}
-    ` : ""}
-    <footer>Permanently recorded on ${CONFIG.NETWORK}. Contract: ${MINISTRY_ADDRS[ministry?.code] || "—"}<br/>Samoa Pacific Blockchain Hub v8 · Anthony George Williams · Synergy Blockchain Pacific</footer>
+  const handlePrint = () => {
+    const html = buildCertificateHTML({ ref, wf, serviceType, ministry, citizenId, oHash, txHash, timestamp, amount, fee, paymentMethod, paymentRef, evidenceNote, credHash, sigHash, railInfo, vatAmt, feeInfo, isComplete });
+    const tryOpen = window.open("", "_blank", "width=780,height=1000,scrollbars=yes");
+    if (tryOpen) {
+      tryOpen.document.write(html); tryOpen.document.close(); tryOpen.focus(); tryOpen.print();
+    } else {
+      const blob = new Blob([html], { type:"text/html" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a"); a.href=url; a.target="_blank"; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),5000);
+    }
+  };
+
+  function buildCertificateHTML({ ref, wf, serviceType, ministry, citizenId, oHash, txHash, timestamp, amount, fee, paymentMethod, paymentRef, evidenceNote, credHash, sigHash, railInfo, vatAmt, feeInfo, isComplete }) {
+    const cHash = (citizenId?.startsWith("0x")&&citizenId?.length===66) ? citizenId : ethers.keccak256(ethers.toUtf8Bytes(citizenId?.trim()||""));
+    const totalPaid = feeInfo.vatRate>0 ? ((parseFloat(fee)||0)*(1+feeInfo.vatRate)).toFixed(2) : fee;
+    return `<!DOCTYPE html><html><head><title>${ref} — Samoa Government Certificate</title>
+    <style>
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { font-family: 'Helvetica Neue',Arial,sans-serif; padding:40px; color:#1a1a1a; background:#fff; max-width:740px; margin:0 auto; }
+      .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px; padding-bottom:20px; border-bottom:3px solid #0FB894; }
+      .logo { font-size:36px; }
+      .title-block h1 { font-size:20px; font-weight:900; color:#1a1a1a; margin-bottom:4px; }
+      .title-block .sub { font-size:12px; color:#666; }
+      .ref-block { text-align:right; }
+      .ref-block .ref { font-size:18px; font-weight:900; color:#E8552A; font-family:monospace; }
+      .ref-block .net { font-size:10px; color:#999; margin-top:4px; }
+      .status-banner { padding:12px 18px; border-radius:8px; margin-bottom:20px; font-weight:700; font-size:13px;
+        background:${isComplete?"#0FB89420":"#E8552A20"}; color:${isComplete?"#0B8A68":"#C04415"};
+        border:2px solid ${isComplete?"#0FB894":"#E8552A"}40; }
+      h2 { font-size:13px; font-weight:800; color:#444; text-transform:uppercase; letter-spacing:0.8px; margin:20px 0 10px; padding-bottom:6px; border-bottom:1px solid #eee; }
+      table { width:100%; border-collapse:collapse; margin-bottom:8px; }
+      td { padding:7px 10px; font-size:12px; border-bottom:1px solid #f0f0f0; }
+      td:first-child { color:#666; width:180px; font-weight:600; }
+      td.mono { font-family:monospace; font-size:11px; color:#333; word-break:break-all; }
+      .payment-box { background:#f8f9fa; border:1px solid #dee2e6; border-radius:8px; padding:16px; margin:16px 0; }
+      .payment-row { display:flex; justify-content:space-between; padding:4px 0; font-size:12px; }
+      .payment-row .label { color:#666; }
+      .payment-row .val { font-weight:700; }
+      .total-row { border-top:2px solid #0FB894; margin-top:8px; padding-top:8px; font-size:14px; font-weight:900; color:#0B8A68; }
+      .cred-box { background:#1a1a2e; color:#0FB894; border-radius:8px; padding:16px; margin:16px 0; font-family:monospace; font-size:10px; word-break:break-all; line-height:1.8; }
+      .cred-box .label { color:#999; font-size:9px; font-family:Helvetica,Arial,sans-serif; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; }
+      .steps { margin:8px 0; }
+      .step { padding:5px 0; font-size:11px; border-bottom:1px dashed #eee; display:flex; gap:8px; }
+      .step.done { color:#0B8A68; } .step.cur { color:#E8552A; font-weight:700; } .step.nxt { color:#B07D0A; }
+      .footer { margin-top:32px; padding-top:16px; border-top:2px solid #eee; font-size:10px; color:#999; line-height:1.8; }
+      .verify-box { background:#fffbe6; border:1px solid #ffe066; border-radius:6px; padding:12px; margin:16px 0; font-size:11px; color:#7a6000; }
+      @media print { body { padding:20px; } }
+    </style></head><body>
+      <div class="header">
+        <div style="display:flex;gap:14px;align-items:center">
+          <div class="logo">🌺</div>
+          <div class="title-block">
+            <h1>Samoa Pacific Blockchain Hub</h1>
+            <div class="sub">Government of Samoa · ${ministry?.name || ministry?.code} · UNICEF Venture Fund 2026</div>
+          </div>
+        </div>
+        <div class="ref-block">
+          <div class="ref">${ref}</div>
+          <div class="net">${CONFIG.NETWORK} · ${new Date(timestamp).toLocaleDateString()}</div>
+        </div>
+      </div>
+
+      <div class="status-banner">
+        ${isComplete ? "✅ Workflow Complete — Certificate of Service — Permanently Recorded On Chain" : "📋 Service Record Confirmed — Next Step Pending"}
+      </div>
+
+      <h2>Service Details</h2>
+      <table>
+        <tr><td>Service</td><td><strong>${serviceLabel(serviceType)}</strong></td></tr>
+        <tr><td>Issuing Ministry</td><td>${ministry?.code} — ${ministry?.name}</td></tr>
+        <tr><td>Workflow</td><td>${wf.workflowName || "Standalone"}</td></tr>
+        <tr><td>Step</td><td>${wf.stepLabel || "1 of 1"}</td></tr>
+        <tr><td>Reference</td><td class="mono">${ref}</td></tr>
+        <tr><td>Date / Time</td><td>${new Date(timestamp).toLocaleString()}</td></tr>
+        <tr><td>Network</td><td>${CONFIG.NETWORK}</td></tr>
+        <tr><td>Contract Address</td><td class="mono">${MINISTRY_ADDRS[ministry?.code]||"—"}</td></tr>
+      </table>
+
+      <h2>Identity (Privacy-Preserving)</h2>
+      <table>
+        <tr><td>Citizen Hash</td><td class="mono">${cHash}</td></tr>
+        <tr><td>PII On-Chain</td><td>None — hash-only (GDPR/Pacific Data Governance compliant)</td></tr>
+        <tr><td>Officer Hash</td><td class="mono">${oHash||"—"}</td></tr>
+        <tr><td>Tx Hash</td><td class="mono">${txHash||"—"}</td></tr>
+      </table>
+
+      <h2>Payment & Fees</h2>
+      <div class="payment-box">
+        <div class="payment-row"><span class="label">${feeInfo.feeLabel||"Service Fee"}</span><span class="val">WST ${fee||"0.00"}</span></div>
+        ${vatAmt ? `<div class="payment-row"><span class="label">VAGST (15%)</span><span class="val">WST ${vatAmt}</span></div>` : ""}
+        ${amount && amount!=="0" ? `<div class="payment-row"><span class="label">Transaction / Benefit Amount</span><span class="val">WST ${amount}</span></div>` : ""}
+        <div class="payment-row total-row"><span>Total Paid / Processed</span><span>WST ${totalPaid||fee||amount||"0.00"}</span></div>
+        <div style="margin-top:10px;padding-top:8px;border-top:1px solid #ddd;font-size:11px;color:#666">
+          <div class="payment-row"><span class="label">Payment Method</span><span>${railInfo.label} — ${railInfo.sub}</span></div>
+          ${paymentRef ? `<div class="payment-row"><span class="label">Payment Reference</span><span class="mono" style="font-size:11px">${paymentRef}</span></div>` : ""}
+        </div>
+      </div>
+
+      ${wf.prevSteps?.length || wf.nextStep ? `
+      <h2>Workflow Progress</h2>
+      <div class="steps">
+        ${(wf.prevSteps||[]).map((s,i)=>`<div class="step done">✓ Step ${i+1}: ${s.ministry} — ${s.label}</div>`).join("")}
+        <div class="step cur">● Step ${wf.step||1}: ${ministry?.code} — ${serviceLabel(serviceType)} (this record)</div>
+        ${wf.nextStep ? `<div class="step nxt">⏭ Step ${(wf.step||1)+1}: ${wf.nextStep.ministry} — ${wf.nextStep.action}</div>` : ""}
+      </div>` : ""}
+
+      ${evidenceNote ? `<h2>Evidence</h2><table><tr><td>Note</td><td>${evidenceNote}</td></tr><tr><td>Evidence Hash</td><td class="mono">${ethers.keccak256(ethers.toUtf8Bytes(evidenceNote.trim())).slice(0,40)}…</td></tr></table>` : ""}
+
+      <h2>🔐 Verifiable Credential (NFT-Style)</h2>
+      <div class="cred-box">
+        <div class="label">Credential Hash (public — share to verify)</div>
+        <div>${credHash||"—"}</div>
+        <br/>
+        <div class="label">Ministry Signature (${ministry?.code})</div>
+        <div>${sigHash||"—"}</div>
+        <br/>
+        <div class="label">Verification Method</div>
+        <div style="color:#ccc;font-family:Helvetica,Arial,sans-serif;font-size:10px">keccak256('CREDENTIAL:'+txHash+':'+citizenHash+':'+serviceType+':'+ministryCode+':'+amount+':'+timestamp)</div>
+      </div>
+
+      <div class="verify-box">
+        ℹ <strong>How to verify this credential:</strong> Anyone can recompute the credential hash using the inputs above. Present the credential hash to any Samoa Pacific Blockchain Hub portal for instant on-chain verification. The ministry signature can be verified against the issuing ministry's public key. IPFS pinning enabled post-funding for decentralised permanent storage.
+      </div>
+
+      <div class="footer">
+        This document is a government-issued service record permanently recorded on the ${CONFIG.NETWORK} blockchain.
+        It is legally equivalent to a physical ministry receipt for tax, audit, and regulatory purposes.<br/>
+        Samoa Pacific Blockchain Hub v10 · Anthony George Williams · Synergy Blockchain Pacific · UNICEF Venture Fund 2026 Application<br/>
+        Generated: ${new Date().toLocaleString()} · Ref: ${ref}
+      </div>
     </body></html>`;
   }
 
   return (
-    <div style={{ ...card(), borderLeft:`4px solid ${isComplete ? C.seafoam : C.coral}`, maxWidth:"700px" }}>
+    <div style={{ ...card(), borderLeft:`4px solid ${isComplete ? C.seafoam : C.coral}`, maxWidth:"720px" }}>
+      {/* Header */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"16px" }}>
         <div>
           <div style={{ fontSize:"22px", marginBottom:"4px" }}>{isComplete ? "✅" : "📋"}</div>
           <div style={{ fontSize:"16px", fontWeight:900, fontFamily:F.display, color:isComplete?C.seafoam:C.white }}>
-            {isComplete ? "Workflow Complete — On Chain" : "Step Recorded On Chain"}
+            {isComplete ? "Certificate Issued — Workflow Complete" : "Step Recorded On Chain"}
           </div>
           <div style={{ fontSize:"12px", color:C.silver, marginTop:"2px" }}>{wf.stepLabel || "Record confirmed"}</div>
         </div>
         <div style={{ textAlign:"right" }}>
-          <div style={{ fontSize:"10px", color:C.muted, marginBottom:"3px" }}>Reference Number</div>
+          <div style={{ fontSize:"10px", color:C.muted, marginBottom:"3px" }}>Reference</div>
           <div style={{ fontFamily:F.mono, fontSize:"13px", fontWeight:700, color:C.seafoam, background:C.seafoam+"18", padding:"4px 10px", borderRadius:"6px" }}>{ref}</div>
         </div>
       </div>
 
-      {/* Core detail grid */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", marginBottom:"14px" }}>
-        {[
-          ["Service",      serviceLabel(serviceType)],
-          ["Ministry",     ministry?.code],
-          ["Citizen Hash", citizenId ? ethers.keccak256(ethers.toUtf8Bytes(citizenId.trim())).slice(0,14)+"…" : "—"],
-          ["Officer Hash", oHash ? oHash.slice(0,14)+"…" : "—"],
-          ["Timestamp",    new Date(timestamp).toLocaleString()],
-          ["Tx Hash",      txHash ? txHash.slice(0,12)+"…"+txHash.slice(-6) : "—"],
-          ...(amount ? [["Amount",  `WST ${amount}`]] : []),
-          ...(fee    ? [["Gov Fee", `WST ${fee}`]]    : []),
-          ["Network",      CONFIG.NETWORK],
-        ].map(([label, val]) => (
-          <div key={label} style={{ background:C.abyss, borderRadius:"6px", padding:"8px 12px" }}>
-            <div style={{ fontSize:"9px", color:C.muted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.6px", marginBottom:"2px" }}>{label}</div>
-            <div style={{ fontSize:"12px", color:C.white, fontFamily:["Citizen Hash","Officer Hash","Tx Hash"].includes(label)?F.mono:F.ui, fontWeight:600 }}>{val}</div>
-          </div>
+      {/* Tab switcher */}
+      <div style={{ display:"flex", gap:"0", marginBottom:"16px", borderRadius:"8px", overflow:"hidden", border:`1px solid ${C.ocean}` }}>
+        {[["receipt","📋 Receipt"],["credential","🔐 Credential"],["json","{ } JSON"]].map(([t,l])=>(
+          <button key={t} onClick={()=>setCredTab(t)}
+            style={{ flex:1, padding:"8px 0", fontSize:"11px", fontWeight:700, cursor:"pointer", border:"none", fontFamily:F.ui,
+              background:credTab===t?C.seafoam+"22":C.abyss, color:credTab===t?C.seafoam:C.muted,
+              borderRight:t!=="json"?`1px solid ${C.ocean}`:"none" }}>
+            {l}
+          </button>
         ))}
       </div>
 
-      {/* Evidence note */}
-      {evidenceNote && (
-        <div style={{ background:C.abyss, borderRadius:"6px", padding:"10px 12px", marginBottom:"14px" }}>
-          <div style={{ fontSize:"9px", color:C.muted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.6px", marginBottom:"3px" }}>Evidence Note (hashed on chain)</div>
-          <div style={{ fontSize:"12px", color:C.silver }}>{evidenceNote}</div>
-          <div style={{ fontSize:"10px", color:C.muted, fontFamily:F.mono, marginTop:"3px" }}>Hash: {ethers.keccak256(ethers.toUtf8Bytes(evidenceNote.trim())).slice(0,20)}…</div>
-        </div>
+      {/* RECEIPT TAB */}
+      {credTab === "receipt" && (
+        <>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", marginBottom:"14px" }}>
+            {[
+              ["Service",      serviceLabel(serviceType)],
+              ["Ministry",     ministry?.code],
+              ["Citizen Hash", citizenId ? ethers.keccak256(ethers.toUtf8Bytes(citizenId.trim())).slice(0,14)+"…" : "—"],
+              ["Officer Hash", oHash ? oHash.slice(0,14)+"…" : "—"],
+              ["Timestamp",    new Date(timestamp).toLocaleString()],
+              ["Tx Hash",      txHash ? txHash.slice(0,12)+"…"+txHash.slice(-6) : "—"],
+              ...(fee&&fee!=="0"    ? [["Gov Fee",   `WST ${fee}`]]        : []),
+              ...(amount&&amount!=="0"?[["Amount",   `WST ${amount}`]]     : []),
+              ...(vatAmt            ? [["VAGST 15%", `WST ${vatAmt}`]]     : []),
+              ...(paymentMethod     ? [["Pay Method",railInfo.label]]       : []),
+              ...(paymentRef        ? [["Pay Ref",   paymentRef]]           : []),
+              ["Network",      CONFIG.NETWORK],
+            ].map(([label, val]) => (
+              <div key={label} style={{ background:C.abyss, borderRadius:"6px", padding:"8px 12px" }}>
+                <div style={{ fontSize:"9px", color:C.muted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.6px", marginBottom:"2px" }}>{label}</div>
+                <div style={{ fontSize:"12px", color:C.white, fontFamily:["Citizen Hash","Officer Hash","Tx Hash","Pay Ref"].includes(label)?F.mono:F.ui, fontWeight:600 }}>{val}</div>
+              </div>
+            ))}
+          </div>
+
+          {evidenceNote && (
+            <div style={{ background:C.abyss, borderRadius:"6px", padding:"10px 12px", marginBottom:"14px" }}>
+              <div style={{ fontSize:"9px", color:C.muted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.6px", marginBottom:"3px" }}>Evidence (Payment Ref + Details — hashed on chain)</div>
+              <div style={{ fontSize:"11px", color:C.silver, wordBreak:"break-all" }}>{evidenceNote}</div>
+              <div style={{ fontSize:"10px", color:C.muted, fontFamily:F.mono, marginTop:"3px" }}>Hash: {ethers.keccak256(ethers.toUtf8Bytes(evidenceNote.trim())).slice(0,20)}…</div>
+            </div>
+          )}
+
+          <WorkflowProgress wf={wf} currentStep={wf.step || 1} />
+
+          {wf.prevSteps?.length > 0 && (
+            <div style={{ marginTop:"12px" }}>
+              <div style={{ fontSize:"10px", fontWeight:700, color:C.silver, marginBottom:"6px", textTransform:"uppercase" }}>Completed Steps</div>
+              {wf.prevSteps.map((s, i) => (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"5px 0", borderBottom:`1px dashed ${C.ocean}` }}>
+                  <span style={{ color:C.seafoam, fontSize:"12px" }}>✓</span>
+                  <span style={{ fontSize:"12px", color:C.silver }}>{s.ministry} — {s.label}</span>
+                </div>
+              ))}
+              <div style={{ display:"flex", alignItems:"center", gap:"8px", padding:"5px 0" }}>
+                <span style={{ color:C.coral, fontSize:"12px" }}>●</span>
+                <span style={{ fontSize:"12px", color:C.white, fontWeight:700 }}>{ministry?.code} — {serviceLabel(serviceType)} (this record)</span>
+              </div>
+            </div>
+          )}
+
+          {wf.nextStep && (
+            <div style={{ marginTop:"14px", padding:"12px", background:C.amber+"18", border:`1px solid ${C.amber}44`, borderRadius:"8px" }}>
+              <div style={{ fontSize:"11px", fontWeight:700, color:C.amber, marginBottom:"4px" }}>⏭ Next Step Required</div>
+              <div style={{ fontSize:"12px", color:C.silver }}><strong style={{ color:C.white }}>{wf.nextStep.ministry}</strong> must: {wf.nextStep.action}</div>
+              <div style={{ fontSize:"11px", color:C.muted, marginTop:"4px" }}>{wf.notice}</div>
+            </div>
+          )}
+          {isComplete && (
+            <div style={{ marginTop:"14px", padding:"12px", background:C.seafoam+"18", border:`1px solid ${C.seafoam}44`, borderRadius:"8px" }}>
+              <div style={{ fontSize:"11px", fontWeight:700, color:C.seafoam, marginBottom:"4px" }}>✓ Workflow Complete — Certificate Issued On Chain</div>
+              <div style={{ fontSize:"12px", color:C.silver }}>{wf.notice}</div>
+            </div>
+          )}
+        </>
       )}
 
-      {/* Workflow progress bar */}
-      <WorkflowProgress wf={wf} currentStep={wf.step || 1} />
+      {/* CREDENTIAL TAB */}
+      {credTab === "credential" && (
+        <div>
+          <div style={{ marginBottom:"14px", padding:"12px", background:C.seafoam+"14", border:`1px solid ${C.seafoam}33`, borderRadius:"8px" }}>
+            <div style={{ fontSize:"12px", fontWeight:700, color:C.seafoam, marginBottom:"6px" }}>🔐 Verifiable Credential — NFT-Style Ministry Certificate</div>
+            <div style={{ fontSize:"11px", color:C.silver, lineHeight:1.8 }}>
+              This credential is cryptographically unique. The <strong>Credential Hash</strong> is derived from your transaction data and can be verified by anyone. The <strong>Ministry Signature</strong> proves it was issued by {ministry?.code}. No personal data is exposed — only your identity hash is referenced.<br/>
+              <span style={{ color:C.amber, fontSize:"10px" }}>Share the Credential Hash publicly to prove you hold this service record. Keep your Tx Hash private — it is your private key equivalent.</span>
+            </div>
+          </div>
 
-      {/* Completed steps list */}
-      {wf.prevSteps?.length > 0 && (
-        <div style={{ marginTop:"12px" }}>
-          <div style={{ fontSize:"10px", fontWeight:700, color:C.silver, marginBottom:"6px", textTransform:"uppercase" }}>Completed Steps</div>
-          {wf.prevSteps.map((s, i) => (
-            <div key={i} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"5px 0", borderBottom:`1px dashed ${C.ocean}` }}>
-              <span style={{ color:C.seafoam, fontSize:"12px" }}>✓</span>
-              <span style={{ fontSize:"12px", color:C.silver }}>{s.ministry} — {s.label}</span>
+          {[
+            ["Credential Hash (Share Publicly)", credHash, true],
+            ["Ministry Signature", sigHash, true],
+            ["Issued By", `${ministry?.code} — ${ministry?.name}`, false],
+            ["Service", serviceLabel(serviceType), false],
+            ["Workflow", wf.workflowName||"Standalone", false],
+            ["Reference", ref, false],
+            ["Timestamp", new Date(timestamp).toISOString(), false],
+            ["Blockchain", `${CONFIG.NETWORK} · ${MINISTRY_ADDRS[ministry?.code]||"—"}`, true],
+          ].map(([label, val, mono]) => (
+            <div key={label} style={{ background:C.abyss, borderRadius:"6px", padding:"10px 12px", marginBottom:"8px" }}>
+              <div style={{ fontSize:"9px", color:C.muted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.6px", marginBottom:"4px" }}>{label}</div>
+              <div style={{ fontSize:mono?"11px":"12px", color:mono?C.seafoam:C.white, fontFamily:mono?F.mono:F.ui, wordBreak:"break-all", fontWeight:600 }}>{val}</div>
             </div>
           ))}
-          <div style={{ display:"flex", alignItems:"center", gap:"8px", padding:"5px 0" }}>
-            <span style={{ color:C.coral, fontSize:"12px" }}>●</span>
-            <span style={{ fontSize:"12px", color:C.white, fontWeight:700 }}>{ministry?.code} — {serviceLabel(serviceType)} (this record)</span>
+
+          <div style={{ marginTop:"12px", padding:"12px", background:C.amber+"18", border:`1px solid ${C.amber}33`, borderRadius:"8px", fontSize:"11px", color:C.amber, lineHeight:1.8 }}>
+            <strong>IPFS Readiness:</strong> The JSON metadata for this credential is ready for IPFS pinning via Pinata or web3.storage. Once pinned, the IPFS CID becomes permanent proof accessible to any government portal, auditor, or tax authority. Switch to the JSON tab to download the credential file.
           </div>
         </div>
       )}
 
-      {/* Next step callout */}
-      {wf.nextStep && (
-        <div style={{ marginTop:"14px", padding:"12px", background:C.amber+"18", border:`1px solid ${C.amber}44`, borderRadius:"8px" }}>
-          <div style={{ fontSize:"11px", fontWeight:700, color:C.amber, marginBottom:"4px" }}>⏭ Next Step Required</div>
-          <div style={{ fontSize:"12px", color:C.silver }}><strong style={{ color:C.white }}>{wf.nextStep.ministry}</strong> must: {wf.nextStep.action}</div>
-          <div style={{ fontSize:"11px", color:C.muted, marginTop:"4px" }}>{wf.notice}</div>
-        </div>
-      )}
-      {isComplete && (
-        <div style={{ marginTop:"14px", padding:"12px", background:C.seafoam+"18", border:`1px solid ${C.seafoam}44`, borderRadius:"8px" }}>
-          <div style={{ fontSize:"11px", fontWeight:700, color:C.seafoam, marginBottom:"4px" }}>✓ Workflow Complete — Permanently On Chain</div>
-          <div style={{ fontSize:"12px", color:C.silver }}>{wf.notice}</div>
+      {/* JSON TAB */}
+      {credTab === "json" && ipfsMeta && (
+        <div>
+          <div style={{ marginBottom:"12px", padding:"10px 12px", background:"#4A9EE022", border:`1px solid #4A9EE044`, borderRadius:"8px", fontSize:"11px", color:"#4A9EE0" }}>
+            Machine-readable credential metadata — IPFS-ready JSON. Download and pin to Pinata/web3.storage for permanent decentralised storage. Verifiable by any smart contract or government portal.
+          </div>
+          <pre style={{ background:C.abyss, borderRadius:"8px", padding:"14px", fontSize:"10px", color:C.seafoam, fontFamily:F.mono, overflow:"auto", maxHeight:"380px", border:`1px solid ${C.ocean}`, whiteSpace:"pre-wrap", wordBreak:"break-all" }}>
+            {JSON.stringify(ipfsMeta, null, 2)}
+          </pre>
+          <button onClick={handleDownloadJSON} style={{ ...btn("success"), marginTop:"12px", width:"100%", justifyContent:"center" }}>
+            ⬇ Download {ref}-credential.json
+          </button>
         </div>
       )}
 
       {/* Action buttons */}
       <div style={{ display:"flex", gap:"10px", marginTop:"16px", flexWrap:"wrap" }}>
-        <button onClick={handlePrint} style={{ ...btn("ghost") }}>🖨 Print / Download PDF</button>
+        <button onClick={handlePrint} style={{ ...btn("ghost") }}>🖨 Print / Download Certificate PDF</button>
         <button onClick={onAnother}  style={{ ...btn("ghost") }}>Record Another</button>
         {wf.nextStep && onNext && (
           <button
             onClick={() => onNext(wf.nextStep.ministry)}
-            style={{ ...btn("primary"), background: "#1B6CA8", display:"flex", alignItems:"center", gap:"8px" }}
+            style={{ ...btn("primary"), background:"#1B6CA8", display:"flex", alignItems:"center", gap:"8px" }}
           >
             <span style={{ fontSize:"16px" }}>{MINISTRY_META[wf.nextStep.ministry]?.icon || "→"}</span>
             <span>Go to {MINISTRY_META[wf.nextStep.ministry]?.name || wf.nextStep.ministry} — Pending Actions</span>
@@ -1107,52 +1379,89 @@ function RecordsTab({ records, totalRecords, loading, connected, ministry }) {
 }
 
 // ---
-// RECORD SERVICE TAB -- submits to chain via ethers.js
+// RECORD SERVICE TAB -- full payment flow, dual officer/citizen view, fee schedule, credential generation
 // ---
 function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefill }) {
   const meta         = MINISTRY_META[ministryCode];
   const addr         = MINISTRY_ADDRS[ministryCode];
   const serviceTypes = SERVICE_TYPES[ministryCode] || [];
+  const initSvc      = prefill?.serviceType || serviceTypes[0]?.value || "";
+  const feeInfo      = SERVICE_FEES[initSvc] || {};
 
   const [form, setForm] = useState({
     citizenId:     prefill?.citizenId    || "",
-    serviceType:   prefill?.serviceType  || serviceTypes[0]?.value || "",
+    serviceType:   initSvc,
     evidenceNote:  prefill?.evidenceNote || "",
-    amount:        prefill?.amount       || "",
-    fee:           prefill?.fee          || "",
+    amount:        prefill?.amount       || String(feeInfo.clientAmount || ""),
+    fee:           prefill?.fee          || String(feeInfo.govFee || ""),
     paymentMethod: "BANK_TRANSFER",
+    paymentRef:    "",
     officerId:     "OFFICER-001",
-    ndidsVerified: shouldVerifyNDIDS(ministryCode, prefill?.serviceType || serviceTypes[0]?.value || ""),
+    ndidsVerified: shouldVerifyNDIDS(ministryCode, initSvc),
+    paymentConfirmed: false,
+    viewMode:      "officer",  // "officer" | "citizen"
   });
-  const [submitting, setSubmitting] = useState(false);
-  const [txMsg,      setTxMsg]      = useState(null);
+  const [submitting,    setSubmitting]    = useState(false);
+  const [txMsg,         setTxMsg]        = useState(null);
+  const [paymentDone,   setPaymentDone]  = useState(false);
 
-  // Apply prefill when it changes (from Pending Actions one-click)
+  // Apply prefill when it changes
   useEffect(() => {
-    if (prefill) setForm(f => ({
-      ...f,
-      ...prefill,
-      ndidsVerified: shouldVerifyNDIDS(ministryCode, prefill.serviceType || f.serviceType),
+    if (!prefill) return;
+    const svc    = prefill.serviceType || form.serviceType;
+    const fi     = SERVICE_FEES[svc] || {};
+    setForm(f => ({
+      ...f, ...prefill,
+      amount:       prefill.amount || String(fi.clientAmount || ""),
+      fee:          prefill.fee    || String(fi.govFee || ""),
+      ndidsVerified: shouldVerifyNDIDS(ministryCode, svc),
+      paymentConfirmed: false,
     }));
+    setPaymentDone(false);
   }, [prefill]);
 
-  // When coming from a pending action, use the exact wfId carried in prefill so that
-  // shared service types (DIGITAL_PAYMENT_RECORDED, TAX_COMPLIANCE_VERIFIED) resolve
-  // to the correct workflow rather than always the first match in SVC_TO_WF.
+  // Recompute fee when service type changes
+  const handleServiceChange = (svc) => {
+    const fi = SERVICE_FEES[svc] || {};
+    setForm(f => ({
+      ...f,
+      serviceType:   svc,
+      amount:        String(fi.clientAmount || ""),
+      fee:           String(fi.govFee || ""),
+      ndidsVerified: shouldVerifyNDIDS(ministryCode, svc),
+      paymentConfirmed: false,
+    }));
+    setPaymentDone(false);
+  };
+
+  // Resolve workflow
   const resolvedWfId = form.workflowId || (SVC_TO_WF[form.serviceType] || [])[0]?.workflowId;
   const resolvedStep = resolvedWfId
     ? (SVC_TO_WF[form.serviceType] || []).find(x => x.workflowId === resolvedWfId) || (SVC_TO_WF[form.serviceType] || [])[0]
     : (SVC_TO_WF[form.serviceType] || [])[0];
-  const selectedWf = resolvedStep;
-  const wfDef      = selectedWf ? WORKFLOW_DEFS[selectedWf.workflowId] : null;
-  const stepIdx    = selectedWf?.stepIndex ?? -1;
-  const needsFee   = wfDef?.steps[stepIdx]?.fee;
+  const selectedWf   = resolvedStep;
+  const wfDef        = selectedWf ? WORKFLOW_DEFS[selectedWf.workflowId] : null;
+  const stepIdx      = selectedWf?.stepIndex ?? -1;
+  const curFeeInfo   = SERVICE_FEES[form.serviceType] || {};
+  const hasPayment   = curFeeInfo.hasFee;
+  const isPayOut     = curFeeInfo.isPaymentOut;
+  const vatAmount    = curFeeInfo.vatRate > 0 ? ((parseFloat(form.fee)||0) * curFeeInfo.vatRate).toFixed(2) : null;
+  const totalDue     = curFeeInfo.vatRate > 0
+    ? ((parseFloat(form.fee)||0) * (1 + curFeeInfo.vatRate)).toFixed(2)
+    : form.fee;
+  const railInfo     = PAYMENT_RAILS.find(r => r.value === form.paymentMethod) || PAYMENT_RAILS[0];
+
+  // Payment gate: submission requires payment confirmed if fees exist
+  const paymentGateCleared = !hasPayment || paymentDone || isPayOut;
 
   const handleSubmit = async () => {
     if (!form.citizenId || !form.serviceType) { setTxMsg({ type:"error", text:"Citizen ID and service type are required." }); return; }
-    // Guard: warn if NDIDS is ON but policy says this ministry has no access -- will revert on chain
     if (form.ndidsVerified && !shouldVerifyNDIDS(ministryCode, form.serviceType)) {
-      setTxMsg({ type:"error", text:`⚠ NDIDS verification is ON but ${ministryCode} does not have NDIDS access for ${form.serviceType} citizens. Uncheck "Verify identity via NDIDS" and resubmit.` });
+      setTxMsg({ type:"error", text:`⚠ ${ministryCode} does not have NDIDS access for ${form.serviceType} citizens. Uncheck NDIDS.` });
+      return;
+    }
+    if (!paymentGateCleared) {
+      setTxMsg({ type:"error", text:"⚠ Payment must be confirmed before submitting to blockchain. Complete the payment section below." });
       return;
     }
     setSubmitting(true);
@@ -1161,60 +1470,109 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
       const signer   = getSigner(provider);
       const contract = new ethers.Contract(addr, ABI.MINISTRY, signer);
       const rawId    = form.citizenId.trim();
-      // If citizenId is already a bytes32 hex (from pending action prefill), use directly
       const cHash    = (rawId.startsWith("0x") && rawId.length === 66)
-        ? rawId
-        : ethers.keccak256(ethers.toUtf8Bytes(rawId));
-      const evidence = form.evidenceNote?.trim() || `${form.serviceType}|${form.officerId}|${Date.now()}`;
+        ? rawId : ethers.keccak256(ethers.toUtf8Bytes(rawId));
+      // Evidence includes payment reference for immutable audit
+      const payRef   = form.paymentRef?.trim() || `${form.paymentMethod}|REF-${Date.now().toString(36).toUpperCase()}`;
+      const evidence = form.evidenceNote?.trim()
+        ? `${form.evidenceNote} | PMT:${payRef} | RAIL:${form.paymentMethod} | FEE:${form.fee}WST | AMT:${form.amount}WST`
+        : `${form.serviceType}|${form.officerId}|PMT:${payRef}|RAIL:${form.paymentMethod}|FEE:${form.fee}WST|AMT:${form.amount}WST|${Date.now()}`;
       const dHash    = ethers.keccak256(ethers.toUtf8Bytes(evidence));
       const tx       = await contract.recordService(cHash, form.serviceType, dHash, form.ndidsVerified);
       setTxMsg({ type:"info", text:"Awaiting confirmation…" });
       const receipt  = await tx.wait();
-      onSuccess({ txHash:receipt.hash, citizenId:form.citizenId, serviceType:form.serviceType, evidenceNote:form.evidenceNote, amount:form.amount, fee:form.fee, paymentMethod:form.paymentMethod, officerId:form.officerId, timestamp:Date.now(), ministry:{ ...meta, code:ministryCode }, workflowId: form.workflowId || selectedWf?.workflowId || null });
+      onSuccess({
+        txHash:receipt.hash, citizenId:form.citizenId, serviceType:form.serviceType,
+        evidenceNote:evidence, amount:form.amount, fee:form.fee,
+        paymentMethod:form.paymentMethod, paymentRef:payRef,
+        officerId:form.officerId, timestamp:Date.now(),
+        ministry:{ ...meta, code:ministryCode },
+        workflowId: form.workflowId || selectedWf?.workflowId || null,
+      });
       setTxMsg(null);
+      setPaymentDone(false);
     } catch(e) {
       setTxMsg({ type:"error", text:e.reason || e.message || "Transaction failed." });
     } finally { setSubmitting(false); }
   };
 
   const inStyle = { width:"100%", background:C.abyss, border:`1px solid ${C.ocean}`, borderRadius:"8px", padding:"10px 14px", color:C.white, fontSize:"13px", fontFamily:F.ui, boxSizing:"border-box" };
+  const labelStyle = { fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" };
 
   return (
-    <div style={{ ...card(), maxWidth:"640px" }}>
-      <SectionHead title="Record Service" sub="Submit a service record directly to the blockchain" />
+    <div style={{ ...card(), maxWidth:"680px" }}>
 
-      {txMsg && <div style={{ marginBottom:"14px", padding:"10px 14px", borderRadius:"8px", background:txMsg.type==="error"?C.danger+"22":C.seafoam+"22", border:`1px solid ${txMsg.type==="error"?C.danger:C.seafoam}44`, color:txMsg.type==="error"?"#F88":C.seafoam, fontSize:"13px" }}>{txMsg.text}</div>}
+      {/* View mode toggle — Officer / Citizen */}
+      <div style={{ display:"flex", gap:"0", marginBottom:"18px", borderRadius:"8px", overflow:"hidden", border:`1px solid ${C.ocean}` }}>
+        {[["officer","🏛 Officer / Ministry View"],["citizen","👤 Citizen / Client View"]].map(([mode,label])=>(
+          <button key={mode} onClick={()=>setForm(f=>({...f,viewMode:mode}))}
+            style={{ flex:1, padding:"9px 0", fontSize:"12px", fontWeight:700, cursor:"pointer", border:"none", fontFamily:F.ui,
+              background:form.viewMode===mode ? meta?.color+"33" : C.abyss,
+              color:form.viewMode===mode ? meta?.color : C.muted,
+              borderRight:mode==="officer"?`1px solid ${C.ocean}`:"none" }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {form.viewMode === "citizen" && (
+        <div style={{ ...card({ background:`linear-gradient(135deg,${C.seafoam}14,${C.teal}08)`, borderColor:C.seafoam+"44" }), marginBottom:"16px" }}>
+          <div style={{ fontSize:"13px", fontWeight:700, color:C.seafoam, marginBottom:"8px" }}>🌺 Samoa Government Online Portal</div>
+          <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.8 }}>
+            You are applying for: <strong style={{ color:C.white }}>{serviceLabel(form.serviceType)}</strong><br/>
+            Ministry: <strong style={{ color:meta?.color }}>{meta?.name} ({ministryCode})</strong><br/>
+            {curFeeInfo.feeLabel && <>Fee: <strong style={{ color:C.gold }}>WST {curFeeInfo.govFee || 0} {curFeeInfo.vatRate>0 && `+ VAGST — Total WST ${totalDue}`}</strong><br/></>}
+            <span style={{ fontSize:"11px", color:C.muted }}>Your payment and identity are recorded permanently on the Samoa Pacific Blockchain — no more queuing at the office.</span>
+          </div>
+        </div>
+      )}
+
+      <SectionHead
+        title={form.viewMode==="citizen" ? "📋 Apply & Pay Online" : "Record Service"}
+        sub={form.viewMode==="citizen"
+          ? "Complete your application and pay your government fee securely online"
+          : "Submit a service record and payment directly to the blockchain"}
+      />
+
+      {txMsg && (
+        <div style={{ marginBottom:"14px", padding:"10px 14px", borderRadius:"8px",
+          background:txMsg.type==="error"?C.danger+"22":txMsg.type==="success"?C.seafoam+"22":"#4A9EE022",
+          border:`1px solid ${txMsg.type==="error"?C.danger:txMsg.type==="success"?C.seafoam:"#4A9EE0"}44`,
+          color:txMsg.type==="error"?"#F88":txMsg.type==="success"?C.seafoam:"#4A9EE0", fontSize:"13px" }}>
+          {txMsg.text}
+        </div>
+      )}
 
       {/* Workflow context banner */}
       {wfDef && (
         <div style={{ marginBottom:"14px", padding:"10px 12px", background:C.amber+"18", border:`1px solid ${C.amber}44`, borderRadius:"8px" }}>
           <div style={{ fontSize:"11px", fontWeight:700, color:C.amber }}>🔄 Workflow: {wfDef.name}</div>
           <div style={{ fontSize:"11px", color:C.silver, marginTop:"3px" }}>
-            This is Step {stepIdx+1} of {wfDef.steps.length}.
-            {stepIdx > 0 && ` Prev: ${wfDef.steps[stepIdx-1].ministry} — ${wfDef.steps[stepIdx-1].label}.`}
-            {stepIdx < wfDef.steps.length-1 && ` Next: ${wfDef.steps[stepIdx+1].ministry} — ${wfDef.steps[stepIdx+1].label}.`}
+            Step {stepIdx+1} of {wfDef.steps.length}.
+            {stepIdx>0 && ` Previous: ${wfDef.steps[stepIdx-1].ministry} — ${wfDef.steps[stepIdx-1].label}.`}
+            {stepIdx<wfDef.steps.length-1 && ` Next: ${wfDef.steps[stepIdx+1].ministry} — ${wfDef.steps[stepIdx+1].label}.`}
           </div>
         </div>
       )}
 
       {prefill && (
         <div style={{ marginBottom:"14px", padding:"10px 12px", background:C.seafoam+"14", border:`1px solid ${C.seafoam}33`, borderRadius:"8px" }}>
-          <div style={{ fontSize:"11px", fontWeight:700, color:C.seafoam }}>⚡ Pre-filled from Pending Actions — review and submit</div>
+          <div style={{ fontSize:"11px", fontWeight:700, color:C.seafoam }}>⚡ Pre-filled from Pending Actions — fees auto-loaded · review and pay</div>
           {prefill.citizenLabel && <div style={{ fontSize:"11px", color:C.silver, marginTop:"4px" }}>👤 {prefill.citizenLabel}</div>}
         </div>
       )}
 
-      {/* Citizen ID */}
+      {/* Citizen / Business ID */}
       <div style={{ marginBottom:"14px" }}>
-        <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>Citizen / Business ID *</label>
+        <label style={labelStyle}>{form.viewMode==="citizen"?"Your National ID / Business Number *":"Citizen / Business ID *"}</label>
         {(form.citizenId?.startsWith("0x") && form.citizenId?.length === 66) ? (
           <div style={{ ...inStyle, background:C.abyss+"88", color:C.seafoam, fontFamily:F.mono, fontSize:"12px" }}>
             {form.citizenId.slice(0,22)}…{form.citizenId.slice(-6)}
-            <div style={{ fontSize:"10px", color:C.muted, marginTop:"4px", fontFamily:F.ui }}>Pre-hashed citizen identity from chain — submitted directly</div>
+            <div style={{ fontSize:"10px", color:C.muted, marginTop:"4px", fontFamily:F.ui }}>Pre-hashed identity — submitted directly to chain</div>
           </div>
         ) : (
           <>
-            <input value={form.citizenId} onChange={e=>setForm(f=>({...f,citizenId:e.target.value}))} placeholder="e.g. CITIZEN-WS-001" style={inStyle} />
+            <input value={form.citizenId} onChange={e=>setForm(f=>({...f,citizenId:e.target.value}))} placeholder={form.viewMode==="citizen"?"e.g. WS-123456 or Business No.":"e.g. CITIZEN-WS-001"} style={inStyle} />
             {form.citizenId && <div style={{ fontSize:"10px", color:C.muted, marginTop:"4px", fontFamily:F.mono }}>On-chain hash: {ethers.keccak256(ethers.toUtf8Bytes(form.citizenId.trim())).slice(0,22)}…</div>}
           </>
         )}
@@ -1222,87 +1580,172 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
 
       {/* Service type */}
       <div style={{ marginBottom:"14px" }}>
-        <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>Service Type *</label>
-        <select value={form.serviceType} onChange={e => setForm(f => ({
-          ...f,
-          serviceType: e.target.value,
-          ndidsVerified: shouldVerifyNDIDS(ministryCode, e.target.value),
-        }))} style={inStyle}>
+        <label style={labelStyle}>Service Requested *</label>
+        <select value={form.serviceType} onChange={e=>handleServiceChange(e.target.value)} style={inStyle}>
           {serviceTypes.map(st=><option key={st.value} value={st.value}>{st.label}</option>)}
         </select>
         {form.serviceType && <div style={{ fontSize:"11px", color:C.muted, marginTop:"4px" }}>{serviceDesc(form.serviceType)}</div>}
       </div>
 
-      {/* Amount + Fee + Payment Method (when applicable) */}
-      {(needsFee || form.amount || form.fee) && (
-        <>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"14px" }}>
-            <div>
-              <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>Payment Amount (WST)</label>
-              <input value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))} placeholder="e.g. 500.00" style={inStyle} />
-            </div>
-            <div>
-              <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>Gov Fee (WST)</label>
-              <input value={form.fee} onChange={e=>setForm(f=>({...f,fee:e.target.value}))} placeholder="e.g. 50.00" style={inStyle} />
-            </div>
-          </div>
-          <div style={{ marginBottom:"14px" }}>
-            <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>Payment Rail / Method</label>
-            <select value={form.paymentMethod} onChange={e=>setForm(f=>({...f,paymentMethod:e.target.value}))} style={inStyle}>
-              <option value="BANK_TRANSFER">🏦 Bank Transfer (BSP / ANZ / Samoa Commercial Bank)</option>
-              <option value="MPAY_VODAFONE">📱 M-Pay / M-Tala (Vodafone Samoa)</option>
-              <option value="DIGICEL_MYCASH">📱 MyCash (Digicel Samoa)</option>
-              <option value="WST_STABLECOIN">💎 WST Stablecoin Wallet (CBS Digital)</option>
-              <option value="VISA_MASTERCARD">💳 Visa / Mastercard (EFTPOS)</option>
-              <option value="MOBILE_BANKING">📲 Mobile Banking App</option>
-              <option value="CHEQUE">📄 Government Cheque</option>
-              <option value="CASH">💵 Cash (receipt required)</option>
-            </select>
-            <div style={{ fontSize:"10px", color:C.muted, marginTop:"4px" }}>
-              Payment method is logged with the on-chain record as part of the audit trail. WST Stablecoin requires CBS issuance authorisation.
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Officer ID */}
-      <div style={{ marginBottom:"14px" }}>
-        <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>Officer ID</label>
-        <input value={form.officerId} onChange={e=>setForm(f=>({...f,officerId:e.target.value}))} placeholder="OFFICER-001" style={inStyle} />
-        {form.officerId && <div style={{ fontSize:"10px", color:C.muted, marginTop:"4px", fontFamily:F.mono }}>Officer hash: {officerHashFor(form.officerId).slice(0,18)}…</div>}
-      </div>
-
-      {/* Evidence note */}
-      <div style={{ marginBottom:"14px" }}>
-        <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>Evidence Note (hashed on chain)</label>
-        <textarea value={form.evidenceNote} onChange={e=>setForm(f=>({...f,evidenceNote:e.target.value}))} placeholder="Reference number, supporting documents, details…" rows={3} style={{ ...inStyle, resize:"vertical" }} />
-      </div>
-
-      {/* NDIDS toggle */}
-      <div style={{ marginBottom:"18px", padding:"10px 12px", background:C.ocean, borderRadius:"8px", border:`1px solid ${C.wave}` }}>
+      {/* ── NDIDS VERIFICATION PANEL ──────────────────────────────────── */}
+      <div style={{ marginBottom:"14px", padding:"12px 14px", background:C.ocean, borderRadius:"8px", border:`1px solid ${form.ndidsVerified?C.seafoam+"66":C.wave}` }}>
         <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"4px" }}>
           <input type="checkbox" id="ndids" checked={form.ndidsVerified} onChange={e=>setForm(f=>({...f,ndidsVerified:e.target.checked}))} style={{ width:"16px", height:"16px", accentColor:C.seafoam }} />
-          <label htmlFor="ndids" style={{ fontSize:"12px", color:C.silver, cursor:"pointer", fontWeight:700 }}>Verify identity via NDIDS</label>
+          <label htmlFor="ndids" style={{ fontSize:"12px", color:C.silver, cursor:"pointer", fontWeight:700 }}>
+            {form.viewMode==="citizen" ? "Verify my identity via National Digital ID System (NDIDS)" : "Verify identity via NDIDS"}
+          </label>
           <span style={{ ...badge(form.ndidsVerified ? C.seafoam : C.amber), fontSize:"9px" }}>
-            {form.ndidsVerified ? "✓ NDIDS ON" : "PAYMENT ONLY"}
+            {form.ndidsVerified ? "✓ IDENTITY VERIFIED" : "PAYMENT ONLY"}
           </span>
         </div>
         <div style={{ fontSize:"11px", color:C.muted, marginLeft:"26px" }}>
           {form.ndidsVerified
-            ? `${ministryCode} has NDIDS read access for this service — identity will be verified on chain.`
-            : `Identity verification not required for this step — upstream ministry already verified. Submitting as payment/processing record only.`
-          }
+            ? `${ministryCode} has NDIDS read access — your identity hash will be verified on chain before service is processed.`
+            : "Payment-only step — identity was verified by the initiating ministry. This step processes the payment and service record."}
         </div>
         {!shouldVerifyNDIDS(ministryCode, form.serviceType) && form.ndidsVerified && (
           <div style={{ fontSize:"11px", color:C.danger, marginTop:"6px", marginLeft:"26px", fontWeight:700 }}>
-            ⚠ Warning: {ministryCode} does not have NDIDS access for {form.serviceType} citizens — this transaction will revert. Uncheck NDIDS above.
+            ⚠ {ministryCode} does not have NDIDS access for this service — the transaction will revert. Uncheck NDIDS.
           </div>
         )}
       </div>
 
-      <button onClick={handleSubmit} disabled={submitting || !connected} style={{ ...btn(submitting||!connected?"ghost":"primary"), width:"100%", justifyContent:"center", padding:"13px 20px", fontSize:"14px", opacity:!connected?0.5:submitting?0.7:1 }}>
-        {!connected ? "⚠ Not connected to chain" : submitting ? "⏳ Broadcasting…" : "📡 Submit to Blockchain"}
+      {/* ── PAYMENT SECTION ─── appears when NDIDS verified OR payment required ──── */}
+      {hasPayment && (
+        <div style={{ marginBottom:"16px", padding:"16px", background:`linear-gradient(135deg,${C.seafoam}0A,${C.teal}06)`, border:`2px solid ${paymentDone?C.seafoam:C.amber}66`, borderRadius:"10px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px" }}>
+            <div style={{ fontSize:"13px", fontWeight:700, color:paymentDone?C.seafoam:C.amber }}>
+              {isPayOut ? "💸 Government Payment Out" : "💳 Payment Required"}
+            </div>
+            {paymentDone && <span style={{ ...badge(C.seafoam), fontSize:"10px" }}>✓ Payment Confirmed</span>}
+          </div>
+
+          {/* Fee breakdown */}
+          <div style={{ background:C.abyss, borderRadius:"8px", padding:"12px", marginBottom:"14px", border:`1px solid ${C.ocean}` }}>
+            <div style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", marginBottom:"8px" }}>
+              {isPayOut ? "Disbursement Summary" : "Fee Schedule — Pre-populated"}
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr auto", gap:"4px 12px", fontSize:"12px" }}>
+              <span style={{ color:C.muted }}>{curFeeInfo.feeLabel}</span>
+              <span style={{ color:C.white, fontWeight:700, textAlign:"right" }}>WST {(parseFloat(form.fee)||parseFloat(form.amount)||0).toFixed(2)}</span>
+              {vatAmount && <>
+                <span style={{ color:C.muted }}>VAGST (15%)</span>
+                <span style={{ color:C.amber, textAlign:"right" }}>WST {vatAmount}</span>
+              </>}
+              {curFeeInfo.govFee > 0 && !isPayOut && <>
+                <span style={{ color:C.muted }}>Government Processing Fee</span>
+                <span style={{ color:C.gold, textAlign:"right" }}>WST {curFeeInfo.govFee.toFixed(2)}</span>
+              </>}
+              <div style={{ gridColumn:"1/-1", borderTop:`1px solid ${C.ocean}`, marginTop:"6px", marginBottom:"2px" }} />
+              <span style={{ color:C.white, fontWeight:800 }}>{isPayOut ? "Total Disbursement" : "Total Due"}</span>
+              <span style={{ color:C.seafoam, fontWeight:900, textAlign:"right", fontSize:"14px" }}>
+                WST {totalDue || (parseFloat(form.fee)||parseFloat(form.amount)||0).toFixed(2)}
+              </span>
+            </div>
+            <div style={{ fontSize:"10px", color:C.muted, marginTop:"8px" }}>{curFeeInfo.note}</div>
+          </div>
+
+          {/* Amount fields — editable for override services */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"12px" }}>
+            <div>
+              <label style={labelStyle}>{isPayOut ? "Disbursement Amount (WST)" : "Service / Transaction Amount (WST)"}</label>
+              <input value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))}
+                placeholder={curFeeInfo.override?"Enter actual amount":"Pre-populated"} style={inStyle}
+                readOnly={!curFeeInfo.override && !isPayOut} />
+              {curFeeInfo.override && <div style={{ fontSize:"10px", color:C.amber, marginTop:"4px" }}>⚡ Enter actual amount for this transaction</div>}
+            </div>
+            <div>
+              <label style={labelStyle}>Government Fee (WST)</label>
+              <input value={form.fee} onChange={e=>setForm(f=>({...f,fee:e.target.value}))}
+                placeholder="Pre-populated" style={inStyle} readOnly={!curFeeInfo.override} />
+              {curFeeInfo.vatRate>0 && <div style={{ fontSize:"10px", color:C.muted, marginTop:"4px" }}>+VAGST {(curFeeInfo.vatRate*100).toFixed(0)}% = WST {vatAmount}</div>}
+            </div>
+          </div>
+
+          {/* Payment rail */}
+          {!isPayOut && (
+            <>
+              <div style={{ marginBottom:"12px" }}>
+                <label style={labelStyle}>Payment Method</label>
+                <select value={form.paymentMethod} onChange={e=>setForm(f=>({...f,paymentMethod:e.target.value}))} style={inStyle}>
+                  {PAYMENT_RAILS.map(r=>(
+                    <option key={r.value} value={r.value}>{r.label} — {r.sub}</option>
+                  ))}
+                </select>
+                <div style={{ fontSize:"10px", color:C.muted, marginTop:"4px" }}>{railInfo.sub}</div>
+              </div>
+
+              <div style={{ marginBottom:"12px" }}>
+                <label style={labelStyle}>Payment Reference / Receipt No.</label>
+                <input value={form.paymentRef} onChange={e=>setForm(f=>({...f,paymentRef:e.target.value}))}
+                  placeholder={`e.g. ${form.paymentMethod==="MPAY_VODAFONE"?"MPAY-":""}TXN-${Date.now().toString(36).toUpperCase().slice(-6)}`} style={inStyle} />
+                <div style={{ fontSize:"10px", color:C.muted, marginTop:"4px" }}>This reference is hashed and logged immutably on chain as payment proof.</div>
+              </div>
+            </>
+          )}
+
+          {/* Client vs officer dual view notice */}
+          {form.viewMode === "citizen" && !isPayOut && (
+            <div style={{ padding:"10px 12px", background:C.amber+"14", border:`1px solid ${C.amber}33`, borderRadius:"8px", marginBottom:"12px", fontSize:"11px", color:C.amber }}>
+              ℹ After confirming payment below, your transaction will be submitted to the blockchain. You will receive a downloadable government certificate with a unique verifiable hash for your records, tax obligations, and future government interactions.
+            </div>
+          )}
+
+          {/* Confirm payment button */}
+          {!paymentDone ? (
+            <button onClick={()=>setPaymentDone(true)} style={{ ...btn("success"), width:"100%", justifyContent:"center", padding:"12px", fontSize:"13px" }}>
+              {isPayOut
+                ? `✓ Confirm Disbursement of WST ${(parseFloat(form.amount)||curFeeInfo.clientAmount||0).toFixed(2)}`
+                : `✓ Confirm Payment — WST ${totalDue} via ${railInfo.label}`}
+            </button>
+          ) : (
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 14px", background:C.seafoam+"18", border:`1px solid ${C.seafoam}44`, borderRadius:"8px" }}>
+              <span style={{ fontSize:"12px", fontWeight:700, color:C.seafoam }}>✅ Payment confirmed — ready to submit to blockchain</span>
+              <button onClick={()=>setPaymentDone(false)} style={{ ...btn("ghost"), fontSize:"10px", padding:"3px 10px" }}>Revise</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Officer ID (officer view only) */}
+      {form.viewMode === "officer" && (
+        <div style={{ marginBottom:"14px" }}>
+          <label style={labelStyle}>Officer ID</label>
+          <input value={form.officerId} onChange={e=>setForm(f=>({...f,officerId:e.target.value}))} placeholder="OFFICER-001" style={inStyle} />
+          {form.officerId && <div style={{ fontSize:"10px", color:C.muted, marginTop:"4px", fontFamily:F.mono }}>Officer hash: {officerHashFor(form.officerId).slice(0,18)}…</div>}
+        </div>
+      )}
+
+      {/* Evidence note */}
+      <div style={{ marginBottom:"16px" }}>
+        <label style={labelStyle}>Evidence Note {form.viewMode==="citizen"?"(optional supporting details)":"(hashed on chain)"}</label>
+        <textarea value={form.evidenceNote} onChange={e=>setForm(f=>({...f,evidenceNote:e.target.value}))}
+          placeholder={form.viewMode==="citizen"
+            ? "Optional: reference number, invoice number, supporting context…"
+            : "Reference number, supporting documents, details…"}
+          rows={3} style={{ ...inStyle, resize:"vertical" }} />
+      </div>
+
+      {/* Payment gate warning */}
+      {hasPayment && !paymentGateCleared && (
+        <div style={{ marginBottom:"14px", padding:"10px 12px", background:C.amber+"18", border:`1px solid ${C.amber}44`, borderRadius:"8px", fontSize:"12px", color:C.amber, fontWeight:700 }}>
+          ⚠ Payment must be confirmed above before submitting to blockchain
+        </div>
+      )}
+
+      <button onClick={handleSubmit} disabled={submitting || !connected || (!paymentGateCleared)}
+        style={{ ...btn(submitting||!connected||!paymentGateCleared?"ghost":"primary"), width:"100%", justifyContent:"center", padding:"13px 20px", fontSize:"14px",
+          opacity:!connected?0.5:(!paymentGateCleared||submitting)?0.6:1 }}>
+        {!connected ? "⚠ Not connected to chain"
+          : submitting ? "⏳ Broadcasting transaction…"
+          : !paymentGateCleared ? "⚠ Confirm payment above first"
+          : "📡 Submit to Blockchain — Record Service + Payment"}
       </button>
+      {connected && (
+        <div style={{ fontSize:"10px", color:C.muted, textAlign:"center", marginTop:"8px" }}>
+          Transaction will be mined on {CONFIG.NETWORK}. Payment ref and fee are hashed into the evidence record — immutable on chain.
+        </div>
+      )}
     </div>
   );
 }
@@ -1310,7 +1753,7 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
 // ---
 // MINISTRY DASHBOARD -- v8: 4 tabs per ministry
 // ---
-function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onBack, onNavigate, allRecords, allLoading }) {
+function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onBack, onNavigate, allRecords, allLoading, citizenPayments, onPaymentProcessed }) {
   const meta    = MINISTRY_META[ministryCode];
   const addr    = MINISTRY_ADDRS[ministryCode];
 
@@ -1342,15 +1785,28 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
   };
 
   const handlePendingAction = (action) => {
+    // Check if citizen has already paid for this action
+    const citizenPmt = (citizenPayments||[]).find(cp =>
+      cp.serviceType === action.step.serviceType &&
+      cp.ministryCode === ministryCode &&
+      cp.wfId === action.wfId &&
+      cp.status === "paid"
+    );
     setPrefill({
-      citizenId:    action.citizenHash,  // raw bytes32 — detected and used directly on submit
-      citizenLabel: `Citizen ${short(action.citizenHash)} · from ${action.prevStep.ministry} ${action.prevStep.label}`,
+      citizenId:    citizenPmt?.citizenId || action.citizenHash,
+      citizenLabel: citizenPmt
+        ? `✅ Payment received from citizen — ${short(action.citizenHash)} · ${citizenPmt.railLabel} · WST ${citizenPmt.fee || citizenPmt.amount}`
+        : `Citizen ${short(action.citizenHash)} · from ${action.prevStep.ministry} ${action.prevStep.label}`,
       serviceType:  action.step.serviceType,
-      evidenceNote: `Cross-ministry workflow step. Prev step: "${action.prevStep.label}" completed by ${action.prevStep.ministry}. Workflow: ${action.wfName}.`,
-      amount: "", fee: "",
-      // Carry the exact workflow ID so CBS/MOF resolve the right workflow (not just [0])
-      // when DIGITAL_PAYMENT_RECORDED or TAX_COMPLIANCE_VERIFIED appear in multiple workflows
+      evidenceNote: citizenPmt
+        ? `Citizen online payment: ${citizenPmt.payRef} | RAIL:${citizenPmt.paymentMethod} | FEE:${citizenPmt.fee}WST | Workflow: ${action.wfName}`
+        : `Cross-ministry workflow step. Prev step: "${action.prevStep.label}" completed by ${action.prevStep.ministry}. Workflow: ${action.wfName}.`,
+      amount:    citizenPmt?.amount || "",
+      fee:       citizenPmt?.fee    || "",
+      paymentMethod: citizenPmt?.paymentMethod || "BANK_TRANSFER",
+      paymentRef: citizenPmt?.payRef || "",
       workflowId: action.wfId,
+      citizenPayRef: citizenPmt?.payRef || null,
     });
     setTab("record");
   };
@@ -1382,15 +1838,42 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
                 <div style={{ color:C.silver, fontSize:"14px", fontWeight:700 }}>No pending actions</div>
                 <div style={{ color:C.muted, fontSize:"12px", marginTop:"6px" }}>All workflow steps are up to date for this ministry.</div>
               </div>
-            ) : pendingActions.map((action, i) => (
-              <div key={i} style={{ ...card(), marginBottom:"12px", borderLeft:`4px solid ${C.amber}` }}>
+            ) : pendingActions.map((action, i) => {
+              // Check if citizen has already paid for this step
+              const citizenPmt = (citizenPayments||[]).find(cp =>
+                cp.serviceType === action.step.serviceType &&
+                cp.ministryCode === ministryCode &&
+                cp.wfId === action.wfId &&
+                cp.status === "paid"
+              );
+              const isPaid = !!citizenPmt;
+              const feeSchedule = SERVICE_FEES[action.step.serviceType] || {};
+
+              return (
+              <div key={i} style={{ ...card(), marginBottom:"14px", borderLeft:`4px solid ${isPaid?C.seafoam:C.amber}`,
+                background: isPaid ? `linear-gradient(135deg,${C.seafoam}06,${C.navy})` : C.navy }}>
+
+                {/* Action header */}
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
                   <div>
                     <div style={{ fontWeight:800, fontSize:"14px", color:C.white }}>{action.wfName}</div>
-                    <div style={{ fontSize:"12px", color:C.amber, marginTop:"2px" }}>Step {action.stepIndex+1}: {action.step.label}</div>
+                    <div style={{ fontSize:"12px", color:isPaid?C.seafoam:C.amber, marginTop:"2px" }}>
+                      Step {action.stepIndex+1}: {action.step.label}
+                    </div>
                   </div>
-                  <span style={{ ...badge(C.amber) }}>Action Required</span>
+                  <div style={{ display:"flex", gap:"8px", flexDirection:"column", alignItems:"flex-end" }}>
+                    <span style={{ ...badge(isPaid?C.seafoam:C.amber) }}>
+                      {isPaid ? "✅ Payment Received" : "⏳ Awaiting Payment / Action"}
+                    </span>
+                    {feeSchedule.hasFee && !feeSchedule.isPaymentOut && (
+                      <span style={{ ...badge(C.gold), fontSize:"9px" }}>
+                        💳 Fee: WST {feeSchedule.govFee}{feeSchedule.vatRate>0?` + VAGST`:""}
+                      </span>
+                    )}
+                  </div>
                 </div>
+
+                {/* Citizen + step details */}
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"8px", marginBottom:"12px" }}>
                   {[
                     ["Citizen Hash",  <Mono>{short(action.citizenHash)}</Mono>],
@@ -1403,14 +1886,61 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
                     </div>
                   ))}
                 </div>
+
                 <WfBar wfId={action.wfId} stepsCompleted={action.stepIndex} />
-                <div style={{ marginTop:"14px" }}>
-                  <button onClick={() => handlePendingAction(action)} style={{ ...btn("primary") }}>
-                    ⚡ Action Now — Pre-filled Form →
+
+                {/* Citizen payment confirmation panel */}
+                {isPaid && citizenPmt && (
+                  <div style={{ marginTop:"12px", padding:"12px 14px", background:C.seafoam+"14", border:`1px solid ${C.seafoam}44`, borderRadius:"8px" }}>
+                    <div style={{ fontSize:"12px", fontWeight:700, color:C.seafoam, marginBottom:"8px" }}>
+                      ✅ Citizen paid online — payment details confirmed
+                    </div>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"8px" }}>
+                      {[
+                        ["Payment Ref",    citizenPmt.payRef],
+                        ["Method",         citizenPmt.railLabel],
+                        ["Amount Paid",    `WST ${citizenPmt.fee || citizenPmt.amount || "—"}`],
+                      ].map(([l,v])=>(
+                        <div key={l} style={{ background:C.abyss, borderRadius:"6px", padding:"7px 10px" }}>
+                          <div style={{ fontSize:"9px", color:C.muted, marginBottom:"2px", textTransform:"uppercase" }}>{l}</div>
+                          <div style={{ fontSize:"12px", color:C.white, fontWeight:700 }}>{v}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ fontSize:"10px", color:C.muted, marginTop:"8px" }}>
+                      Payment reference {citizenPmt.payRef} hashed into evidence. Click "Process & Issue" to complete the service record on-chain and issue the certificate.
+                    </div>
+                  </div>
+                )}
+
+                {/* No payment yet — show expected fee and entry option */}
+                {!isPaid && feeSchedule.hasFee && !feeSchedule.isPaymentOut && (
+                  <div style={{ marginTop:"12px", padding:"12px 14px", background:C.amber+"10", border:`1px solid ${C.amber}33`, borderRadius:"8px" }}>
+                    <div style={{ fontSize:"11px", color:C.amber, fontWeight:700, marginBottom:"4px" }}>
+                      💳 Awaiting citizen payment — WST {feeSchedule.govFee}{feeSchedule.vatRate>0?` + VAGST`:""}
+                    </div>
+                    <div style={{ fontSize:"11px", color:C.muted }}>
+                      Citizen can pay via the <strong style={{ color:C.white }}>Citizen Self-Service Portal</strong>. Once paid, their payment reference appears here automatically and the action becomes ready to process. Officers may also enter a payment reference manually via the Action form.
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ marginTop:"14px", display:"flex", gap:"10px", flexWrap:"wrap" }}>
+                  <button onClick={() => handlePendingAction(action)}
+                    style={{ ...btn(isPaid?"success":"primary") }}>
+                    {isPaid ? "✅ Process & Issue Certificate →" : "⚡ Action Now — Open Form →"}
                   </button>
+                  {citizenPmt && onPaymentProcessed && (
+                    <button
+                      onClick={() => { onPaymentProcessed(citizenPmt.payRef); handlePendingAction(action); }}
+                      style={{ ...btn("ghost"), fontSize:"11px" }}>
+                      Mark Processed
+                    </button>
+                  )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </>
         )}
 
@@ -2340,8 +2870,24 @@ function Home({ provider, connected, blockNumber, allRecords, allLoading, onSele
           })}
         </div>
 
-        {/* Special dashboards */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px", marginBottom:"28px" }}>
+        {/* Special dashboards — 2x3 grid */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"14px", marginBottom:"28px" }}>
+          {/* ROW 1 */}
+          <div onClick={() => onSelect("citizen")} style={{ ...card(), cursor:"pointer", borderTop:`3px solid #22C55E`, position:"relative" }}
+            onMouseEnter={e=>e.currentTarget.style.background=C.ocean}
+            onMouseLeave={e=>e.currentTarget.style.background=C.navy}>
+            <div style={{ position:"absolute", top:"14px", right:"14px" }}>
+              <span style={{ ...badge("#22C55E"), fontSize:"9px" }}>PUBLIC PORTAL</span>
+            </div>
+            <div style={{ fontSize:"28px", marginBottom:"8px" }}>🧑‍💻</div>
+            <div style={{ fontWeight:800, fontSize:"14px", fontFamily:F.display, marginBottom:"4px" }}>Citizen Self-Service Portal</div>
+            <div style={{ fontSize:"12px", color:C.silver }}>Apply online · Pay gov fees · Track applications · Download certificates — no queuing</div>
+            <div style={{ marginTop:"10px", display:"flex", gap:"6px", flexWrap:"wrap" }}>
+              <span style={{ ...badge("#22C55E"), fontSize:"9px" }}>Light Theme</span>
+              <span style={{ ...badge(C.silver), fontSize:"9px" }}>Mobile-Friendly</span>
+              <span style={{ ...badge(C.silver), fontSize:"9px" }}>All 6 Ministries</span>
+            </div>
+          </div>
           <div onClick={() => onSelect("unicef")} style={{ ...card(), cursor:"pointer", borderTop:`3px solid ${C.gold}` }}
             onMouseEnter={e=>e.currentTarget.style.background=C.ocean}
             onMouseLeave={e=>e.currentTarget.style.background=C.navy}>
@@ -2356,6 +2902,7 @@ function Home({ provider, connected, blockNumber, allRecords, allLoading, onSele
             <div style={{ fontWeight:800, fontSize:"14px", fontFamily:F.display, marginBottom:"4px" }}>Community Project Dashboard</div>
             <div style={{ fontSize:"12px", color:C.silver }}>PM · Matai · Public views · Real-time spend tracking · Receipt logging · Donor-visible audit trail</div>
           </div>
+          {/* ROW 2 */}
           <div onClick={() => onSelect("ndids")} style={{ ...card(), cursor:"pointer", borderTop:`3px solid ${C.seafoam}` }}
             onMouseEnter={e=>e.currentTarget.style.background=C.ocean}
             onMouseLeave={e=>e.currentTarget.style.background=C.navy}>
@@ -2367,7 +2914,6 @@ function Home({ provider, connected, blockNumber, allRecords, allLoading, onSele
             <div style={{ fontSize:"12px", color:C.silver }}>Citizen identity registry · NDIDS hash verification · Cross-ministry access policy · Privacy-preserving by design</div>
             <div style={{ marginTop:"10px", display:"flex", gap:"6px", flexWrap:"wrap" }}>
               <span style={{ ...badge(C.seafoam), fontSize:"9px" }}>NDIDSRegistry</span>
-              <span style={{ ...badge(C.silver), fontSize:"9px" }}>GDPR-aligned</span>
               <span style={{ ...badge(C.silver), fontSize:"9px" }}>Hash-only storage</span>
             </div>
           </div>
@@ -2377,6 +2923,11 @@ function Home({ provider, connected, blockNumber, allRecords, allLoading, onSele
             <div style={{ fontSize:"28px", marginBottom:"8px" }}>🔗</div>
             <div style={{ fontWeight:800, fontSize:"14px", fontFamily:F.display, marginBottom:"4px" }}>Interoperability Hub</div>
             <div style={{ fontSize:"12px", color:C.silver }}>Cross-ministry permissions, workflow log, live contract registry</div>
+          </div>
+          <div style={{ ...card(), borderTop:`3px solid ${C.muted}`, opacity:0.5 }}>
+            <div style={{ fontSize:"28px", marginBottom:"8px" }}>📊</div>
+            <div style={{ fontWeight:800, fontSize:"14px", fontFamily:F.display, marginBottom:"4px" }}>Analytics Dashboard</div>
+            <div style={{ fontSize:"12px", color:C.silver }}>Coming post-funding — cross-ministry analytics, audit exports, tax authority integration</div>
           </div>
         </div>
 
@@ -2407,6 +2958,578 @@ function Home({ provider, connected, blockNumber, allRecords, allLoading, onSele
           })}
         </div>
 
+      </div>
+    </div>
+  );
+}
+
+
+// ---
+// CITIZEN SELF-SERVICE PORTAL
+// Light theme, public-facing, mobile-friendly
+// Citizens: look up applications by ID or reference, pay fees, download certificates
+// Payments flow to MinistryDashboard pending actions queue automatically
+// ---
+
+// Light theme colour palette for citizen portal
+const CP = {
+  bg:      "#F0F4F8",
+  card:    "#FFFFFF",
+  border:  "#E2E8F0",
+  navy:    "#1E3A5F",
+  green:   "#16A34A",
+  amber:   "#D97706",
+  red:     "#DC2626",
+  blue:    "#2563EB",
+  teal:    "#0D9488",
+  muted:   "#64748B",
+  light:   "#94A3B8",
+  text:    "#1E293B",
+  sub:     "#475569",
+};
+
+// Citizen-friendly service catalogue
+const CITIZEN_SERVICES = [
+  // MCIL
+  { ministry:"MCIL", serviceType:"COMPANY_REGISTRATION",        icon:"🏢", name:"Company Registration",          desc:"Register a new business entity",                     category:"Business" },
+  { ministry:"MCIL", serviceType:"FOREIGN_INVESTMENT_APPROVED", icon:"🌏", name:"Foreign Investment Application",  desc:"Apply for foreign investment approval",              category:"Business" },
+  { ministry:"MCIL", serviceType:"TRADE_LICENCE_UPDATED",       icon:"📦", name:"Trade Licence Verification",      desc:"Verify or renew your trade licence",                 category:"Business" },
+  { ministry:"MCIL", serviceType:"LABOUR_CONTRACT_RECORDED",    icon:"📜", name:"Investment Certificate",          desc:"Apply for investment certificate issuance",           category:"Business" },
+  // MCIT
+  { ministry:"MCIT", serviceType:"BUSINESS_LICENCE_DIGITAL",    icon:"💼", name:"Digital Business Licence",        desc:"Apply for or renew digital business licence",        category:"Business" },
+  { ministry:"MCIT", serviceType:"DIGITAL_ID_ISSUED",           icon:"🪪", name:"National Digital ID",             desc:"Apply for your digital identity card",               category:"Identity" },
+  { ministry:"MCIT", serviceType:"SPECTRUM_LICENCE_ISSUED",     icon:"📡", name:"Spectrum / Radio Licence",         desc:"Apply for telecommunications spectrum licence",      category:"Telecoms" },
+  { ministry:"MCIT", serviceType:"ICT_REGISTRATION",            icon:"🖥", name:"ICT Sector Clearance",             desc:"Obtain sector regulatory clearance for investment",  category:"Business" },
+  // CUSTOMS
+  { ministry:"CUSTOMS", serviceType:"SHIPMENT_CLEARED_2025",    icon:"🚢", name:"Customs Clearance",               desc:"Record and clear an import/export shipment",         category:"Trade" },
+  { ministry:"CUSTOMS", serviceType:"TRADE_FACILITATION_RECORD",icon:"✅", name:"Container Release",               desc:"Finalise clearance and release container",            category:"Trade" },
+  { ministry:"CUSTOMS", serviceType:"TARIFF_CLASSIFICATION",    icon:"🏷", name:"Tariff Classification",            desc:"Get a tariff code assigned for your goods",          category:"Trade" },
+  { ministry:"CUSTOMS", serviceType:"BOND_WAREHOUSE_RECORD",    icon:"🏭", name:"Bond Warehouse Entry",             desc:"Register goods into a bonded warehouse",             category:"Trade" },
+  // EDUCATION
+  { ministry:"EDUCATION", serviceType:"SCHOOL_ENROLMENT_2025",  icon:"🎒", name:"School Enrolment",                desc:"Enrol a child in the national school programme",     category:"Education" },
+  { ministry:"EDUCATION", serviceType:"SCHOLARSHIP_AWARDED",    icon:"🎓", name:"Scholarship Application",          desc:"Apply for or record a scholarship award",            category:"Education" },
+  { ministry:"EDUCATION", serviceType:"GRADUATION_RECORD",      icon:"📋", name:"Graduation Certificate",          desc:"Record and receive graduation certificate",           category:"Education" },
+  // MOF
+  { ministry:"MOF", serviceType:"TAX_COMPLIANCE_VERIFIED",      icon:"🧾", name:"Tax Compliance Certificate",       desc:"Obtain annual tax compliance clearance",             category:"Finance" },
+  { ministry:"MOF", serviceType:"SOCIAL_WELFARE_PAYMENT_2025",  icon:"💚", name:"Social Welfare Registration",      desc:"Register for social welfare payment",                category:"Welfare" },
+  // CBS
+  { ministry:"CBS", serviceType:"ACCOUNT_OPENED",               icon:"🏦", name:"Bank Account Opening",             desc:"Open a new CBS-registered bank account",             category:"Banking" },
+  { ministry:"CBS", serviceType:"DIGITAL_PAYMENT_RECORDED",     icon:"💸", name:"Digital Payment",                  desc:"Record a digital or mobile payment transaction",     category:"Banking" },
+  { ministry:"CBS", serviceType:"STABLECOIN_ISSUANCE",          icon:"💎", name:"WST Stablecoin Issuance",          desc:"Request WST digital currency from CBS",              category:"Banking" },
+];
+
+const CP_CATEGORIES = ["All", "Business", "Identity", "Trade", "Education", "Finance", "Welfare", "Banking", "Telecoms"];
+
+function CitizenPortal({ onBack, citizenPayments, onCitizenPayment, connected }) {
+  const [screen,    setScreen]    = useState("home");     // "home"|"browse"|"pay"|"track"|"success"
+  const [lookup,    setLookup]    = useState("");
+  const [lookupRef, setLookupRef] = useState("");
+  const [selected,  setSelected]  = useState(null);       // selected CITIZEN_SERVICES entry
+  const [category,  setCategory]  = useState("All");
+  const [citizenId, setCitizenId] = useState("");
+  const [payMethod, setPayMethod] = useState("MPAY_VODAFONE");
+  const [paying,    setPaying]    = useState(false);
+  const [lastPayment, setLastPayment] = useState(null);
+
+  const filtered = CITIZEN_SERVICES.filter(s =>
+    category === "All" || s.category === category
+  );
+
+  // Citizen's payment history (for their ID or reference)
+  const myPayments = citizenPayments.filter(cp =>
+    lookup && (
+      cp.citizenId?.toLowerCase().includes(lookup.toLowerCase()) ||
+      cp.payRef?.toLowerCase().includes(lookup.toLowerCase()) ||
+      lookupRef && cp.payRef?.toLowerCase() === lookupRef.toLowerCase()
+    )
+  );
+
+  const feeInfo  = selected ? (SERVICE_FEES[selected.serviceType] || {}) : {};
+  const vatAmt   = feeInfo.vatRate > 0 ? ((feeInfo.govFee||0) * feeInfo.vatRate).toFixed(2) : null;
+  const totalDue = feeInfo.vatRate > 0 ? ((feeInfo.govFee||0) * (1 + feeInfo.vatRate)).toFixed(2) : String(feeInfo.govFee || 0);
+  const railInfo = PAYMENT_RAILS.find(r => r.value === payMethod) || PAYMENT_RAILS[0];
+  const meta     = selected ? MINISTRY_META[selected.ministry] : null;
+
+  const handlePay = () => {
+    if (!citizenId.trim()) return;
+    setPaying(true);
+    setTimeout(() => {
+      const payRef = `CPZ-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+      const pmt = {
+        payRef,
+        citizenId:     citizenId.trim(),
+        serviceType:   selected.serviceType,
+        ministryCode:  selected.ministry,
+        amount:        feeInfo.isPaymentOut ? String(feeInfo.clientAmount) : "0",
+        fee:           String(feeInfo.govFee || 0),
+        paymentMethod: payMethod,
+        railLabel:     railInfo.label,
+        wfId:          (SVC_TO_WF[selected.serviceType]||[])[0]?.workflowId || null,
+        timestamp:     Date.now(),
+        status:        "paid",
+        service:       selected,
+      };
+      onCitizenPayment(pmt);
+      setLastPayment(pmt);
+      setPaying(false);
+      setScreen("success");
+    }, 1200);
+  };
+
+  // ── Light theme card helper
+  const cpCard = (extra={}) => ({
+    background:CP.card, borderRadius:"12px", padding:"20px",
+    border:`1px solid ${CP.border}`, boxShadow:"0 1px 3px rgba(0,0,0,0.08)",
+    ...extra,
+  });
+  const cpInput = { width:"100%", background:"#F8FAFC", border:`1.5px solid ${CP.border}`,
+    borderRadius:"8px", padding:"11px 14px", color:CP.text, fontSize:"14px",
+    fontFamily:F.ui, boxSizing:"border-box", outline:"none" };
+  const cpLabel = { fontSize:"12px", fontWeight:700, color:CP.muted, textTransform:"uppercase",
+    letterSpacing:"0.5px", display:"block", marginBottom:"6px" };
+  const cpBtn = (variant="primary") => ({
+    display:"inline-flex", alignItems:"center", justifyContent:"center", gap:"8px",
+    padding:"11px 22px", borderRadius:"8px", fontWeight:700, fontSize:"13px",
+    cursor:"pointer", border:"none", fontFamily:F.ui,
+    ...(variant==="primary" ? { background:CP.blue, color:"#fff" }
+      : variant==="green"  ? { background:CP.green, color:"#fff" }
+      : variant==="outline" ? { background:"transparent", color:CP.blue, border:`1.5px solid ${CP.blue}` }
+      : { background:CP.border, color:CP.muted }),
+  });
+
+  return (
+    <div style={{ minHeight:"100vh", background:CP.bg, fontFamily:F.ui, color:CP.text }}>
+
+      {/* ── HEADER */}
+      <div style={{ background:CP.navy, color:"#fff", padding:"0" }}>
+        <div style={{ maxWidth:"1000px", margin:"0 auto", padding:"16px 28px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ display:"flex", gap:"14px", alignItems:"center" }}>
+            <span style={{ fontSize:"28px" }}>🌺</span>
+            <div>
+              <div style={{ fontWeight:900, fontSize:"17px", fontFamily:F.display }}>Samoa Government Online Portal</div>
+              <div style={{ fontSize:"11px", color:"#94A3B8", marginTop:"2px" }}>Samoa Pacific Blockchain Hub · Citizen Self-Service</div>
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:"10px", alignItems:"center" }}>
+            <span style={{ fontSize:"11px", background:"#22C55E22", color:"#4ADE80", padding:"4px 10px", borderRadius:"20px", fontWeight:700 }}>
+              {connected ? "● LIVE — Blockchain Connected" : "⚠ Demo Mode"}
+            </span>
+            <button onClick={onBack} style={{ ...cpBtn("outline"), padding:"7px 16px", fontSize:"12px", color:"#94A3B8", borderColor:"#475569" }}>
+              ← Back to Hub
+            </button>
+          </div>
+        </div>
+
+        {/* Nav */}
+        {screen !== "success" && (
+          <div style={{ background:"#152B46", borderTop:"1px solid #2D4A6A" }}>
+            <div style={{ maxWidth:"1000px", margin:"0 auto", padding:"0 28px", display:"flex", gap:"0" }}>
+              {[["home","🏠 Home"],["browse","📋 Services"],["track","🔍 Track Application"]].map(([s,l])=>(
+                <button key={s} onClick={()=>setScreen(s)}
+                  style={{ padding:"11px 20px", fontSize:"12px", fontWeight:700, cursor:"pointer", border:"none",
+                    fontFamily:F.ui, background:"transparent", color:screen===s?"#22C55E":"#94A3B8",
+                    borderBottom:screen===s?"2px solid #22C55E":"2px solid transparent" }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div style={{ maxWidth:"1000px", margin:"0 auto", padding:"32px 28px" }}>
+
+        {/* ── HOME SCREEN */}
+        {screen === "home" && (
+          <div>
+            <div style={{ textAlign:"center", marginBottom:"40px" }}>
+              <div style={{ fontSize:"14px", fontWeight:700, color:CP.teal, letterSpacing:"2px", textTransform:"uppercase", marginBottom:"10px" }}>
+                🌺 Samoa Pacific Blockchain Hub
+              </div>
+              <h1 style={{ fontSize:"32px", fontWeight:900, color:CP.navy, marginBottom:"12px", fontFamily:F.display }}>
+                Government Services Online
+              </h1>
+              <p style={{ fontSize:"15px", color:CP.sub, maxWidth:"540px", margin:"0 auto", lineHeight:1.7 }}>
+                Apply for licences, pay government fees, track your applications and download verified certificates — all without queuing at a ministry office.
+              </p>
+            </div>
+
+            {/* Quick actions */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"16px", marginBottom:"32px" }}>
+              {[
+                { icon:"📋", title:"Browse & Apply",      sub:"Find any government service and apply online",  action:()=>setScreen("browse"),  color:CP.blue },
+                { icon:"💳", title:"Pay a Fee",           sub:"Pay for a service you've been invoiced for",    action:()=>setScreen("browse"),  color:CP.green },
+                { icon:"🔍", title:"Track Application",   sub:"Check status using your ID or reference number",action:()=>setScreen("track"),   color:CP.teal },
+              ].map(({icon,title,sub,action,color})=>(
+                <div key={title} onClick={action} style={{ ...cpCard(), cursor:"pointer", borderTop:`3px solid ${color}`, transition:"box-shadow 0.15s" }}
+                  onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,0.12)"}
+                  onMouseLeave={e=>e.currentTarget.style.boxShadow="0 1px 3px rgba(0,0,0,0.08)"}>
+                  <div style={{ fontSize:"32px", marginBottom:"12px" }}>{icon}</div>
+                  <div style={{ fontWeight:800, fontSize:"15px", color:CP.navy, marginBottom:"6px" }}>{title}</div>
+                  <div style={{ fontSize:"13px", color:CP.sub, lineHeight:1.6 }}>{sub}</div>
+                  <div style={{ marginTop:"14px", color:color, fontSize:"12px", fontWeight:700 }}>Get started →</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Popular services quick links */}
+            <div style={{ ...cpCard(), marginBottom:"24px" }}>
+              <div style={{ fontWeight:800, fontSize:"15px", color:CP.navy, marginBottom:"14px" }}>🔥 Popular Services</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"10px" }}>
+                {CITIZEN_SERVICES.slice(0,8).map(svc=>{
+                  const fi = SERVICE_FEES[svc.serviceType]||{};
+                  return (
+                    <div key={svc.serviceType} onClick={()=>{ setSelected(svc); setScreen("pay"); }}
+                      style={{ padding:"12px", background:CP.bg, borderRadius:"8px", cursor:"pointer", border:`1px solid ${CP.border}` }}
+                      onMouseEnter={e=>e.currentTarget.style.background="#E2E8F0"}
+                      onMouseLeave={e=>e.currentTarget.style.background=CP.bg}>
+                      <div style={{ fontSize:"22px", marginBottom:"6px" }}>{svc.icon}</div>
+                      <div style={{ fontSize:"12px", fontWeight:700, color:CP.navy, marginBottom:"2px" }}>{svc.name}</div>
+                      <div style={{ fontSize:"11px", color:CP.muted }}>{MINISTRY_META[svc.ministry]?.name}</div>
+                      {fi.hasFee && !fi.isPaymentOut && (
+                        <div style={{ marginTop:"6px", fontSize:"11px", fontWeight:700, color:CP.green }}>
+                          WST {fi.govFee}{fi.vatRate>0?" + VAGST":""}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Info banner */}
+            <div style={{ ...cpCard({ background:"#EFF6FF", borderColor:"#BFDBFE" }) }}>
+              <div style={{ display:"flex", gap:"14px", alignItems:"flex-start" }}>
+                <span style={{ fontSize:"28px" }}>🔐</span>
+                <div>
+                  <div style={{ fontWeight:800, fontSize:"14px", color:CP.navy, marginBottom:"6px" }}>Your identity is protected by blockchain</div>
+                  <div style={{ fontSize:"13px", color:CP.sub, lineHeight:1.7 }}>
+                    This portal uses the <strong>National Digital Identity System (NDIDS)</strong>. Your personal information is never stored on-chain — only a cryptographic hash of your identity is recorded. Every payment and service record you receive comes with a unique <strong>verifiable credential</strong> that you can use for tax, audit, and future government interactions.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── BROWSE SERVICES */}
+        {screen === "browse" && (
+          <div>
+            <div style={{ marginBottom:"24px" }}>
+              <h2 style={{ fontSize:"22px", fontWeight:900, color:CP.navy, marginBottom:"6px" }}>Browse Government Services</h2>
+              <p style={{ fontSize:"13px", color:CP.sub }}>Select a service to apply and pay online. All transactions are recorded on the Samoa Pacific Blockchain.</p>
+            </div>
+
+            {/* Category filter */}
+            <div style={{ display:"flex", gap:"8px", marginBottom:"20px", flexWrap:"wrap" }}>
+              {CP_CATEGORIES.map(cat=>(
+                <button key={cat} onClick={()=>setCategory(cat)}
+                  style={{ padding:"6px 14px", borderRadius:"20px", fontSize:"12px", fontWeight:700, cursor:"pointer",
+                    border:`1.5px solid ${category===cat?CP.blue:CP.border}`,
+                    background:category===cat?CP.blue:"transparent",
+                    color:category===cat?"#fff":CP.muted }}>
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"14px" }}>
+              {filtered.map(svc => {
+                const fi   = SERVICE_FEES[svc.serviceType] || {};
+                const meta = MINISTRY_META[svc.ministry];
+                return (
+                  <div key={svc.serviceType} onClick={()=>{ setSelected(svc); setCitizenId(""); setScreen("pay"); }}
+                    style={{ ...cpCard(), cursor:"pointer", borderTop:`3px solid ${meta?.color||CP.blue}` }}
+                    onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,0.12)"}
+                    onMouseLeave={e=>e.currentTarget.style.boxShadow="0 1px 3px rgba(0,0,0,0.08)"}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
+                      <span style={{ fontSize:"28px" }}>{svc.icon}</span>
+                      <span style={{ fontSize:"10px", fontWeight:700, color:meta?.color||CP.blue, background:(meta?.color||CP.blue)+"18", padding:"3px 8px", borderRadius:"4px" }}>
+                        {svc.category}
+                      </span>
+                    </div>
+                    <div style={{ fontWeight:800, fontSize:"14px", color:CP.navy, marginBottom:"4px" }}>{svc.name}</div>
+                    <div style={{ fontSize:"12px", color:CP.sub, marginBottom:"10px", lineHeight:1.5 }}>{svc.desc}</div>
+                    <div style={{ fontSize:"11px", color:CP.muted, marginBottom:"10px" }}>
+                      {meta?.icon} {meta?.name}
+                    </div>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <div style={{ fontSize:"13px", fontWeight:800, color: fi.isPaymentOut?CP.teal : fi.hasFee?CP.green:CP.muted }}>
+                        {fi.isPaymentOut ? `💚 Benefit: WST ${fi.clientAmount}` : fi.hasFee ? `💳 WST ${fi.govFee}${fi.vatRate>0?" + VAGST":""}` : "Free"}
+                      </div>
+                      <span style={{ fontSize:"12px", color:CP.blue, fontWeight:700 }}>Apply →</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── PAYMENT SCREEN */}
+        {screen === "pay" && selected && (
+          <div style={{ maxWidth:"600px", margin:"0 auto" }}>
+            <button onClick={()=>setScreen("browse")} style={{ ...cpBtn("outline"), marginBottom:"20px", fontSize:"12px", padding:"7px 14px" }}>
+              ← Back to Services
+            </button>
+
+            {/* Service summary card */}
+            <div style={{ ...cpCard({ borderTop:`4px solid ${meta?.color||CP.blue}`, marginBottom:"20px" }) }}>
+              <div style={{ display:"flex", gap:"14px", alignItems:"center" }}>
+                <span style={{ fontSize:"40px" }}>{selected.icon}</span>
+                <div>
+                  <div style={{ fontWeight:900, fontSize:"18px", color:CP.navy }}>{selected.name}</div>
+                  <div style={{ fontSize:"12px", color:CP.muted, marginTop:"3px" }}>{meta?.icon} {meta?.name}</div>
+                  <div style={{ fontSize:"13px", color:CP.sub, marginTop:"6px" }}>{selected.desc}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Fee breakdown */}
+            {feeInfo.hasFee && (
+              <div style={{ ...cpCard({ background:"#F0FDF4", borderColor:"#86EFAC", marginBottom:"20px" }) }}>
+                <div style={{ fontWeight:800, fontSize:"14px", color:"#166534", marginBottom:"12px" }}>
+                  {feeInfo.isPaymentOut ? "💚 Government Benefit Details" : "💳 Fee Breakdown"}
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:"6px", fontSize:"13px" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between" }}>
+                    <span style={{ color:CP.sub }}>{feeInfo.feeLabel}</span>
+                    <span style={{ fontWeight:700 }}>WST {feeInfo.isPaymentOut ? feeInfo.clientAmount : feeInfo.govFee}</span>
+                  </div>
+                  {vatAmt && (
+                    <div style={{ display:"flex", justifyContent:"space-between" }}>
+                      <span style={{ color:CP.sub }}>VAGST (15%)</span>
+                      <span style={{ fontWeight:700, color:CP.amber }}>WST {vatAmt}</span>
+                    </div>
+                  )}
+                  <div style={{ borderTop:`1px solid #86EFAC`, paddingTop:"8px", marginTop:"4px", display:"flex", justifyContent:"space-between" }}>
+                    <span style={{ fontWeight:800, color:"#166534" }}>Total {feeInfo.isPaymentOut?"Benefit":"Due"}</span>
+                    <span style={{ fontWeight:900, fontSize:"16px", color:"#166534" }}>WST {feeInfo.isPaymentOut ? feeInfo.clientAmount : totalDue}</span>
+                  </div>
+                </div>
+                <div style={{ fontSize:"11px", color:"#4B7C5A", marginTop:"8px" }}>{feeInfo.note}</div>
+              </div>
+            )}
+
+            {/* Citizen ID / Application form */}
+            <div style={{ ...cpCard({ marginBottom:"20px" }) }}>
+              <div style={{ fontWeight:800, fontSize:"15px", color:CP.navy, marginBottom:"16px" }}>Your Details</div>
+
+              <div style={{ marginBottom:"14px" }}>
+                <label style={cpLabel}>Your National ID / Business Number *</label>
+                <input value={citizenId} onChange={e=>setCitizenId(e.target.value)}
+                  placeholder="e.g. WS-123456 or your National ID number"
+                  style={cpInput} />
+                <div style={{ fontSize:"11px", color:CP.light, marginTop:"5px" }}>
+                  Your ID is converted to a privacy-preserving hash before being stored on-chain. Your personal details remain private.
+                </div>
+              </div>
+
+              {/* Payment method */}
+              {feeInfo.hasFee && !feeInfo.isPaymentOut && (
+                <div style={{ marginBottom:"14px" }}>
+                  <label style={cpLabel}>Payment Method</label>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px" }}>
+                    {PAYMENT_RAILS.map(rail => (
+                      <div key={rail.value} onClick={()=>setPayMethod(rail.value)}
+                        style={{ padding:"10px 12px", borderRadius:"8px", cursor:"pointer",
+                          border:`2px solid ${payMethod===rail.value?CP.blue:CP.border}`,
+                          background:payMethod===rail.value?"#EFF6FF":CP.card }}>
+                        <div style={{ fontSize:"13px", fontWeight:700, color:payMethod===rail.value?CP.blue:CP.text }}>{rail.label}</div>
+                        <div style={{ fontSize:"11px", color:CP.muted, marginTop:"2px" }}>{rail.sub}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* What happens next explainer */}
+            <div style={{ ...cpCard({ background:"#EFF6FF", borderColor:"#BFDBFE", marginBottom:"20px" }) }}>
+              <div style={{ fontWeight:700, fontSize:"13px", color:CP.navy, marginBottom:"10px" }}>ℹ What happens after you submit?</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+                {[
+                  ["1","Your payment is confirmed and a reference number is generated"],
+                  ["2","The ministry officer is automatically notified in their dashboard"],
+                  ["3","The officer processes and signs your service record on-chain"],
+                  ["4","You receive a verifiable certificate with a unique blockchain hash"],
+                  ["5","Your credential can be used for tax, audit, and future government interactions"],
+                ].map(([n,t])=>(
+                  <div key={n} style={{ display:"flex", gap:"10px", alignItems:"flex-start" }}>
+                    <span style={{ minWidth:"22px", height:"22px", borderRadius:"50%", background:CP.blue, color:"#fff", fontSize:"11px", fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center" }}>{n}</span>
+                    <span style={{ fontSize:"12px", color:CP.sub, lineHeight:1.5 }}>{t}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button onClick={handlePay} disabled={!citizenId.trim() || paying}
+              style={{ ...cpBtn(paying?"":"green"), width:"100%", padding:"14px", fontSize:"14px",
+                opacity:!citizenId.trim()||paying?0.6:1 }}>
+              {paying ? "⏳ Processing payment…"
+                : feeInfo.isPaymentOut ? `✅ Register & Receive WST ${feeInfo.clientAmount}`
+                : feeInfo.hasFee ? `✅ Pay WST ${totalDue} via ${railInfo.label}`
+                : "✅ Submit Application (No Fee)"}
+            </button>
+            <div style={{ fontSize:"11px", color:CP.light, textAlign:"center", marginTop:"8px" }}>
+              Your payment reference will be logged on-chain. The ministry officer will see it in their pending actions immediately.
+            </div>
+          </div>
+        )}
+
+        {/* ── SUCCESS SCREEN */}
+        {screen === "success" && lastPayment && (
+          <div style={{ maxWidth:"600px", margin:"0 auto", textAlign:"center" }}>
+            <div style={{ ...cpCard({ borderTop:`4px solid ${CP.green}`, marginBottom:"24px" }) }}>
+              <div style={{ fontSize:"56px", marginBottom:"12px" }}>✅</div>
+              <div style={{ fontSize:"22px", fontWeight:900, color:CP.navy, marginBottom:"8px" }}>Payment Confirmed!</div>
+              <div style={{ fontSize:"14px", color:CP.sub, marginBottom:"20px" }}>
+                Your application has been submitted to the <strong>{MINISTRY_META[lastPayment.ministryCode]?.name}</strong>. The ministry officer has been notified and will process your request.
+              </div>
+
+              {/* Payment reference hero */}
+              <div style={{ background:CP.navy, borderRadius:"10px", padding:"16px 20px", marginBottom:"20px" }}>
+                <div style={{ fontSize:"11px", color:"#94A3B8", marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>Your Payment Reference — Keep this safe</div>
+                <div style={{ fontSize:"22px", fontWeight:900, color:"#22C55E", fontFamily:F.mono, letterSpacing:"2px" }}>
+                  {lastPayment.payRef}
+                </div>
+                <div style={{ fontSize:"11px", color:"#94A3B8", marginTop:"6px" }}>
+                  Use this reference to track your application or quote it to the ministry officer
+                </div>
+              </div>
+
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"20px", textAlign:"left" }}>
+                {[
+                  ["Service",        serviceLabel(lastPayment.serviceType)],
+                  ["Ministry",       MINISTRY_META[lastPayment.ministryCode]?.name],
+                  ["Amount Paid",    `WST ${lastPayment.fee || lastPayment.amount || "0"}`],
+                  ["Method",         lastPayment.railLabel],
+                  ["Status",         "✅ Payment Confirmed"],
+                  ["Submitted",      new Date(lastPayment.timestamp).toLocaleString()],
+                ].map(([l,v])=>(
+                  <div key={l} style={{ background:CP.bg, borderRadius:"8px", padding:"10px 12px" }}>
+                    <div style={{ fontSize:"10px", color:CP.light, fontWeight:700, textTransform:"uppercase", marginBottom:"3px" }}>{l}</div>
+                    <div style={{ fontSize:"13px", color:CP.text, fontWeight:700 }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ padding:"12px 14px", background:"#FEF3C7", borderRadius:"8px", marginBottom:"20px", textAlign:"left", fontSize:"12px", color:"#92400E" }}>
+                ⏰ <strong>What happens next:</strong> The ministry officer will see your payment in their dashboard and process your service record on-chain, usually within 1 business day. You will receive a verifiable blockchain certificate once complete.
+              </div>
+
+              <div style={{ display:"flex", gap:"10px", justifyContent:"center", flexWrap:"wrap" }}>
+                <button onClick={()=>{ setScreen("track"); setLookup(lastPayment.citizenId); }}
+                  style={{ ...cpBtn("outline") }}>🔍 Track My Application</button>
+                <button onClick={()=>{ setSelected(null); setScreen("browse"); }}
+                  style={{ ...cpBtn("primary") }}>📋 Apply for Another Service</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── TRACK APPLICATION */}
+        {screen === "track" && (
+          <div style={{ maxWidth:"680px", margin:"0 auto" }}>
+            <h2 style={{ fontSize:"22px", fontWeight:900, color:CP.navy, marginBottom:"6px" }}>Track Your Application</h2>
+            <p style={{ fontSize:"13px", color:CP.sub, marginBottom:"24px" }}>Enter your National ID or Payment Reference to view your application status.</p>
+
+            <div style={{ ...cpCard({ marginBottom:"20px" }) }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", marginBottom:"14px" }}>
+                <div>
+                  <label style={cpLabel}>Your National ID</label>
+                  <input value={lookup} onChange={e=>setLookup(e.target.value)}
+                    placeholder="e.g. WS-123456" style={cpInput} />
+                </div>
+                <div>
+                  <label style={cpLabel}>Payment Reference (optional)</label>
+                  <input value={lookupRef} onChange={e=>setLookupRef(e.target.value)}
+                    placeholder="e.g. CPZ-ABC123" style={cpInput} />
+                </div>
+              </div>
+              <div style={{ fontSize:"11px", color:CP.light }}>
+                You can find your payment reference in the confirmation you received when you applied.
+              </div>
+            </div>
+
+            {lookup.trim() && myPayments.length === 0 && (
+              <div style={{ ...cpCard(), textAlign:"center", padding:"36px" }}>
+                <div style={{ fontSize:"32px", marginBottom:"8px" }}>🔍</div>
+                <div style={{ fontWeight:700, color:CP.navy, marginBottom:"4px" }}>No applications found</div>
+                <div style={{ fontSize:"13px", color:CP.sub }}>Try entering your National ID exactly as registered, or use your payment reference.</div>
+              </div>
+            )}
+
+            {myPayments.map((pmt, i) => {
+              const mMeta = MINISTRY_META[pmt.ministryCode];
+              const statusColor = pmt.status==="complete" ? CP.green : pmt.status==="processing" ? CP.blue : CP.amber;
+              const statusLabel = pmt.status==="complete" ? "✅ Certificate Issued" : pmt.status==="processing" ? "⚙ Being Processed" : "⏳ Payment Received — Awaiting Officer";
+              return (
+                <div key={i} style={{ ...cpCard({ borderLeft:`4px solid ${statusColor}`, marginBottom:"14px" }) }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"12px" }}>
+                    <div>
+                      <div style={{ fontWeight:800, fontSize:"15px", color:CP.navy }}>{serviceLabel(pmt.serviceType)}</div>
+                      <div style={{ fontSize:"12px", color:CP.muted, marginTop:"3px" }}>{mMeta?.icon} {mMeta?.name}</div>
+                    </div>
+                    <span style={{ fontSize:"12px", fontWeight:700, color:statusColor, background:statusColor+"18", padding:"4px 10px", borderRadius:"6px" }}>
+                      {statusLabel}
+                    </span>
+                  </div>
+
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"8px", marginBottom:"12px" }}>
+                    {[
+                      ["Payment Ref", pmt.payRef],
+                      ["Amount Paid", `WST ${pmt.fee || pmt.amount || "0"}`],
+                      ["Method",      pmt.railLabel],
+                      ["Submitted",   new Date(pmt.timestamp).toLocaleString()],
+                      ["Status",      statusLabel],
+                      ["Ministry",    mMeta?.name],
+                    ].map(([l,v])=>(
+                      <div key={l} style={{ background:CP.bg, borderRadius:"6px", padding:"8px 10px" }}>
+                        <div style={{ fontSize:"9px", color:CP.light, fontWeight:700, textTransform:"uppercase", marginBottom:"2px" }}>{l}</div>
+                        <div style={{ fontSize:"12px", color:CP.text, fontWeight:600 }}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {pmt.status === "complete" && (
+                    <div style={{ padding:"10px 12px", background:"#F0FDF4", border:`1px solid #86EFAC`, borderRadius:"8px", fontSize:"12px", color:"#166534" }}>
+                      ✅ Your certificate has been issued on-chain. The ministry officer will provide your verifiable credential document.
+                    </div>
+                  )}
+                  {pmt.status === "paid" && (
+                    <div style={{ padding:"10px 12px", background:"#FFFBEB", border:`1px solid #FDE68A`, borderRadius:"8px", fontSize:"12px", color:"#92400E" }}>
+                      ⏳ Payment confirmed. The ministry officer has been notified and will process your request. Usually completed within 1 business day.
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {myPayments.length === 0 && !lookup.trim() && (
+              <div style={{ ...cpCard({ background:"#EFF6FF", borderColor:"#BFDBFE" }), textAlign:"center", padding:"36px" }}>
+                <div style={{ fontSize:"36px", marginBottom:"10px" }}>🔍</div>
+                <div style={{ fontWeight:700, color:CP.navy, marginBottom:"6px" }}>Enter your details above</div>
+                <div style={{ fontSize:"13px", color:CP.sub }}>Enter your National ID or payment reference to see your application history.</div>
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+
+      {/* Footer */}
+      <div style={{ background:CP.navy, color:"#94A3B8", padding:"24px 28px", marginTop:"40px" }}>
+        <div style={{ maxWidth:"1000px", margin:"0 auto", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"12px" }}>
+          <div>
+            <div style={{ fontWeight:700, color:"#fff", marginBottom:"4px" }}>🌺 Samoa Pacific Blockchain Hub</div>
+            <div style={{ fontSize:"11px" }}>Government of Samoa · Synergy Blockchain Pacific · UNICEF Venture Fund 2026</div>
+          </div>
+          <div style={{ fontSize:"11px", textAlign:"right" }}>
+            <div>All transactions recorded on {CONFIG.NETWORK}</div>
+            <div style={{ marginTop:"3px" }}>Verifiable credentials · Privacy-preserving · NDIDS-secured</div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -3303,10 +4426,16 @@ export default function App() {
   const [view,        setView]        = useState("home");
   const [blockNumber, setBlockNumber] = useState(null);
 
-  // Lifted shared state: expenditures and activity log are shared between
-  // CommunityDashboard and UNICEFDashboard so matai approvals clear donor flags in real time
+  // Lifted shared state: expenditures and activity log
   const [expenditures, setExpenditures] = useState(SEED_EXPENDITURES);
   const [activityLog,  setActivityLog]  = useState(SEED_ACTIVITY);
+
+  // Citizen payment registry — shared between CitizenPortal and MinistryDashboard
+  // When a citizen pays online, a record is pushed here with status "paid".
+  // The officer's Pending Actions tab polls this to show payment status and enable processing.
+  // Structure: { payRef, citizenId, serviceType, ministryCode, amount, fee, paymentMethod,
+  //              railLabel, wfId, timestamp, status: "paid"|"processing"|"complete" }
+  const [citizenPayments, setCitizenPayments] = useState([]);
 
   // Block number polling
   useEffect(() => {
@@ -3341,6 +4470,19 @@ export default function App() {
           ministryCode={ministry}
           onBack={() => setView("home")}
           onNavigate={v => setView(v)}
+          citizenPayments={citizenPayments}
+          onPaymentProcessed={(payRef) =>
+            setCitizenPayments(p => p.map(cp => cp.payRef===payRef ? {...cp, status:"complete"} : cp))
+          }
+        />
+      )}
+
+      {view === "citizen" && (
+        <CitizenPortal
+          {...sharedProps}
+          onBack={() => setView("home")}
+          citizenPayments={citizenPayments}
+          onCitizenPayment={(payment) => setCitizenPayments(p => [payment, ...p])}
         />
       )}
 

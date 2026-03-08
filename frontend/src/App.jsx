@@ -220,6 +220,8 @@ const ABI = {
     "function isRegistered(bytes32) view returns (bool)",
     "function hasAccess(bytes32, address) view returns (bool)",
     "function serviceCount(bytes32) view returns (uint256)",
+    "function registerCitizen(bytes32 citizenHash) external",
+    "function batchRegisterCitizens(bytes32[] citizenHashes) external",
     "event CitizenRegistered(bytes32 indexed citizenHash, uint256 timestamp)",
   ],
   AID: [
@@ -1130,6 +1132,47 @@ const WORKFLOWS = {
 };
 
 // ---
+// =============================================================================
+// SEED CITIZENS — demo citizens pre-loaded into the SBS registry
+// =============================================================================
+// These are the citizens already recorded across ministry dashboards in the
+// demo/test transactions. Their hashes match what is stored on-chain when
+// demo transactions are run. Replace with real WS- IDs when going to production.
+//
+// Hash format: keccak256(citizenId) — same as what the Record Service form produces.
+// e.g. ethers.keccak256(ethers.toUtf8Bytes("CITIZEN-WS-001"))
+//
+// To add real citizens: enter their WS- National ID or business number in the
+// SBS Bulk Register tool — the app hashes it before sending to chain.
+// PII (the plain ID) is NEVER sent to or stored on-chain.
+// =============================================================================
+const SEED_CITIZENS = [
+  // ── Demo citizens from existing ministry transactions ──────────────────
+  { id:"CITIZEN-WS-001", label:"Demo Citizen 01",        sector:"Education/Welfare",  note:"Used in EDU-BENEFIT workflow demo" },
+  { id:"CITIZEN-WS-002", label:"Demo Citizen 02",        sector:"Trade/Business",     note:"Used in CUSTOMS-CLEAR workflow demo" },
+  { id:"CITIZEN-WS-003", label:"Demo Citizen 03",        sector:"Business",           note:"Used in BIZ-LICENCE workflow demo" },
+  { id:"CITIZEN-WS-004", label:"Demo Citizen 04",        sector:"Education",          note:"Used in UNICEF-TRANCHE workflow demo" },
+  { id:"CITIZEN-WS-005", label:"Demo Citizen 05",        sector:"Welfare/Finance",    note:"Used in WELFARE workflow demo" },
+  // ── SOE payers ────────────────────────────────────────────────────────
+  { id:"SOE-EPC-2025-001", label:"Electric Power Corporation", sector:"Business/SOE", note:"SOE payer — government fee account" },
+  { id:"SOE-SWA-2025-002", label:"Samoa Water Authority",      sector:"Business/SOE", note:"SOE payer — government fee account" },
+  // ── Additional demo citizens for SBS services ─────────────────────────
+  { id:"CITIZEN-WS-006", label:"Demo Citizen 06",        sector:"Identity",           note:"SBS Digital ID demo" },
+  { id:"CITIZEN-WS-007", label:"Demo Citizen 07",        sector:"Identity",           note:"SBS Birth Certificate demo" },
+  { id:"CITIZEN-WS-008", label:"Demo Citizen 08",        sector:"Identity/Elections", note:"SBS Voter Registration demo" },
+  { id:"CITIZEN-WS-009", label:"Demo Business 01",       sector:"Business/Trade",     note:"Company Registration + Trade Licence demo" },
+  { id:"CITIZEN-WS-010", label:"Demo Foreign Investor",  sector:"Business/FDI",       note:"FOREIGN-INV workflow demo" },
+];
+
+// Pre-compute hashes for SEED_CITIZENS so the SBS dashboard can display them
+// without needing ethers at render time. These are deterministic keccak256 hashes.
+// Production note: real citizen hashes are computed at point of registration —
+// the plain ID never leaves the officer's browser.
+function getSeedHash(citizenId) {
+  // We use a simple consistent hash derivation matching what the Record Service form does
+  return ethers.keccak256(ethers.toUtf8Bytes(citizenId));
+}
+
 // FALLBACK MOCK DATA
 // ---
 const MOCK = {
@@ -3483,6 +3526,405 @@ function HubDashboard({ provider, connected, blockNumber, onBack, allRecords, al
   );
 }
 
+// =============================================================================
+// REGISTRY TAB — SBS Identity Registry
+// Three sections:
+//   1. Bulk Register tool — register citizens on-chain via NDIDSRegistry
+//   2. NDIDS Sync status — shows SEED_CITIZENS with on-chain verification
+//   3. SBS service records — on-chain records of SBS-issued documents
+// =============================================================================
+function RegistryTab({ SBS_CARD, SBS_PURPLE, myRecords, lastReceipt, idLookup, setIdLookup, provider, connected, onGoRecord }) {
+  const SBS_INPUT = { width:"100%", background:"#0F0820", border:`1px solid ${SBS_PURPLE}44`,
+    borderRadius:"8px", padding:"10px 14px", color:"#E9D5FF", fontSize:"13px",
+    fontFamily:F.ui, boxSizing:"border-box" };
+
+  // ── State ───────────────────────────────────────────────────────────────
+  const [bulkInput,      setBulkInput]      = useState("");        // textarea of WS- IDs
+  const [bulkMode,       setBulkMode]       = useState("seed");    // "seed" | "manual" | "csv"
+  const [registering,    setRegistering]    = useState(false);
+  const [regResults,     setRegResults]     = useState([]);        // [{id, hash, status, error}]
+  const [lookupResult,   setLookupResult]   = useState(null);
+  const [lookupLoading,  setLookupLoading]  = useState(false);
+  const [seedStatus,     setSeedStatus]     = useState({});        // { citizenId: "registered"|"not_registered"|"checking"|"error" }
+  const [seedChecked,    setSeedChecked]    = useState(false);
+
+  const ndidsContract = provider
+    ? new ethers.Contract(ADDR.NDIDS, ABI.NDIDS, provider)
+    : null;
+  const ndidsSigner = provider
+    ? new ethers.Contract(ADDR.NDIDS, ABI.NDIDS, provider.getSigner ? provider.getSigner() : provider)
+    : null;
+
+  // ── Check all seed citizens against NDIDSRegistry ───────────────────────
+  const checkSeedStatus = async () => {
+    if (!ndidsContract) {
+      // Offline mode — mark all as unverifiable
+      const s = {};
+      SEED_CITIZENS.forEach(c => { s[c.id] = "offline"; });
+      setSeedStatus(s);
+      setSeedChecked(true);
+      return;
+    }
+    const s = {};
+    SEED_CITIZENS.forEach(c => { s[c.id] = "checking"; });
+    setSeedStatus({...s});
+    for (const citizen of SEED_CITIZENS) {
+      try {
+        const h = getSeedHash(citizen.id);
+        const registered = await ndidsContract.isRegistered(h);
+        s[citizen.id] = registered ? "registered" : "not_registered";
+      } catch(e) {
+        s[citizen.id] = "error";
+      }
+      setSeedStatus({...s});
+    }
+    setSeedChecked(true);
+  };
+
+  // ── Register a single citizen by ID ────────────────────────────────────
+  const registerOne = async (citizenId) => {
+    const h = getSeedHash(citizenId.trim());
+    try {
+      if (!ndidsSigner) throw new Error("No signer — connect wallet");
+      const tx = await ndidsSigner.registerCitizen(h);
+      await tx.wait();
+      return { id:citizenId, hash:h, status:"registered", txHash:tx.hash };
+    } catch(e) {
+      const msg = e.message || "Unknown error";
+      // "already registered" is not a real error for our purposes
+      if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("exist")) {
+        return { id:citizenId, hash:h, status:"already_registered" };
+      }
+      return { id:citizenId, hash:h, status:"error", error:msg };
+    }
+  };
+
+  // ── Bulk register all seed citizens ────────────────────────────────────
+  const handleRegisterSeed = async () => {
+    setRegistering(true);
+    setRegResults([]);
+    const results = [];
+    for (const citizen of SEED_CITIZENS) {
+      const r = await registerOne(citizen.id);
+      results.push({ ...r, label: citizen.label });
+      setRegResults([...results]);
+    }
+    setRegistering(false);
+    // Refresh seed status
+    await checkSeedStatus();
+  };
+
+  // ── Register from manual textarea input ────────────────────────────────
+  const handleRegisterManual = async () => {
+    const ids = bulkInput.split("\n").map(s=>s.trim()).filter(Boolean);
+    if (!ids.length) return;
+    setRegistering(true);
+    setRegResults([]);
+    const results = [];
+    for (const id of ids) {
+      const r = await registerOne(id);
+      results.push(r);
+      setRegResults([...results]);
+    }
+    setRegistering(false);
+  };
+
+  // ── Lookup a single citizen by ID or hash ──────────────────────────────
+  const handleLookup = async () => {
+    if (!idLookup.trim()) return;
+    setLookupLoading(true);
+    setLookupResult(null);
+    try {
+      const isHash = idLookup.trim().startsWith("0x") && idLookup.trim().length === 66;
+      const h = isHash ? idLookup.trim() : getSeedHash(idLookup.trim());
+      // Check seed data match
+      const seedMatch = SEED_CITIZENS.find(c => c.id === idLookup.trim() || getSeedHash(c.id) === h);
+      // Check on-chain if connected
+      let onChain = null;
+      if (ndidsContract) {
+        onChain = await ndidsContract.isRegistered(h);
+      }
+      // Find any SBS service records for this hash
+      const serviceRecs = myRecords.filter(r => r.citizenHash?.toLowerCase() === h.toLowerCase());
+      setLookupResult({ input: idLookup.trim(), hash: h, onChain, seedMatch, serviceRecs });
+    } catch(e) {
+      setLookupResult({ error: e.message });
+    } finally { setLookupLoading(false); }
+  };
+
+  // ── Status badge helper ─────────────────────────────────────────────────
+  const statusBadge = (status) => {
+    const map = {
+      registered:       { color:"#34D399", bg:"#34D39918", label:"✅ On-chain" },
+      not_registered:   { color:"#FBBF24", bg:"#FBBF2418", label:"⚠ Not registered" },
+      already_registered: { color:"#34D399", bg:"#34D39918", label:"✅ Already registered" },
+      checking:         { color:"#A78BFA", bg:"#A78BFA18", label:"⏳ Checking…" },
+      offline:          { color:"#94A3B8", bg:"#94A3B818", label:"— Offline" },
+      error:            { color:"#F87171", bg:"#F8717118", label:"❌ Error" },
+    };
+    const s = map[status] || map.error;
+    return <span style={{ fontSize:"10px", fontWeight:700, color:s.color, background:s.bg, padding:"2px 8px", borderRadius:"4px" }}>{s.label}</span>;
+  };
+
+  const notRegisteredCount = Object.values(seedStatus).filter(v=>v==="not_registered").length;
+  const registeredCount    = Object.values(seedStatus).filter(v=>v==="registered"||v==="already_registered").length;
+
+  return (
+    <>
+      <SectionHead
+        title="📋 Identity Registry"
+        sub={`${myRecords.length} SBS service records on-chain · ${SEED_CITIZENS.length} citizens in seed data`}
+      />
+
+      {/* ── SECTION 1: NDIDS SYNC ──────────────────────────────────── */}
+      <div style={{ ...SBS_CARD, marginBottom:"20px", borderTop:`3px solid ${SBS_PURPLE}` }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"14px" }}>
+          <div>
+            <div style={{ fontWeight:800, fontSize:"15px", color:"#E9D5FF", marginBottom:"4px" }}>
+              🔄 Sync Citizens to NDIDSRegistry
+            </div>
+            <div style={{ fontSize:"12px", color:"#A78BFA" }}>
+              {SEED_CITIZENS.length} demo citizens · {registeredCount} on-chain · {notRegisteredCount} pending
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:"8px" }}>
+            <button onClick={checkSeedStatus} disabled={registering}
+              style={{ ...btn("ghost"), fontSize:"11px", borderColor:`${SBS_PURPLE}66` }}>
+              🔍 Check Status
+            </button>
+            {connected && notRegisteredCount > 0 && (
+              <button onClick={handleRegisterSeed} disabled={registering}
+                style={{ ...btn("primary"), fontSize:"11px", background:SBS_PURPLE }}>
+                {registering ? "⏳ Registering…" : `📡 Register All (${notRegisteredCount})`}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Privacy notice */}
+        <div style={{ padding:"10px 12px", background:"#0F082088", border:`1px solid ${SBS_PURPLE}33`, borderRadius:"8px", marginBottom:"14px", fontSize:"11px", color:"#A78BFA", lineHeight:1.7 }}>
+          🔒 <strong style={{ color:"#E9D5FF" }}>Privacy-preserving:</strong> Only the <code style={{ color:"#C4B5FD" }}>keccak256</code> hash of each citizen ID is sent to the chain.
+          The plain WS- ID never leaves this browser. The NDIDSRegistry stores hashes only — zero PII on-chain.
+          This is GDPR-aligned and compatible with the Pacific Data Governance Framework.
+        </div>
+
+        {/* Seed citizens table */}
+        <div style={{ display:"grid", gap:"6px" }}>
+          {SEED_CITIZENS.map(citizen => {
+            const status  = seedStatus[citizen.id] || "unchecked";
+            const h = getSeedHash(citizen.id);
+            return (
+              <div key={citizen.id} style={{ display:"grid", gridTemplateColumns:"1fr 120px 140px 100px", gap:"8px", alignItems:"center",
+                background:"#0F0820", borderRadius:"6px", padding:"8px 12px" }}>
+                <div>
+                  <div style={{ fontSize:"12px", fontWeight:700, color:"#E9D5FF" }}>{citizen.id}</div>
+                  <div style={{ fontSize:"10px", color:"#7C3AED", marginTop:"1px" }}>{citizen.label} · {citizen.sector}</div>
+                </div>
+                <div style={{ fontSize:"9px", color:"#4B3B6B", fontFamily:F.mono }}>{h.slice(0,14)}…</div>
+                <div>{statusBadge(status)}</div>
+                <div>
+                  {connected && (status === "not_registered" || status === "unchecked") && (
+                    <button onClick={async()=>{
+                      setSeedStatus(s=>({...s,[citizen.id]:"checking"}));
+                      const r = await registerOne(citizen.id);
+                      setSeedStatus(s=>({...s,[citizen.id]:r.status}));
+                    }} style={{ ...btn("ghost"), fontSize:"10px", padding:"3px 8px", borderColor:`${SBS_PURPLE}66` }}>
+                      Register
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Registration results */}
+        {regResults.length > 0 && (
+          <div style={{ marginTop:"14px", padding:"12px", background:"#0F0820", borderRadius:"8px" }}>
+            <div style={{ fontSize:"11px", fontWeight:700, color:"#A78BFA", marginBottom:"8px" }}>
+              Registration Results — {regResults.filter(r=>r.status==="registered"||r.status==="already_registered").length}/{regResults.length} complete
+            </div>
+            {regResults.map((r,i)=>(
+              <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+                padding:"5px 8px", borderBottom:`1px solid ${SBS_PURPLE}18` }}>
+                <span style={{ fontSize:"11px", color:"#C4B5FD" }}>{r.id}</span>
+                <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
+                  {r.txHash && <span style={{ fontSize:"9px", color:"#4B3B6B", fontFamily:F.mono }}>{r.txHash.slice(0,14)}…</span>}
+                  {statusBadge(r.status)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── SECTION 2: MANUAL / CSV REGISTER ──────────────────────── */}
+      <div style={{ ...SBS_CARD, marginBottom:"20px" }}>
+        <div style={{ fontWeight:700, fontSize:"14px", color:"#E9D5FF", marginBottom:"10px" }}>
+          ✏️ Register Additional Citizens
+        </div>
+        <div style={{ display:"flex", gap:"8px", marginBottom:"12px" }}>
+          {[["seed","Seed List"],["manual","Enter IDs"],["csv","CSV Upload"]].map(([m,l])=>(
+            <button key={m} onClick={()=>setBulkMode(m)}
+              style={{ ...btn(bulkMode===m?"primary":"ghost"), fontSize:"11px",
+                ...(bulkMode===m?{background:SBS_PURPLE}:{borderColor:`${SBS_PURPLE}66`}) }}>
+              {l}
+            </button>
+          ))}
+        </div>
+
+        {bulkMode === "manual" && (
+          <>
+            <div style={{ fontSize:"11px", color:"#A78BFA", marginBottom:"8px" }}>
+              Enter one Citizen ID per line (WS- National ID, Business No., or SOE-EPC-… format).
+              Plain IDs are hashed in-browser — never sent to chain.
+            </div>
+            <textarea
+              value={bulkInput}
+              onChange={e=>setBulkInput(e.target.value)}
+              placeholder={"WS-123456\nWS-234567\nSOE-EPC-2025-003\nBUSINESS-12345"}
+              rows={6}
+              style={{ ...SBS_INPUT, resize:"vertical", marginBottom:"10px" }}
+            />
+            <div style={{ display:"flex", gap:"10px", alignItems:"center" }}>
+              <button onClick={handleRegisterManual} disabled={!connected||registering||!bulkInput.trim()}
+                style={{ ...btn("primary"), background:SBS_PURPLE, fontSize:"12px" }}>
+                {registering ? "⏳ Registering…" : "📡 Register IDs"}
+              </button>
+              {!connected && <span style={{ fontSize:"11px", color:"#FBBF24" }}>⚠ Connect wallet to register on-chain</span>}
+            </div>
+          </>
+        )}
+
+        {bulkMode === "csv" && (
+          <div style={{ padding:"24px", textAlign:"center", border:`2px dashed ${SBS_PURPLE}44`, borderRadius:"8px" }}>
+            <div style={{ fontSize:"28px", marginBottom:"8px" }}>📄</div>
+            <div style={{ fontSize:"13px", color:"#A78BFA", marginBottom:"6px" }}>CSV upload — production feature</div>
+            <div style={{ fontSize:"11px", color:"#7C3AED" }}>
+              Upload a .csv with a "citizenId" column. All IDs are hashed client-side before registration.
+              Available in the production version with BSP identity API integration.
+            </div>
+          </div>
+        )}
+
+        {bulkMode === "seed" && (
+          <div style={{ fontSize:"12px", color:"#A78BFA", lineHeight:1.8 }}>
+            The <strong style={{ color:"#E9D5FF" }}>Seed List</strong> above contains all {SEED_CITIZENS.length} demo citizens
+            pre-loaded for the MVP. Use the "Register All" button to push them to the NDIDSRegistry contract,
+            or click "Register" next to each individual citizen. For real citizen onboarding, switch to "Enter IDs" mode.
+          </div>
+        )}
+      </div>
+
+      {/* ── SECTION 3: CITIZEN LOOKUP ──────────────────────────────── */}
+      <div style={{ ...SBS_CARD, marginBottom:"20px" }}>
+        <div style={{ fontWeight:700, fontSize:"14px", color:"#E9D5FF", marginBottom:"10px" }}>🔍 Citizen Lookup</div>
+        <div style={{ display:"flex", gap:"10px", marginBottom:"10px" }}>
+          <input value={idLookup} onChange={e=>setIdLookup(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&handleLookup()}
+            placeholder="Enter WS- National ID, Business No., or 0x hash…"
+            style={{ ...SBS_INPUT, flex:1 }} />
+          <button onClick={handleLookup} disabled={lookupLoading||!idLookup.trim()}
+            style={{ ...btn("primary"), background:SBS_PURPLE, whiteSpace:"nowrap" }}>
+            {lookupLoading ? "…" : "Search"}
+          </button>
+        </div>
+        {idLookup.trim() && !idLookup.trim().startsWith("0x") && (
+          <div style={{ fontSize:"10px", color:"#7C3AED", fontFamily:F.mono, marginBottom:"8px" }}>
+            Will check hash: {getSeedHash(idLookup.trim()).slice(0,28)}…
+          </div>
+        )}
+        {lookupResult && !lookupResult.error && (
+          <div style={{ background:"#0F0820", borderRadius:"8px", padding:"14px" }}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"10px" }}>
+              {[
+                ["Input",       lookupResult.input],
+                ["Hash",        lookupResult.hash?.slice(0,20)+"…"],
+                ["On-chain",    lookupResult.onChain === null ? "—" : lookupResult.onChain ? "✅ Registered" : "❌ Not registered"],
+                ["In seed list", lookupResult.seedMatch ? `✅ ${lookupResult.seedMatch.label}` : "—"],
+              ].map(([l,v])=>(
+                <div key={l}>
+                  <div style={{ fontSize:"9px", color:"#7C3AED", textTransform:"uppercase", marginBottom:"2px" }}>{l}</div>
+                  <div style={{ fontSize:"12px", color:"#E9D5FF", fontWeight:700 }}>{v}</div>
+                </div>
+              ))}
+            </div>
+            {lookupResult.serviceRecs?.length > 0 && (
+              <div style={{ borderTop:`1px solid ${SBS_PURPLE}22`, paddingTop:"10px" }}>
+                <div style={{ fontSize:"11px", color:"#A78BFA", marginBottom:"6px" }}>
+                  SBS Service Records ({lookupResult.serviceRecs.length}):
+                </div>
+                {lookupResult.serviceRecs.map((r,i)=>(
+                  <div key={i} style={{ fontSize:"11px", color:"#C4B5FD", padding:"4px 0" }}>
+                    {serviceLabel(r.serviceType)} · Block {r.blockNumber || "—"}
+                  </div>
+                ))}
+              </div>
+            )}
+            {connected && lookupResult.onChain === false && (
+              <button onClick={async()=>{
+                const r = await registerOne(lookupResult.input);
+                setLookupResult(prev=>({...prev, onChain: r.status==="registered"||r.status==="already_registered", regResult:r}));
+              }} style={{ ...btn("primary"), background:SBS_PURPLE, fontSize:"12px", marginTop:"10px" }}>
+                📡 Register this citizen
+              </button>
+            )}
+          </div>
+        )}
+        {lookupResult?.error && (
+          <div style={{ color:"#F87171", fontSize:"12px", padding:"10px" }}>{lookupResult.error}</div>
+        )}
+      </div>
+
+      {/* ── SECTION 4: SBS SERVICE RECORDS ON-CHAIN ────────────────── */}
+      <SectionHead title="📄 SBS Service Records On-Chain" sub={`${myRecords.length} identity documents issued`} />
+      {lastReceipt && (
+        <div style={{ ...SBS_CARD, marginBottom:"12px", borderLeft:"4px solid #34D399" }}>
+          <div style={{ fontSize:"11px", fontWeight:700, color:"#34D399", marginBottom:"6px" }}>📋 Last Issued Certificate</div>
+          <ReceiptCard {...lastReceipt} ministry={{ code:"SBS", color:SBS_PURPLE, name:"Samoa Bureau of Statistics" }} onAnother={onGoRecord} />
+        </div>
+      )}
+      {myRecords.length === 0 ? (
+        <div style={{ ...SBS_CARD, textAlign:"center", padding:"48px" }}>
+          <div style={{ fontSize:"32px", marginBottom:"10px" }}>📭</div>
+          <div style={{ color:"#A78BFA", fontSize:"14px" }}>No SBS service records on chain yet</div>
+          <div style={{ color:"#7C3AED", fontSize:"12px", marginTop:"6px" }}>Issue an identity document via the Record Service tab</div>
+        </div>
+      ) : myRecords.map((r, i) => {
+        const fi = SERVICE_FEES[r.serviceType] || {};
+        // Check if this citizen is in the seed list
+        const seedEntry = SEED_CITIZENS.find(c => getSeedHash(c.id) === r.citizenHash);
+        return (
+          <div key={i} style={{ ...SBS_CARD, marginBottom:"10px", borderLeft:`4px solid ${SBS_PURPLE}` }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"8px" }}>
+              <div>
+                <div style={{ fontWeight:700, fontSize:"13px", color:"#E9D5FF" }}>{serviceLabel(r.serviceType)}</div>
+                <div style={{ fontSize:"11px", color:"#A78BFA", marginTop:"2px" }}>
+                  Hash: <Mono>{short(r.citizenHash)}</Mono>
+                  {seedEntry && <span style={{ color:"#34D399", marginLeft:"8px" }}>· {seedEntry.id}</span>}
+                </div>
+              </div>
+              <span style={{ ...badge(SBS_PURPLE), fontSize:"9px" }}>On-chain ✓</span>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"6px" }}>
+              {[
+                ["Block",    r.blockNumber || "—"],
+                ["Fee",      fi.hasFee ? `WST ${fi.govFee}` : "Free"],
+                ["Date",     r.timestamp ? new Date(r.timestamp*1000).toLocaleDateString() : "—"],
+              ].map(([l,v])=>(
+                <div key={l} style={{ background:"#0F0820", borderRadius:"4px", padding:"5px 8px" }}>
+                  <div style={{ fontSize:"8px", color:"#7C3AED", textTransform:"uppercase", marginBottom:"1px" }}>{l}</div>
+                  <div style={{ fontSize:"11px", color:"#C4B5FD" }}>{v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
 // ---
 // SBS DASHBOARD — Samoa Bureau of Statistics
 // Full ministry dashboard: National Digital ID, Birth Certificates, Passports,
@@ -3725,60 +4167,17 @@ function SBSDashboard({ provider, connected, blockNumber, onBack, onNavigate, al
 
         {/* ─── IDENTITY REGISTRY ────────────────────────────────────── */}
         {tab === "registry" && (
-          <>
-            <SectionHead title="📋 Identity Registry" sub={`${myRecords.length} identity records issued by SBS on-chain`} />
-
-            {/* ID lookup */}
-            <div style={{ ...SBS_CARD, marginBottom:"20px" }}>
-              <div style={{ fontSize:"13px", fontWeight:700, color:"#A78BFA", marginBottom:"10px" }}>🔍 Look up an identity record</div>
-              <div style={{ display:"flex", gap:"10px" }}>
-                <input value={idLookup} onChange={e=>setIdLookup(e.target.value)}
-                  placeholder="Enter National ID, hash, or reference…"
-                  style={{ flex:1, background:"#0F0820", border:`1px solid ${SBS_PURPLE}44`, borderRadius:"8px", padding:"10px 14px", color:"#E9D5FF", fontSize:"13px", fontFamily:F.ui }} />
-                <button onClick={()=>{}} style={{ ...btn("primary"), background:SBS_PURPLE }}>Search</button>
-              </div>
-            </div>
-
-            {lastReceipt && (
-              <div style={{ ...SBS_CARD, marginBottom:"16px", borderLeft:`4px solid #34D399` }}>
-                <div style={{ fontSize:"11px", fontWeight:700, color:"#34D399", marginBottom:"6px" }}>📋 Last Issued Certificate</div>
-                <ReceiptCard {...lastReceipt} ministry={{ code:"SBS", color:SBS_PURPLE, name:"Samoa Bureau of Statistics" }} onAnother={()=>setTab("record")} />
-              </div>
-            )}
-
-            {myRecords.length === 0 ? (
-              <div style={{ ...SBS_CARD, textAlign:"center", padding:"48px" }}>
-                <div style={{ fontSize:"32px", marginBottom:"10px" }}>📭</div>
-                <div style={{ color:"#A78BFA", fontSize:"14px" }}>No SBS records on chain yet</div>
-                <div style={{ color:"#7C3AED", fontSize:"12px", marginTop:"6px" }}>Submit the first identity record via Record Service tab</div>
-              </div>
-            ) : myRecords.map((r, i) => {
-              const fi = SERVICE_FEES[r.serviceType] || {};
-              return (
-                <div key={i} style={{ ...SBS_CARD, marginBottom:"10px", borderLeft:`4px solid ${SBS_PURPLE}` }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"8px" }}>
-                    <div>
-                      <div style={{ fontWeight:700, fontSize:"13px", color:"#E9D5FF" }}>{serviceLabel(r.serviceType)}</div>
-                      <div style={{ fontSize:"11px", color:"#A78BFA", marginTop:"2px" }}>Citizen: <Mono>{short(r.citizenHash)}</Mono></div>
-                    </div>
-                    <span style={{ ...badge(SBS_PURPLE), fontSize:"9px" }}>On-chain ✓</span>
-                  </div>
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"6px" }}>
-                    {[
-                      ["Block",    r.blockNumber || "—"],
-                      ["Fee",      fi.hasFee ? `WST ${fi.govFee}` : "Free"],
-                      ["Date",     r.timestamp ? new Date(r.timestamp*1000).toLocaleDateString() : "—"],
-                    ].map(([l,v])=>(
-                      <div key={l} style={{ background:"#0F0820", borderRadius:"4px", padding:"5px 8px" }}>
-                        <div style={{ fontSize:"8px", color:"#7C3AED", textTransform:"uppercase", marginBottom:"1px" }}>{l}</div>
-                        <div style={{ fontSize:"11px", color:"#C4B5FD" }}>{v}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </>
+          <RegistryTab
+            SBS_CARD={SBS_CARD}
+            SBS_PURPLE={SBS_PURPLE}
+            myRecords={myRecords}
+            lastReceipt={lastReceipt}
+            idLookup={idLookup}
+            setIdLookup={setIdLookup}
+            provider={provider}
+            connected={connected}
+            onGoRecord={()=>setTab("record")}
+          />
         )}
       </div>
     </div>

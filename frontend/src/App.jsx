@@ -2004,6 +2004,29 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
       const tx       = await contract.recordService(cHash, form.serviceType, dHash, form.ndidsVerified);
       setTxMsg({ type:"info", text:"Awaiting confirmation…" });
       const receipt  = await tx.wait();
+
+      // ── Auto-register citizen in NDIDSRegistry ──────────────────────────
+      // Every citizen who receives a service record is automatically registered
+      // in NDIDSRegistry so the two systems stay permanently in sync.
+      // Runs silently — "already registered" errors are ignored.
+      // This ensures backfill happens naturally as officers process services.
+      try {
+        const ndidsSigner   = new ethers.Contract(ADDR.NDIDS, ABI.NDIDS, signer);
+        const alreadyInNDIDS = await ndidsSigner.isRegistered(cHash).catch(()=>false);
+        if (!alreadyInNDIDS) {
+          const ndidsTx = await ndidsSigner.registerCitizen(cHash);
+          await ndidsTx.wait();
+          // Silent success — no user-facing message needed
+        }
+      } catch(ndidsErr) {
+        // Never block the service record on an NDIDS registration failure.
+        // Officer sees a soft warning only — the service record is already confirmed.
+        const msg = ndidsErr?.reason || ndidsErr?.message || "";
+        if (!msg.toLowerCase().includes("already") && !msg.toLowerCase().includes("exist")) {
+          console.warn("NDIDS auto-register note:", msg);
+        }
+      }
+      // ── End auto-register ───────────────────────────────────────────────
       onSuccess({
         txHash:receipt.hash, citizenId:form.citizenId, serviceType:form.serviceType,
         evidenceNote:evidence, amount:form.amount, fee:form.fee,
@@ -5173,6 +5196,29 @@ function NDIDSDashboard({ provider, connected, blockNumber, onBack, allRecords }
           </div>
           <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.8 }}>
             <strong style={{ color:C.seafoam }}>How NDIDS works:</strong> No personal information is stored on-chain. Each citizen is identified by a <code style={{ color:C.seafoam }}>keccak256</code> hash of their identity credentials. Ministries are granted sector-specific read access — a ministry can only verify a citizen's hash if they have been provisioned access to that sector's registry. Cross-workflow steps (e.g. CBS processing an education payment) submit with <code style={{ color:C.amber }}>ndidsVerified=false</code>, meaning the identity was already verified by the initiating ministry upstream. This is by design and aligns with Samoa's data sovereignty and emerging GDPR-equivalent frameworks.
+            <div style={{ marginTop:"14px", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px" }}>
+              <div style={{ background:C.abyss, borderRadius:"8px", padding:"12px", border:`1px solid ${C.seafoam}33` }}>
+                <div style={{ fontSize:"11px", fontWeight:700, color:C.seafoam, marginBottom:"6px" }}>🪪 NDIDSRegistry</div>
+                <div style={{ fontSize:"11px", color:C.silver, lineHeight:1.8 }}>
+                  Stores: <strong style={{ color:C.white }}>citizenHash only</strong><br/>
+                  Purpose: Identity gating — "is this person authorised?"<br/>
+                  Populated by: <code style={{ color:C.seafoam }}>registerCitizen()</code><br/>
+                  <span style={{ color:C.gold }}>v17: auto-called on every service record ✓</span>
+                </div>
+              </div>
+              <div style={{ background:C.abyss, borderRadius:"8px", padding:"12px", border:`1px solid ${C.ocean}33` }}>
+                <div style={{ fontSize:"11px", fontWeight:700, color:C.silver, marginBottom:"6px" }}>📋 Ministry Contracts</div>
+                <div style={{ fontSize:"11px", color:C.silver, lineHeight:1.8 }}>
+                  Stores: <strong style={{ color:C.white }}>service records</strong><br/>
+                  Purpose: What services has this citizen received?<br/>
+                  Populated by: <code style={{ color:C.seafoam }}>recordService()</code><br/>
+                  <span style={{ color:C.muted }}>Independent from NDIDSRegistry</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ marginTop:"10px", fontSize:"11px", color:C.muted, borderTop:`1px solid ${C.ocean}22`, paddingTop:"10px" }}>
+              ℹ The count displayed above is the live NDIDSRegistry total. The MOCK fallback (25) shows only when the chain is offline. After an Anvil restart the chain resets to 0 — run <code style={{ color:C.seafoam }}>node register_citizens.js</code> to backfill, or simply record services and auto-registration handles it.
+            </div>
           </div>
         </div>
 

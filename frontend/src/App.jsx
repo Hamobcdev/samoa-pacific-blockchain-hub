@@ -324,7 +324,7 @@ const SERVICE_TYPES = {
     { value:"SPECTRUM_LICENCE_ISSUED", label:"Spectrum Licence Issued",    desc:"Radio/telecom spectrum licence granted" },
     { value:"DIGITAL_ID_ISSUED",       label:"Digital ID Issued",          desc:"Government digital identity credential issued" },
     { value:"CYBERSECURITY_AUDIT",     label:"Cybersecurity Audit",        desc:"Organisation cybersecurity compliance recorded" },
-    { value:"ICT_REGISTRATION",        label:"ICT Sector Approval",        desc:"ICT/sector review for investment or registration" },
+    { value:"ICT_REGISTRATION",        label:"Sector Regulatory Clearance", desc:"Sector authority review for investment, ICT registration, or compliance clearance" },
   ],
   MCIL: [
     { value:"TRADE_LICENCE_UPDATED",         label:"Trade Licence Verified",      desc:"Importer trade licence verified for customs" },
@@ -406,11 +406,12 @@ const WORKFLOW_DEFS = {
     name: "Foreign Investment Approval",
     icon: "🌏",
     steps: [
-      { ministry:"MCIL", serviceType:"FOREIGN_INVESTMENT_APPROVED", label:"MCIL: Application Review",            fee:false },
-      { ministry:"MOF",  serviceType:"TAX_COMPLIANCE_VERIFIED",     label:"MOF: Tax & Compliance Clearance",     fee:false },
-      { ministry:"MCIT", serviceType:"ICT_REGISTRATION",            label:"MCIT: Sector Review & Approval",      fee:false },
-      { ministry:"MCIL", serviceType:"LABOUR_CONTRACT_RECORDED",    label:"MCIL: Issue Investment Certificate ✓",fee:false },
+      { ministry:"MCIL", serviceType:"FOREIGN_INVESTMENT_APPROVED", label:"MCIL: Application Review & Initial Approval", fee:false },
+      { ministry:"MOF",  serviceType:"TAX_COMPLIANCE_VERIFIED",     label:"MOF: Tax & Compliance Clearance",            fee:false },
+      { ministry:"MCIT", serviceType:"ICT_REGISTRATION",            label:"MCIT: Sector Regulatory Clearance",          fee:false },
+      { ministry:"MCIL", serviceType:"LABOUR_CONTRACT_RECORDED",    label:"MCIL: Issue Investment Certificate ✓",       fee:false },
     ],
+    note: "MCIT provides sector regulatory clearance at Step 3. For ICT/telecoms investments this is a spectrum and licensing review; for other sectors MCIT confirms the digital infrastructure and compliance requirements are met before MCIL issues the final certificate.",
   },
   "UNICEF-TRANCHE": {
     name: "UNICEF Grant Tranche",
@@ -529,7 +530,7 @@ const WORKFLOWS = {
   BUSINESS_LICENCE_DIGITAL:       { workflowName:"Business Licence",                 workflowId:"BIZ-LICENCE",   step:3, totalSteps:3, owner:"MCIT",      stepLabel:"Step 3 of 3 — Licence Issued ✓",          nextStep:null,                                                                                                                          prevSteps:[{ ministry:"MCIL",      label:"Company registered"         },{ ministry:"MOF",label:"Fee processed" }], receipt:{ label:"Business Licence Reference",      prefix:"MCIT-LIC" }, notice:"Workflow complete. Digital business licence permanently on chain." },
   FOREIGN_INVESTMENT_APPROVED:    { workflowName:"Foreign Investment Approval",      workflowId:"FOREIGN-INV",   step:1, totalSteps:4, owner:"MCIL",      stepLabel:"Step 1 of 4 — MCIL Review",               nextStep:{ ministry:"MOF",       action:"Tax & compliance clearance",        serviceType:"TAX_COMPLIANCE_VERIFIED"         }, prevSteps:[],                                                                                  receipt:{ label:"FDI Application Reference",       prefix:"MCIL-FDI" }, notice:"MOF must clear tax and compliance." },
   TAX_COMPLIANCE_VERIFIED:        { workflowName:"Foreign Investment Approval",      workflowId:"FOREIGN-INV",   step:2, totalSteps:4, owner:"MOF",       stepLabel:"Step 2 of 4 — MOF Clearance",             nextStep:{ ministry:"MCIT",      action:"Sector review and approval",        serviceType:"ICT_REGISTRATION"                }, prevSteps:[{ ministry:"MCIL",      label:"Application reviewed"       }],  receipt:{ label:"Tax Compliance Reference",        prefix:"MOF-TAX"  }, notice:"MCIT must complete sector review before MCIL issues certificate." },
-  ICT_REGISTRATION:               { workflowName:"Foreign Investment Approval",      workflowId:"FOREIGN-INV",   step:3, totalSteps:4, owner:"MCIT",      stepLabel:"Step 3 of 4 — MCIT Sector Approval",      nextStep:{ ministry:"MCIL",      action:"Issue investment certificate",      serviceType:"LABOUR_CONTRACT_RECORDED"        }, prevSteps:[{ ministry:"MCIL",      label:"Application reviewed"       },{ ministry:"MOF",label:"Tax cleared" }], receipt:{ label:"Sector Approval Reference",       prefix:"MCIT-INV" }, notice:"MCIL must now issue the final investment certificate." },
+  ICT_REGISTRATION:               { workflowName:"Foreign Investment Approval",      workflowId:"FOREIGN-INV",   step:3, totalSteps:4, owner:"MCIT",      stepLabel:"Step 3 of 4 — MCIT Sector Regulatory Clearance", nextStep:{ ministry:"MCIL",      action:"Issue investment certificate",      serviceType:"LABOUR_CONTRACT_RECORDED"        }, prevSteps:[{ ministry:"MCIL",      label:"Application reviewed"       },{ ministry:"MOF",label:"Tax cleared" }], receipt:{ label:"Sector Clearance Reference",      prefix:"MCIT-INV" }, notice:"MCIL must now issue the final investment certificate. MCIT sector clearance is recorded on chain as a permanent compliance record." },
   LABOUR_CONTRACT_RECORDED:       { workflowName:"Foreign Investment Approval",      workflowId:"FOREIGN-INV",   step:4, totalSteps:4, owner:"MCIL",      stepLabel:"Step 4 of 4 — Certificate Issued ✓",      nextStep:null,                                                                                                                          prevSteps:[{ ministry:"MCIL",      label:"Application reviewed"       },{ ministry:"MOF",label:"Tax cleared" },{ ministry:"MCIT",label:"Sector approved" }], receipt:{ label:"Investment Certificate Reference",prefix:"MCIL-CERT"}, notice:"Workflow complete. Investment certificate permanently on chain." },
   GRADUATION_RECORD:              { workflowName:"UNICEF Grant Tranche",             workflowId:"UNICEF-TRANCHE",step:1, totalSteps:2, owner:"EDUCATION", stepLabel:"Step 1 of 2 — Evidence Submitted",        nextStep:{ ministry:"MOF",       action:"Confirm financial evidence",        serviceType:"BUDGET_ALLOCATION_RECORDED"      }, prevSteps:[],                                                                                  receipt:{ label:"Evidence Reference",              prefix:"EDU-EVID" }, notice:"MOF must confirm financial evidence before UNICEF can verify tranche." },
   // Standalone records
@@ -685,9 +686,12 @@ function StatusBadge({ status }) {
 }
 function ConnectionBanner({ connected, error, network }) {
   if (connected) return (
-    <div style={{ background:C.seafoam+"18", borderBottom:`1px solid ${C.seafoam}33`, padding:"6px 28px", display:"flex", gap:"12px", alignItems:"center", fontSize:"11px" }}>
+    <div style={{ background:C.seafoam+"18", borderBottom:`1px solid ${C.seafoam}33`, padding:"6px 28px", display:"flex", gap:"12px", alignItems:"center", fontSize:"11px", flexWrap:"wrap" }}>
       <span style={{ color:C.seafoam, fontWeight:700 }}>● LIVE — reading from {network}</span>
       <span style={{ color:C.muted }}>Polling every {CONFIG.POLL_MS/1000}s · transactions appear automatically</span>
+      <span style={{ color:C.muted, borderLeft:`1px solid ${C.ocean}`, paddingLeft:"12px" }}>
+        ℹ Block # advances on each transaction (Anvil mines on demand). On testnet/mainnet blocks advance automatically every ~2–12s depending on chain configuration.
+      </span>
     </div>
   );
   return (
@@ -791,8 +795,14 @@ function WorkflowProgress({ wf, currentStep }) {
   );
 }
 
-function ReceiptCard({ txHash, citizenId, serviceType, evidenceNote, timestamp, ministry, amount, fee, officerId, onNext, onAnother }) {
-  const wf         = WORKFLOWS[serviceType] || {};
+function ReceiptCard({ txHash, citizenId, serviceType, evidenceNote, timestamp, ministry, amount, fee, officerId, workflowId, onNext, onAnother }) {
+  // Resolve to the correct WORKFLOWS entry.
+  // DIGITAL_PAYMENT_RECORDED and TAX_COMPLIANCE_VERIFIED appear in multiple workflows —
+  // use the workflowId carried from the pending action to find the right entry.
+  const wfEntry = workflowId
+    ? Object.entries(WORKFLOWS).find(([svc, w]) => svc === serviceType && w.workflowId === workflowId)?.[1]
+    : null;
+  const wf         = wfEntry || WORKFLOWS[serviceType] || {};
   const ref        = generateRef(txHash, wf.receipt?.prefix || "SBP");
   const isComplete = !wf.nextStep;
   const oHash      = officerId ? officerHashFor(officerId) : null;
@@ -928,7 +938,14 @@ function ReceiptCard({ txHash, citizenId, serviceType, evidenceNote, timestamp, 
         <button onClick={handlePrint} style={{ ...btn("ghost") }}>🖨 Print / Download PDF</button>
         <button onClick={onAnother}  style={{ ...btn("ghost") }}>Record Another</button>
         {wf.nextStep && onNext && (
-          <button onClick={onNext} style={{ ...btn("primary") }}>← Hub — open {wf.nextStep.ministry} Pending Actions</button>
+          <button
+            onClick={() => onNext(wf.nextStep.ministry)}
+            style={{ ...btn("primary"), background: "#1B6CA8", display:"flex", alignItems:"center", gap:"8px" }}
+          >
+            <span style={{ fontSize:"16px" }}>{MINISTRY_META[wf.nextStep.ministry]?.icon || "→"}</span>
+            <span>Go to {MINISTRY_META[wf.nextStep.ministry]?.name || wf.nextStep.ministry} — Pending Actions</span>
+            <span style={{ fontSize:"11px", opacity:0.8 }}>Step {(wf.step||1)+1}</span>
+          </button>
         )}
       </div>
     </div>
@@ -1098,12 +1115,13 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
   const serviceTypes = SERVICE_TYPES[ministryCode] || [];
 
   const [form, setForm] = useState({
-    citizenId:    prefill?.citizenId    || "",
-    serviceType:  prefill?.serviceType  || serviceTypes[0]?.value || "",
-    evidenceNote: prefill?.evidenceNote || "",
-    amount:       prefill?.amount       || "",
-    fee:          prefill?.fee          || "",
-    officerId:    "OFFICER-001",
+    citizenId:     prefill?.citizenId    || "",
+    serviceType:   prefill?.serviceType  || serviceTypes[0]?.value || "",
+    evidenceNote:  prefill?.evidenceNote || "",
+    amount:        prefill?.amount       || "",
+    fee:           prefill?.fee          || "",
+    paymentMethod: "BANK_TRANSFER",
+    officerId:     "OFFICER-001",
     ndidsVerified: shouldVerifyNDIDS(ministryCode, prefill?.serviceType || serviceTypes[0]?.value || ""),
   });
   const [submitting, setSubmitting] = useState(false);
@@ -1118,7 +1136,14 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
     }));
   }, [prefill]);
 
-  const selectedWf = (SVC_TO_WF[form.serviceType] || [])[0];
+  // When coming from a pending action, use the exact wfId carried in prefill so that
+  // shared service types (DIGITAL_PAYMENT_RECORDED, TAX_COMPLIANCE_VERIFIED) resolve
+  // to the correct workflow rather than always the first match in SVC_TO_WF.
+  const resolvedWfId = form.workflowId || (SVC_TO_WF[form.serviceType] || [])[0]?.workflowId;
+  const resolvedStep = resolvedWfId
+    ? (SVC_TO_WF[form.serviceType] || []).find(x => x.workflowId === resolvedWfId) || (SVC_TO_WF[form.serviceType] || [])[0]
+    : (SVC_TO_WF[form.serviceType] || [])[0];
+  const selectedWf = resolvedStep;
   const wfDef      = selectedWf ? WORKFLOW_DEFS[selectedWf.workflowId] : null;
   const stepIdx    = selectedWf?.stepIndex ?? -1;
   const needsFee   = wfDef?.steps[stepIdx]?.fee;
@@ -1145,7 +1170,7 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
       const tx       = await contract.recordService(cHash, form.serviceType, dHash, form.ndidsVerified);
       setTxMsg({ type:"info", text:"Awaiting confirmation…" });
       const receipt  = await tx.wait();
-      onSuccess({ txHash:receipt.hash, citizenId:form.citizenId, serviceType:form.serviceType, evidenceNote:form.evidenceNote, amount:form.amount, fee:form.fee, officerId:form.officerId, timestamp:Date.now(), ministry:{ ...meta, code:ministryCode } });
+      onSuccess({ txHash:receipt.hash, citizenId:form.citizenId, serviceType:form.serviceType, evidenceNote:form.evidenceNote, amount:form.amount, fee:form.fee, paymentMethod:form.paymentMethod, officerId:form.officerId, timestamp:Date.now(), ministry:{ ...meta, code:ministryCode }, workflowId: form.workflowId || selectedWf?.workflowId || null });
       setTxMsg(null);
     } catch(e) {
       setTxMsg({ type:"error", text:e.reason || e.message || "Transaction failed." });
@@ -1208,18 +1233,36 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
         {form.serviceType && <div style={{ fontSize:"11px", color:C.muted, marginTop:"4px" }}>{serviceDesc(form.serviceType)}</div>}
       </div>
 
-      {/* Amount + Fee (when applicable) */}
+      {/* Amount + Fee + Payment Method (when applicable) */}
       {(needsFee || form.amount || form.fee) && (
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"14px" }}>
-          <div>
-            <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>Payment Amount (WST)</label>
-            <input value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))} placeholder="e.g. 500.00" style={inStyle} />
+        <>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"14px" }}>
+            <div>
+              <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>Payment Amount (WST)</label>
+              <input value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))} placeholder="e.g. 500.00" style={inStyle} />
+            </div>
+            <div>
+              <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>Gov Fee (WST)</label>
+              <input value={form.fee} onChange={e=>setForm(f=>({...f,fee:e.target.value}))} placeholder="e.g. 50.00" style={inStyle} />
+            </div>
           </div>
-          <div>
-            <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>Gov Fee (WST)</label>
-            <input value={form.fee} onChange={e=>setForm(f=>({...f,fee:e.target.value}))} placeholder="e.g. 50.00" style={inStyle} />
+          <div style={{ marginBottom:"14px" }}>
+            <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>Payment Rail / Method</label>
+            <select value={form.paymentMethod} onChange={e=>setForm(f=>({...f,paymentMethod:e.target.value}))} style={inStyle}>
+              <option value="BANK_TRANSFER">🏦 Bank Transfer (BSP / ANZ / Samoa Commercial Bank)</option>
+              <option value="MPAY_VODAFONE">📱 M-Pay / M-Tala (Vodafone Samoa)</option>
+              <option value="DIGICEL_MYCASH">📱 MyCash (Digicel Samoa)</option>
+              <option value="WST_STABLECOIN">💎 WST Stablecoin Wallet (CBS Digital)</option>
+              <option value="VISA_MASTERCARD">💳 Visa / Mastercard (EFTPOS)</option>
+              <option value="MOBILE_BANKING">📲 Mobile Banking App</option>
+              <option value="CHEQUE">📄 Government Cheque</option>
+              <option value="CASH">💵 Cash (receipt required)</option>
+            </select>
+            <div style={{ fontSize:"10px", color:C.muted, marginTop:"4px" }}>
+              Payment method is logged with the on-chain record as part of the audit trail. WST Stablecoin requires CBS issuance authorisation.
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Officer ID */}
@@ -1267,7 +1310,7 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
 // ---
 // MINISTRY DASHBOARD -- v8: 4 tabs per ministry
 // ---
-function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onBack, allRecords, allLoading }) {
+function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onBack, onNavigate, allRecords, allLoading }) {
   const meta    = MINISTRY_META[ministryCode];
   const addr    = MINISTRY_ADDRS[ministryCode];
 
@@ -1305,6 +1348,9 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
       serviceType:  action.step.serviceType,
       evidenceNote: `Cross-ministry workflow step. Prev step: "${action.prevStep.label}" completed by ${action.prevStep.ministry}. Workflow: ${action.wfName}.`,
       amount: "", fee: "",
+      // Carry the exact workflow ID so CBS/MOF resolve the right workflow (not just [0])
+      // when DIGITAL_PAYMENT_RECORDED or TAX_COMPLIANCE_VERIFIED appear in multiple workflows
+      workflowId: action.wfId,
     });
     setTab("record");
   };
@@ -1451,10 +1497,15 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
             <SectionHead title="📋 Last Receipt" sub="Most recent transaction confirmation" />
             <ReceiptCard
               {...lastReceipt}
+              workflowId={lastReceipt?.workflowId}
               onAnother={() => { setLastReceipt(null); setTab("record"); }}
-              onNext={() => {
-                const wf = WORKFLOWS[lastReceipt.serviceType];
-                if (wf?.nextStep?.ministry) onBack(); // go home so user can click next ministry
+              onNext={(nextMinistry) => {
+                if (nextMinistry && onNavigate) {
+                  // Navigate directly to the next ministry's Pending Actions
+                  onNavigate("ministry:" + nextMinistry);
+                } else {
+                  onBack();
+                }
               }}
             />
           </>
@@ -1469,20 +1520,13 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
 // COMMUNITY INTEL PANEL -- embedded in UNICEF overview + standalone tab
 // Reads from the same COMMUNITY_PROJECTS seed + tranches from chain
 // ---
-function CommunityIntelPanel({ tranches, grantRaw, onOpenCommunity }) {
+function CommunityIntelPanel({ tranches, grantRaw, onOpenCommunity, expenditures: liveExp }) {
   const project = COMMUNITY_PROJECTS[0]; // Grant #0 = Biogas Vaiala
-  const SEED_EXP = [
-    { id:"EXP-001", milestoneId:0, recipient:"Samoa Plumbing Ltd",    amount:8500,  category:"Materials", status:"approved" },
-    { id:"EXP-002", milestoneId:0, recipient:"Community Labour Team", amount:6200,  category:"Labour",    status:"approved" },
-    { id:"EXP-003", milestoneId:0, recipient:"Pacific Training Co",   amount:4800,  category:"Training",  status:"approved" },
-    { id:"EXP-004", milestoneId:0, recipient:"Project Overhead Q1",   amount:2100,  category:"Overhead",  status:"approved" },
-    { id:"EXP-005", milestoneId:1, recipient:"Biogas Equipment NZ",   amount:22000, category:"Equipment", status:"approved" },
-    { id:"EXP-006", milestoneId:1, recipient:"Installation Labour",   amount:9400,  category:"Labour",    status:"approved" },
-    { id:"EXP-007", milestoneId:1, recipient:"Piping & Fittings",     amount:5800,  category:"Materials", status:"pending"  },
-  ];
-  const approved   = SEED_EXP.filter(e=>e.status==="approved");
+  // Use live expenditures passed from App state so matai approvals are reflected here
+  const projExp  = (liveExp || SEED_EXPENDITURES).filter(e => e.projectId === project.id);
+  const approved = projExp.filter(e=>e.status==="approved");
   const totalSpent = approved.reduce((s,e)=>s+e.amount,0);
-  const pending    = SEED_EXP.filter(e=>e.status==="pending");
+  const pending    = projExp.filter(e=>e.status==="pending");
 
   // Sync milestone statuses from live chain tranche data
   const syncedMilestones = project.milestones.map((m, i) => {
@@ -1491,7 +1535,8 @@ function CommunityIntelPanel({ tranches, grantRaw, onOpenCommunity }) {
     const chainStatus = [null,"released","verified"][tr.status] || m.status;
     return { ...m, status: chainStatus || m.status };
   });
-  const daysSince = 8;
+  // daysSince is computed from pending expenditure dates — if no pending items, default to 0 so flag clears
+  const daysSince = pending.length > 0 ? 8 : 0;
   const flags = [
     ...(daysSince>=7     ? [{ level:"warning", msg:`No PM activity for ${daysSince} days — possible supply delay` }] : []),
     ...(pending.length>0 ? [{ level:"info",    msg:`${pending.length} expenditure awaiting matai approval — ${pending.reduce((s,e)=>s+e.amount,0).toLocaleString()} WST on hold` }] : []),
@@ -1557,17 +1602,10 @@ function CommunityIntelPanel({ tranches, grantRaw, onOpenCommunity }) {
   );
 }
 
-function CommunityGrantView({ tranches, grantRaw, onOpenCommunity }) {
+function CommunityGrantView({ tranches, grantRaw, onOpenCommunity, expenditures: liveExp }) {
   const project = COMMUNITY_PROJECTS[0];
-  const SEED_EXP = [
-    { id:"EXP-001", milestoneId:0, recipient:"Samoa Plumbing Ltd",    amount:8500,  category:"Materials", receiptRef:"INV-SPL-2025-089",   date:"2025-02-10", status:"approved" },
-    { id:"EXP-002", milestoneId:0, recipient:"Community Labour Team", amount:6200,  category:"Labour",    receiptRef:"TIMESHEET-FEB-2025", date:"2025-02-28", status:"approved" },
-    { id:"EXP-003", milestoneId:0, recipient:"Pacific Training Co",   amount:4800,  category:"Training",  receiptRef:"TRAIN-PAC-2025-12",  date:"2025-03-05", status:"approved" },
-    { id:"EXP-004", milestoneId:0, recipient:"Project Overhead Q1",   amount:2100,  category:"Overhead",  receiptRef:"OVERHEAD-Q1-2025",   date:"2025-03-15", status:"approved" },
-    { id:"EXP-005", milestoneId:1, recipient:"Biogas Equipment NZ",   amount:22000, category:"Equipment", receiptRef:"INV-BENZ-2025-441",  date:"2025-06-01", status:"approved" },
-    { id:"EXP-006", milestoneId:1, recipient:"Installation Labour",   amount:9400,  category:"Labour",    receiptRef:"TIMESHEET-JUN-2025", date:"2025-06-30", status:"approved" },
-    { id:"EXP-007", milestoneId:1, recipient:"Piping & Fittings",     amount:5800,  category:"Materials", receiptRef:"INV-SPL-2025-210",   date:"2025-07-12", status:"pending"  },
-  ];
+  // Use live expenditures so donor view reflects matai approvals in real time
+  const SEED_EXP = (liveExp || SEED_EXPENDITURES).filter(e => e.projectId === project.id);
   const approved   = SEED_EXP.filter(e=>e.status==="approved");
   const pending    = SEED_EXP.filter(e=>e.status==="pending");
   const totalSpent = approved.reduce((s,e)=>s+e.amount,0);
@@ -1703,7 +1741,7 @@ function CommunityGrantView({ tranches, grantRaw, onOpenCommunity }) {
 // ---
 // UNICEF DONOR DASHBOARD -- v7 preserved + v8 verifyUsage/releaseTranche
 // ---
-function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords, allLoading, onOpenCommunity }) {
+function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords, allLoading, onOpenCommunity, expenditures, activityLog }) {
   const [tab, setTab] = useState("overview");
   const aidContract = useContract(ADDR.AID, ABI.AID, provider);
 
@@ -1874,20 +1912,39 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
             </div>
 
             {/* Auto beneficiary notice */}
+              <div style={{ ...card({ background:C.ocean, borderColor:C.gold+"33" }), marginBottom:"14px" }}>
+                <div style={{ fontSize:"11px", fontWeight:700, color:C.gold, marginBottom:"4px" }}>🌐 Samoa Pacific Blockchain Hub — Platform Context</div>
+                <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.7 }}>
+                  This dashboard tracks <strong style={{ color:C.white }}>Grant #0 — UNICEF Samoa Education Access Programme 2025</strong>, a government education benefit and school-enrolment grant managed through the Ministry of Education and MOF.<br/>
+                  A separate community implementation — the <strong style={{ color:"#4A9EE0" }}>Vaiala Village Biogas Project</strong> — is tracked in the <strong>Community Project Dashboard</strong> and uses the same AIDisbursementTracker contract infrastructure to demonstrate multi-programme capability on a single platform. These are two distinct funded programmes; the platform handles both simultaneously.
+                </div>
+              </div>
+
             <div style={{ ...card({ background:C.ocean, borderColor:C.seafoam+"44" }), marginBottom:"14px" }}>
               <div style={{ fontSize:"12px", color:C.seafoam, fontWeight:700, marginBottom:"4px" }}>🤖 Auto Beneficiary Count from Education Records</div>
               <div style={{ fontSize:"12px", color:C.silver }}>{enrolmentCount} school enrolments detected on chain. This value is pre-filled when verifying tranches.</div>
             </div>
 
             <div style={{ ...card(), borderLeft:`3px solid ${C.seafoam}` }}>
-              <SectionHead title="Live Contract Addresses" sub="Verify independently on any block explorer" />
+              <SectionHead title="Live Contract Addresses" sub={CONFIG.NETWORK === "Anvil Local" ? "Local chain — copy address to verify in Foundry/Cast. Explorer links activate on testnet/mainnet deployment." : "Verify independently on any block explorer"} />
+              {CONFIG.NETWORK === "Anvil Local" && (
+                <div style={{ padding:"10px 12px", background:C.amber+"14", border:`1px solid ${C.amber}33`, borderRadius:"8px", marginBottom:"12px", fontSize:"11px", color:C.amber }}>
+                  ℹ <strong>Local Anvil network detected.</strong> Block explorers (Polygonscan, Etherscan) only index public networks. To inspect these contracts locally, use:<br/>
+                  <span style={{ fontFamily:F.mono, color:C.silver, marginTop:"4px", display:"block" }}>cast call {"<ADDRESS>"} "totalRecords()(uint256)" --rpc-url http://127.0.0.1:8545</span>
+                  On testnet or mainnet deployment, the View ↗ links below will open the live explorer automatically.
+                </div>
+              )}
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px" }}>
                 {[["AID Tracker",ADDR.AID],["Education Node",ADDR.EDUCATION],["NDIDS Registry",ADDR.NDIDS],["Hub Contract",ADDR.HUB]].map(([label,addr]) => (
                   <div key={label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"9px 12px", background:C.ocean, borderRadius:"8px" }}>
                     <span style={{ fontSize:"12px", fontWeight:700 }}>{label}</span>
                     <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
                       <Mono>{addr.slice(0,8)}...{addr.slice(-6)}</Mono>
-                      <a href={`https://polygonscan.com/address/${addr}`} target="_blank" rel="noreferrer" style={{ fontSize:"10px", color:C.seafoam, textDecoration:"none", fontWeight:700 }}>View ↗</a>
+                      {CONFIG.NETWORK === "Anvil Local" ? (
+                        <button onClick={()=>navigator.clipboard?.writeText(addr)} style={{ fontSize:"10px", color:C.seafoam, background:"transparent", border:`1px solid ${C.seafoam}44`, borderRadius:"4px", padding:"2px 7px", cursor:"pointer", fontWeight:700 }}>Copy</button>
+                      ) : (
+                        <a href={`https://polygonscan.com/address/${addr}`} target="_blank" rel="noreferrer" style={{ fontSize:"10px", color:C.seafoam, textDecoration:"none", fontWeight:700 }}>View ↗</a>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1898,12 +1955,12 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
 
         {/* --- COMMUNITY PROJECT INTELLIGENCE PANEL (overview inline) --- */}
         {tab === "overview" && (
-          <CommunityIntelPanel tranches={tranches} grantRaw={g} onOpenCommunity={onOpenCommunity} />
+          <CommunityIntelPanel tranches={tranches} grantRaw={g} onOpenCommunity={onOpenCommunity} expenditures={expenditures||SEED_EXPENDITURES} />
         )}
 
         {/* --- COMMUNITY PROJECT TAB (full cross-dashboard view) --- */}
         {tab === "community" && (
-          <CommunityGrantView tranches={tranches} grantRaw={g} onOpenCommunity={onOpenCommunity} />
+          <CommunityGrantView tranches={tranches} grantRaw={g} onOpenCommunity={onOpenCommunity} expenditures={expenditures||SEED_EXPENDITURES} />
         )}
 
         {/* ─── TRANCHES (v7) ───────────────────────────────────── */}
@@ -2284,7 +2341,7 @@ function Home({ provider, connected, blockNumber, allRecords, allLoading, onSele
         </div>
 
         {/* Special dashboards */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"14px", marginBottom:"28px" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px", marginBottom:"28px" }}>
           <div onClick={() => onSelect("unicef")} style={{ ...card(), cursor:"pointer", borderTop:`3px solid ${C.gold}` }}
             onMouseEnter={e=>e.currentTarget.style.background=C.ocean}
             onMouseLeave={e=>e.currentTarget.style.background=C.navy}>
@@ -2299,7 +2356,22 @@ function Home({ provider, connected, blockNumber, allRecords, allLoading, onSele
             <div style={{ fontWeight:800, fontSize:"14px", fontFamily:F.display, marginBottom:"4px" }}>Community Project Dashboard</div>
             <div style={{ fontSize:"12px", color:C.silver }}>PM · Matai · Public views · Real-time spend tracking · Receipt logging · Donor-visible audit trail</div>
           </div>
-          <div onClick={() => onSelect("hub")} style={{ ...card(), cursor:"pointer", borderTop:`3px solid ${C.seafoam}` }}
+          <div onClick={() => onSelect("ndids")} style={{ ...card(), cursor:"pointer", borderTop:`3px solid ${C.seafoam}` }}
+            onMouseEnter={e=>e.currentTarget.style.background=C.ocean}
+            onMouseLeave={e=>e.currentTarget.style.background=C.navy}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+              <div style={{ fontSize:"28px", marginBottom:"8px" }}>🪪</div>
+              <span style={{ ...badge(C.seafoam), fontSize:"9px" }}>NDIDS REGISTRY</span>
+            </div>
+            <div style={{ fontWeight:800, fontSize:"14px", fontFamily:F.display, marginBottom:"4px" }}>National Digital Identity System</div>
+            <div style={{ fontSize:"12px", color:C.silver }}>Citizen identity registry · NDIDS hash verification · Cross-ministry access policy · Privacy-preserving by design</div>
+            <div style={{ marginTop:"10px", display:"flex", gap:"6px", flexWrap:"wrap" }}>
+              <span style={{ ...badge(C.seafoam), fontSize:"9px" }}>NDIDSRegistry</span>
+              <span style={{ ...badge(C.silver), fontSize:"9px" }}>GDPR-aligned</span>
+              <span style={{ ...badge(C.silver), fontSize:"9px" }}>Hash-only storage</span>
+            </div>
+          </div>
+          <div onClick={() => onSelect("hub")} style={{ ...card(), cursor:"pointer", borderTop:`3px solid #4A9EE0` }}
             onMouseEnter={e=>e.currentTarget.style.background=C.ocean}
             onMouseLeave={e=>e.currentTarget.style.background=C.navy}>
             <div style={{ fontSize:"28px", marginBottom:"8px" }}>🔗</div>
@@ -2333,6 +2405,171 @@ function Home({ provider, connected, blockNumber, allRecords, allLoading, onSele
               </div>
             );
           })}
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+
+// ---
+// NDIDS DASHBOARD -- National Digital Identity System Registry
+// Restored: Issue 11 fix. Shows registry stats, hash lookup, cross-ministry access policy.
+// NDIDSRegistry contract: stores keccak256 citizen hashes only — no PII on chain.
+// ---
+function NDIDSDashboard({ provider, connected, blockNumber, onBack, allRecords }) {
+  const [lookup,    setLookup]    = useState("");
+  const [lookupRes, setLookupRes] = useState(null);
+  const [checking,  setChecking]  = useState(false);
+
+  const ndidsContract = provider ? new ethers.Contract(ADDR.NDIDS, ABI.NDIDS, provider) : null;
+
+  const { data:totalReg } = usePoll(async () => {
+    if (!ndidsContract) return null;
+    return Number(await ndidsContract.totalRegistered());
+  }, [ndidsContract]);
+
+  const ndidsVerifiedCount = (allRecords||[]).filter(r=>r.ndidsVerified).length;
+  const crossMinistryCount = (allRecords||[]).filter(r=>!r.ndidsVerified).length;
+
+  const handleLookup = async () => {
+    if (!lookup.trim()) return;
+    setChecking(true);
+    setLookupRes(null);
+    try {
+      const h = lookup.trim().startsWith("0x") && lookup.trim().length===66
+        ? lookup.trim()
+        : ethers.keccak256(ethers.toUtf8Bytes(lookup.trim()));
+      let registered = false;
+      if (ndidsContract) {
+        registered = await ndidsContract.isRegistered(h);
+      }
+      setLookupRes({ hash:h, registered, input:lookup.trim() });
+    } catch(e) {
+      setLookupRes({ error: e.message || "Lookup failed." });
+    } finally { setChecking(false); }
+  };
+
+  const inStyle = { width:"100%", background:C.abyss, border:`1px solid ${C.ocean}`, borderRadius:"8px", padding:"10px 14px", color:C.white, fontSize:"13px", fontFamily:F.ui, boxSizing:"border-box" };
+
+  const POLICY_ROWS = [
+    { ministry:"EDUCATION", sector:"Education Citizens",          services:"School enrolment, attendance, graduation, scholarships",  access:"Read own sector" },
+    { ministry:"MOF",       sector:"Finance / Welfare / Trade",   services:"Education benefit, welfare payments, duty, tax compliance",access:"Multi-sector read" },
+    { ministry:"CBS",       sector:"Banking Citizens",            services:"Account opening, remittance, loans, stablecoin issuance", access:"CBS sector only" },
+    { ministry:"CUSTOMS",   sector:"Trade / Import Citizens",     services:"Shipment clearance, trade facilitation, tariff records",  access:"Customs sector" },
+    { ministry:"MCIL",      sector:"Business / Trade Citizens",   services:"Company registration, FDI, trade licence, labour",        access:"Business sector" },
+    { ministry:"MCIT",      sector:"Business / ICT Citizens",     services:"Business licence, sector clearance, digital ID",          access:"ICT/Business sector" },
+  ];
+
+  return (
+    <div style={{ minHeight:"100vh", background:C.deep, fontFamily:F.ui, color:C.white }}>
+      <TopBar title="National Digital Identity System" sub="NDIDSRegistry · Privacy-preserving · Hash-only · GDPR-aligned" accent={C.seafoam} blockNumber={blockNumber} onBack={onBack} />
+      <ConnectionBanner connected={connected} error={!connected?"Chain offline — showing demo data":null} network={CONFIG.NETWORK} />
+
+      <div style={{ maxWidth:"1080px", margin:"0 auto", padding:"28px" }}>
+
+        {/* Hero explanation */}
+        <div style={{ ...card({ background:`linear-gradient(135deg, ${C.seafoam}14, ${C.teal}08)`, borderColor:C.seafoam+"44" }), marginBottom:"24px" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"16px", marginBottom:"16px" }}>
+            <StatPill icon="🪪" value={totalReg ?? MOCK.totalRegistered} label="Citizens Registered"       color={C.seafoam} />
+            <StatPill icon="✅" value={ndidsVerifiedCount}               label="NDIDS-Verified Records"    color={C.gold}    />
+            <StatPill icon="🔄" value={crossMinistryCount}               label="Cross-Ministry (Hash-pass)" color="#4A9EE0"   />
+          </div>
+          <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.8 }}>
+            <strong style={{ color:C.seafoam }}>How NDIDS works:</strong> No personal information is stored on-chain. Each citizen is identified by a <code style={{ color:C.seafoam }}>keccak256</code> hash of their identity credentials. Ministries are granted sector-specific read access — a ministry can only verify a citizen's hash if they have been provisioned access to that sector's registry. Cross-workflow steps (e.g. CBS processing an education payment) submit with <code style={{ color:C.amber }}>ndidsVerified=false</code>, meaning the identity was already verified by the initiating ministry upstream. This is by design and aligns with Samoa's data sovereignty and emerging GDPR-equivalent frameworks.
+          </div>
+        </div>
+
+        {/* Hash lookup */}
+        <SectionHead title="🔍 Citizen Hash Lookup" sub="Enter a Citizen ID or paste a 0x hash to verify registration status on chain" />
+        <div style={{ ...card(), maxWidth:"600px", marginBottom:"24px" }}>
+          <div style={{ marginBottom:"14px" }}>
+            <label style={{ fontSize:"11px", fontWeight:700, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px", display:"block", marginBottom:"6px" }}>Citizen ID or Hash</label>
+            <input value={lookup} onChange={e=>setLookup(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLookup()} placeholder="e.g. CITIZEN-WS-001 or 0x..." style={inStyle} />
+            {lookup.trim() && !lookup.trim().startsWith("0x") && (
+              <div style={{ fontSize:"10px", color:C.muted, marginTop:"4px", fontFamily:F.mono }}>
+                Will check hash: {ethers.keccak256(ethers.toUtf8Bytes(lookup.trim())).slice(0,24)}…
+              </div>
+            )}
+          </div>
+          <button onClick={handleLookup} disabled={checking||!lookup.trim()} style={{ ...btn(checking?"ghost":"success"), width:"100%", justifyContent:"center" }}>
+            {checking ? "⏳ Checking chain…" : "🔍 Verify on Chain"}
+          </button>
+          {lookupRes && !lookupRes.error && (
+            <div style={{ marginTop:"14px", padding:"12px", background:lookupRes.registered?C.seafoam+"18":C.danger+"18", border:`1px solid ${lookupRes.registered?C.seafoam:C.danger}44`, borderRadius:"8px" }}>
+              <div style={{ fontSize:"13px", fontWeight:700, color:lookupRes.registered?C.seafoam:"#F88", marginBottom:"6px" }}>
+                {lookupRes.registered ? "✅ Registered — Identity confirmed on chain" : "❌ Not registered in NDIDS"}
+              </div>
+              <div style={{ fontSize:"11px", color:C.silver }}>Input: <code style={{ color:C.muted }}>{lookupRes.input}</code></div>
+              <div style={{ fontSize:"11px", color:C.muted, fontFamily:F.mono, marginTop:"4px" }}>Hash: {lookupRes.hash.slice(0,28)}…</div>
+              <div style={{ fontSize:"11px", color:C.muted, marginTop:"4px" }}>
+                {connected ? "Live result from NDIDSRegistry contract." : "Offline — result based on demo data."}
+              </div>
+            </div>
+          )}
+          {lookupRes?.error && (
+            <div style={{ marginTop:"14px", padding:"10px 12px", background:C.danger+"18", border:`1px solid ${C.danger}33`, borderRadius:"8px", fontSize:"12px", color:"#F88" }}>
+              ⚠ {lookupRes.error}
+            </div>
+          )}
+        </div>
+
+        {/* Access policy table */}
+        <SectionHead title="🔐 Cross-Ministry NDIDS Access Policy" sub="Derived from Deploy.s.sol grantReadAccess assignments — enforced on-chain" />
+        <div style={{ ...card(), marginBottom:"24px" }}>
+          <div style={{ overflowX:"auto" }}>
+            <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"12px" }}>
+              <thead>
+                <tr style={{ borderBottom:`2px solid ${C.ocean}` }}>
+                  {["Ministry","Sector Served","Services Covered","NDIDS Access Level"].map(h=>(
+                    <th key={h} style={{ padding:"10px 12px", textAlign:"left", fontSize:"10px", fontWeight:800, color:C.silver, textTransform:"uppercase", letterSpacing:"0.6px" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {POLICY_ROWS.map((row,i)=>{
+                  const m = MINISTRY_META[row.ministry];
+                  return (
+                    <tr key={i} style={{ borderBottom:`1px solid ${C.ocean}`, background:i%2===0?"transparent":C.ocean+"44" }}>
+                      <td style={{ padding:"10px 12px" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                          <span style={{ fontSize:"16px" }}>{m?.icon}</span>
+                          <div>
+                            <div style={{ fontWeight:700, color:m?.color }}>{row.ministry}</div>
+                            <div style={{ fontSize:"10px", color:C.muted }}>{m?.name}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding:"10px 12px", color:C.silver }}>{row.sector}</td>
+                      <td style={{ padding:"10px 12px", color:C.muted, fontSize:"11px" }}>{row.services}</td>
+                      <td style={{ padding:"10px 12px" }}>
+                        <span style={{ ...badge(C.seafoam), fontSize:"9px" }}>{row.access}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ marginTop:"14px", padding:"10px 12px", background:C.amber+"14", borderRadius:"8px", fontSize:"11px", color:C.amber }}>
+            ℹ CBS cross-sector steps (DIGITAL_PAYMENT_RECORDED) always submit with <code>ndidsVerified=false</code> — identity was verified by the initiating ministry. MOF BUDGET_ALLOCATION_RECORDED similarly. This is correct behaviour, not an error.
+          </div>
+        </div>
+
+        {/* Contract reference */}
+        <div style={{ ...card({ borderLeft:`4px solid ${C.seafoam}` }) }}>
+          <SectionHead title="Contract Reference" sub="NDIDSRegistry deployed on Anvil Local" />
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 12px", background:C.ocean, borderRadius:"8px", marginBottom:"8px" }}>
+            <span style={{ fontSize:"12px", fontWeight:700 }}>NDIDSRegistry</span>
+            <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
+              <Mono>{ADDR.NDIDS}</Mono>
+              <button onClick={()=>navigator.clipboard?.writeText(ADDR.NDIDS)} style={{ fontSize:"10px", color:C.seafoam, background:"transparent", border:`1px solid ${C.seafoam}44`, borderRadius:"4px", padding:"2px 7px", cursor:"pointer", fontWeight:700 }}>Copy</button>
+            </div>
+          </div>
+          <div style={{ fontSize:"11px", color:C.muted, lineHeight:1.8 }}>
+            Future roadmap: Integration with Samoa Bureau of Statistics (SBS) for birth certificate, marriage licence and health record hash anchoring. All PII remains off-chain with SBS; only the keccak256 commitment is stored on the NDIDSRegistry. This architecture is compatible with evolving global privacy frameworks including GDPR and the Pacific Data Governance Framework.
+          </div>
         </div>
 
       </div>
@@ -2417,21 +2654,22 @@ const SEED_EXPENDITURES = [
 ];
 
 const SEED_ACTIVITY = [
-  { ts: Date.now()-8*86400000,  actor:"PM",    action:"Expenditure EXP-007 submitted — Piping & Fittings 5,800 WST — awaiting matai approval",            flag:true  },
-  { ts: Date.now()-9*86400000,  actor:"CHAIN", action:"Tranche 1 released on chain — 40,000 WST — Grant #0 Milestone 2",                                  flag:false },
-  { ts: Date.now()-12*86400000, actor:"MATAI", action:"Expenditure EXP-006 approved — Installation Labour 9,400 WST",                                     flag:false },
-  { ts: Date.now()-15*86400000, actor:"CHAIN", action:"verifyUsage() confirmed — Tranche 1 verified by UNICEF officer. Beneficiaries: 23",                flag:false },
-  { ts: Date.now()-20*86400000, actor:"PM",    action:"Milestone 1 evidence submitted — 23 households capacity training complete. Ref: REPORT-M1-FINAL",  flag:false },
-  { ts: Date.now()-35*86400000, actor:"CHAIN", action:"Tranche 0 verified — 30,000 WST — Site assessment complete",                                       flag:false },
-  { ts: Date.now()-40*86400000, actor:"CHAIN", action:"Grant #0 created on chain — UNICEF Samoa Education Access Programme 2025 — 100,000 WST",           flag:false },
+  { projectId:"BIOGAS-VAIALA-2025", ts: Date.now()-8*86400000,  actor:"PM",    action:"Expenditure EXP-007 submitted — Piping & Fittings 5,800 WST — awaiting matai approval",            flag:true  },
+  { projectId:"BIOGAS-VAIALA-2025", ts: Date.now()-9*86400000,  actor:"CHAIN", action:"Tranche 1 released on chain — 40,000 WST — Grant #0 Milestone 2",                                  flag:false },
+  { projectId:"BIOGAS-VAIALA-2025", ts: Date.now()-12*86400000, actor:"MATAI", action:"Expenditure EXP-006 approved — Installation Labour 9,400 WST",                                     flag:false },
+  { projectId:"BIOGAS-VAIALA-2025", ts: Date.now()-15*86400000, actor:"CHAIN", action:"verifyUsage() confirmed — Tranche 1 verified by UNICEF officer. Beneficiaries: 23",                flag:false },
+  { projectId:"BIOGAS-VAIALA-2025", ts: Date.now()-20*86400000, actor:"PM",    action:"Milestone 1 evidence submitted — 23 households capacity training complete. Ref: REPORT-M1-FINAL",  flag:false },
+  { projectId:"BIOGAS-VAIALA-2025", ts: Date.now()-35*86400000, actor:"CHAIN", action:"Tranche 0 verified — 30,000 WST — Site assessment complete",                                       flag:false },
+  { projectId:"BIOGAS-VAIALA-2025", ts: Date.now()-40*86400000, actor:"CHAIN", action:"Grant #0 created on chain — UNICEF Samoa Education Access Programme 2025 — 100,000 WST",           flag:false },
+  // Savai'i Rural Water project — separate project, separate log
+  { projectId:"WATER-SAVAII-2026",  ts: Date.now()-2*86400000,  actor:"CHAIN", action:"World Bank grant application submitted — Savai'i Rural Water Access Programme — 250,000 WST",     flag:false },
+  { projectId:"WATER-SAVAII-2026",  ts: Date.now()-1*86400000,  actor:"PM",    action:"Project WATER-SAVAII-2026 created — Survey & design milestone pending World Bank approval",         flag:false },
 ];
 
-function CommunityDashboard({ provider, connected, blockNumber, onBack, onOpenUNICEF }) {
+function CommunityDashboard({ provider, connected, blockNumber, onBack, onOpenUNICEF, expenditures, setExpenditures, activityLog, setActivityLog }) {
   const [role,            setRole]            = useState(null);
   const [tab,             setTab]             = useState("overview");
   const [selectedProject, setSelectedProject] = useState("BIOGAS-VAIALA-2025");
-  const [expenditures,    setExpenditures]    = useState(SEED_EXPENDITURES);
-  const [activityLog,     setActivityLog]     = useState(SEED_ACTIVITY);
   const [pendingExp,      setPendingExp]      = useState({ recipient:"", amount:"", category:"Labour", receiptRef:"", notes:"", milestoneId:"0" });
   const [expTxMsg,        setExpTxMsg]        = useState(null);
   const [submitting,      setSubmitting]      = useState(false);
@@ -2441,6 +2679,9 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack, onOpenUN
   const approved   = projExps.filter(e => e.status === "approved");
   const pending    = projExps.filter(e => e.status === "pending");
 
+  // Activity log filtered to this project only
+  const projActivity = activityLog.filter(e => !e.projectId || e.projectId === project.id);
+
   const totalReceived = project.milestones.filter(m => m.status==="released"||m.status==="verified").reduce((s,m)=>s+m.targetWST,0);
   const totalVerified = project.milestones.filter(m => m.status==="verified").reduce((s,m)=>s+m.targetWST,0);
   const totalSpent    = approved.reduce((s,e)=>s+e.amount,0);
@@ -2448,7 +2689,9 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack, onOpenUN
   const remaining     = totalReceived - totalSpent;
   const burnRate      = totalReceived>0 ? Math.round((totalSpent/totalReceived)*100) : 0;
 
-  const daysSinceLast = Math.floor((Date.now()-activityLog[0].ts)/86400000);
+  const daysSinceLast = projActivity.length > 0
+    ? Math.floor((Date.now()-projActivity[0].ts)/86400000)
+    : 999;
   const flags = [
     ...(daysSinceLast>=7  ? [{ level:"warning", msg:`No activity logged in ${daysSinceLast} days — possible supply or resource delay. Recommend contacting project manager.` }] : []),
     ...(pending.length>0  ? [{ level:"info",    msg:`${pending.length} expenditure${pending.length>1?"s":""} awaiting matai approval — ${totalPending.toLocaleString()} WST on hold` }] : []),
@@ -2464,6 +2707,33 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack, onOpenUN
     if (!pendingExp.recipient||!pendingExp.amount) { setExpTxMsg({ type:"error", text:"Recipient and amount are required." }); return; }
     const amt = parseFloat(pendingExp.amount);
     if (isNaN(amt)||amt<=0) { setExpTxMsg({ type:"error", text:"Enter a valid amount." }); return; }
+
+    // ISSUE 10 FIX: Duplicate spend guard — check for matching receipt ref AND same recipient+amount
+    // This prevents the same invoice being submitted twice. The receipt reference is the primary key.
+    if (pendingExp.receiptRef && pendingExp.receiptRef.trim()) {
+      const dupByRef = expenditures.find(e =>
+        e.projectId === project.id &&
+        e.receiptRef &&
+        e.receiptRef.trim().toLowerCase() === pendingExp.receiptRef.trim().toLowerCase()
+      );
+      if (dupByRef) {
+        setExpTxMsg({ type:"error", text:`⚠ Duplicate detected: Receipt reference "${pendingExp.receiptRef}" already exists as ${dupByRef.id} (${dupByRef.status}). Please verify — if this is a different invoice use a unique reference number. On-chain records are immutable once submitted.` });
+        return;
+      }
+    }
+    // Secondary guard: same recipient + same amount + same milestone within 24 hours
+    const recentDup = expenditures.find(e =>
+      e.projectId === project.id &&
+      e.recipient.trim().toLowerCase() === pendingExp.recipient.trim().toLowerCase() &&
+      e.amount === amt &&
+      e.milestoneId === parseInt(pendingExp.milestoneId) &&
+      Math.abs(new Date(e.date).getTime() - Date.now()) < 86400000
+    );
+    if (recentDup) {
+      setExpTxMsg({ type:"error", text:`⚠ Possible duplicate: ${recentDup.id} already records ${pendingExp.recipient} for ${amt.toLocaleString()} WST on this milestone today. Please review before submitting. If this is a legitimate second payment, ensure the receipt reference is unique.` });
+      return;
+    }
+
     setSubmitting(true);
     const rHash = ethers.keccak256(ethers.toUtf8Bytes(`${pendingExp.receiptRef}|${pendingExp.recipient}|${amt}|${Date.now()}`));
     const newExp = {
@@ -2475,7 +2745,7 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack, onOpenUN
     };
     setTimeout(() => {
       setExpenditures(p=>[...p,newExp]);
-      setActivityLog(p=>[{ ts:Date.now(), actor:"PM", action:`${newExp.id} submitted — ${pendingExp.recipient} ${amt.toLocaleString()} WST (${pendingExp.category}) — awaiting matai approval`, flag:false },...p]);
+      setActivityLog(p=>[{ projectId: project.id, ts:Date.now(), actor:"PM", action:`${newExp.id} submitted — ${pendingExp.recipient} ${amt.toLocaleString()} WST (${pendingExp.category}) — awaiting matai approval`, flag:false },...p]);
       setPendingExp({ recipient:"", amount:"", category:"Labour", receiptRef:"", notes:"", milestoneId:"0" });
       setExpTxMsg({ type:"success", text:`✓ ${newExp.id} recorded. Receipt hash: ${rHash.slice(0,20)}… Awaiting matai approval.` });
       setSubmitting(false);
@@ -2483,8 +2753,9 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack, onOpenUN
   };
 
   const handleApprove = (expId) => {
+    const exp = expenditures.find(e => e.id === expId);
     setExpenditures(p=>p.map(e=>e.id===expId?{...e,status:"approved",approvedBy:"COMMUNITY-MATAI-001"}:e));
-    setActivityLog(p=>[{ ts:Date.now(), actor:"MATAI", action:`${expId} approved by matai — funds cleared for disbursement`, flag:false },...p]);
+    setActivityLog(p=>[{ projectId: exp?.projectId || project.id, ts:Date.now(), actor:"MATAI", action:`${expId} approved by matai — funds cleared for disbursement`, flag:false },...p]);
   };
 
   const inStyle = { width:"100%", background:C.abyss, border:`1px solid ${C.ocean}`, borderRadius:"8px", padding:"10px 14px", color:C.white, fontSize:"13px", fontFamily:F.ui, boxSizing:"border-box" };
@@ -2624,7 +2895,7 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack, onOpenUN
             </div>
             <div style={{ ...card() }}>
               <SectionHead title="Activity Timeline" sub="Live — updates as events occur" />
-              {activityLog.slice(0,6).map((ev,i)=>(
+              {projActivity.slice(0,6).map((ev,i)=>(
                 <div key={i} style={{ display:"flex", gap:"12px", padding:"10px 0", borderBottom:i<5?`1px solid ${C.ocean}`:"none", alignItems:"flex-start" }}>
                   <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:ev.actor==="CHAIN"?C.seafoam+"22":ev.actor==="MATAI"?"#4A9EE0"+"22":C.amber+"22", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px", flexShrink:0 }}>
                     {ev.actor==="CHAIN"?"⛓":ev.actor==="MATAI"?"🏛":"📋"}
@@ -2777,8 +3048,8 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack, onOpenUN
           <>
             <SectionHead title="🔍 Immutable Audit Trail" sub="Every event permanently recorded — tamper-proof by blockchain consensus" />
             <div style={{ ...card(), marginBottom:"14px" }}>
-              {activityLog.map((ev,i)=>(
-                <div key={i} style={{ display:"flex", gap:"14px", padding:"14px 0", borderBottom:i<activityLog.length-1?`1px solid ${C.ocean}`:"none" }}>
+              {projActivity.map((ev,i)=>(
+                <div key={i} style={{ display:"flex", gap:"14px", padding:"14px 0", borderBottom:i<projActivity.length-1?`1px solid ${C.ocean}`:"none" }}>
                   <div style={{ width:"36px", height:"36px", borderRadius:"50%", background:ev.actor==="CHAIN"?C.seafoam+"22":ev.actor==="MATAI"?"#4A9EE0"+"22":C.amber+"22", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0 }}>
                     {ev.actor==="CHAIN"?"⛓":ev.actor==="MATAI"?"🏛":"📋"}
                   </div>
@@ -3032,6 +3303,11 @@ export default function App() {
   const [view,        setView]        = useState("home");
   const [blockNumber, setBlockNumber] = useState(null);
 
+  // Lifted shared state: expenditures and activity log are shared between
+  // CommunityDashboard and UNICEFDashboard so matai approvals clear donor flags in real time
+  const [expenditures, setExpenditures] = useState(SEED_EXPENDITURES);
+  const [activityLog,  setActivityLog]  = useState(SEED_ACTIVITY);
+
   // Block number polling
   useEffect(() => {
     if (!provider) return;
@@ -3064,12 +3340,24 @@ export default function App() {
           {...sharedProps}
           ministryCode={ministry}
           onBack={() => setView("home")}
+          onNavigate={v => setView(v)}
+        />
+      )}
+
+      {view === "ndids" && (
+        <NDIDSDashboard
+          {...sharedProps}
+          onBack={() => setView("home")}
         />
       )}
 
       {view === "community" && (
         <CommunityDashboard
           {...sharedProps}
+          expenditures={expenditures}
+          setExpenditures={setExpenditures}
+          activityLog={activityLog}
+          setActivityLog={setActivityLog}
           onBack={() => setView("home")}
           onOpenUNICEF={() => setView("unicef")}
         />
@@ -3078,6 +3366,8 @@ export default function App() {
       {view === "unicef" && (
         <UNICEFDashboard
           {...sharedProps}
+          expenditures={expenditures}
+          activityLog={activityLog}
           onBack={() => setView("home")}
           onOpenCommunity={() => setView("community")}
         />

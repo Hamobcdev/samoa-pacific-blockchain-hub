@@ -287,11 +287,13 @@ const MINISTRY_META = {
   EDUCATION: { icon:"📚", color:"#C8502A", name:"Ministry of Education, Sports & Culture" },
   MCIL:      { icon:"🏭", color:"#B8860B", name:"Ministry of Commerce, Industry & Labour" },
   CUSTOMS:   { icon:"🛃", color:"#1B8A8A", name:"Ministry of Customs & Revenue" },
+  SBS:       { icon:"🪪", color:"#7C3AED", name:"Samoa Bureau of Statistics" },
 };
 
 const MINISTRY_ADDRS = {
   CBS:ADDR.CBS, MCIT:ADDR.MCIT, MOF:ADDR.MOF,
   MCIL:ADDR.MCIL, EDUCATION:ADDR.EDUCATION, CUSTOMS:ADDR.CUSTOMS,
+  SBS: "0x0000000000000000000000000000000000000SBS", // placeholder — deploy SBSRegistry post-funding
 };
 
 // ---
@@ -320,11 +322,27 @@ const SERVICE_TYPES = {
     { value:"STABLECOIN_ISSUANCE",     label:"WST Stablecoin Issuance",    desc:"Digital WST issued against verified fiat reserve" },
   ],
   MCIT: [
-    { value:"BUSINESS_LICENCE_DIGITAL",label:"Issue Business Licence",     desc:"Business licence issued and recorded digitally" },
-    { value:"SPECTRUM_LICENCE_ISSUED", label:"Spectrum Licence Issued",    desc:"Radio/telecom spectrum licence granted" },
-    { value:"DIGITAL_ID_ISSUED",       label:"Digital ID Issued",          desc:"Government digital identity credential issued" },
-    { value:"CYBERSECURITY_AUDIT",     label:"Cybersecurity Audit",        desc:"Organisation cybersecurity compliance recorded" },
-    { value:"ICT_REGISTRATION",        label:"Sector Regulatory Clearance", desc:"Sector authority review for investment, ICT registration, or compliance clearance" },
+    { value:"SPECTRUM_LICENCE_ISSUED",  label:"Spectrum Licence Issued",     desc:"Radio/telecom spectrum licence granted" },
+    { value:"CYBERSECURITY_AUDIT",      label:"Cybersecurity Audit",         desc:"Organisation cybersecurity compliance recorded" },
+    { value:"ICT_REGISTRATION",         label:"Sector Regulatory Clearance", desc:"Sector authority review for investment, ICT registration, or compliance clearance" },
+    // Note: BUSINESS_LICENCE_DIGITAL moved to MOF (MOF issues AND receives fee)
+    // Note: DIGITAL_ID_ISSUED moved to SBS (SBS issues AND receives fee)
+  ],
+  MOF: [
+    { value:"EDUCATION_BENEFIT_ELIGIBLE_2025", label:"Education Benefit Approved",  desc:"Citizen approved for school fee subsidy — donor funded" },
+    { value:"SOCIAL_WELFARE_PAYMENT_2025",     label:"Social Welfare Payment",      desc:"Welfare payment disbursed and recorded — donor funded" },
+    { value:"TAX_COMPLIANCE_VERIFIED",         label:"Tax Compliance Verified",     desc:"Citizen or business tax status confirmed" },
+    { value:"BUDGET_ALLOCATION_RECORDED",      label:"Budget / Revenue Fee",        desc:"Ministry budget allocation or government fee recorded" },
+    { value:"DUTY_PROCESSED",                  label:"Customs Duty Processed",      desc:"Import/export duty payment confirmed by MOF" },
+    { value:"BUSINESS_LICENCE_DIGITAL",        label:"Issue Business Licence",      desc:"Business licence issued by MOF — fee paid to MOF" },
+  ],
+  SBS: [
+    { value:"DIGITAL_ID_ISSUED",        label:"National Digital ID",         desc:"Government digital identity card issued — hashed on-chain" },
+    { value:"BIRTH_CERT_ISSUED",        label:"Birth Certificate",           desc:"Official birth certificate issued and recorded on-chain" },
+    { value:"PASSPORT_REGISTERED",      label:"Passport Application",        desc:"Passport application recorded — biometric data hashed" },
+    { value:"DRIVERS_LICENCE_DIGITAL",  label:"Digital Driver's Licence",    desc:"Digital driver's licence issued — LTA physical licence separate" },
+    { value:"ELECTIONS_ID_VERIFIED",    label:"Elections ID / Voter Reg.",   desc:"Voter identity verified and registration confirmed — free" },
+    { value:"IDENTITY_HASH_UPDATE",     label:"Identity Record Update",      desc:"Citizen updates their hashed identity record on NDIDS" },
   ],
   MCIL: [
     { value:"TRADE_LICENCE_UPDATED",         label:"Trade Licence Verified",      desc:"Importer trade licence verified for customs" },
@@ -397,10 +415,19 @@ const WORKFLOW_DEFS = {
     name: "Business Licence",
     icon: "🏢",
     steps: [
-      { ministry:"MCIL", serviceType:"COMPANY_REGISTRATION",       label:"MCIL: Register & Verify Eligibility", fee:false },
-      { ministry:"MOF",  serviceType:"BUDGET_ALLOCATION_RECORDED", label:"MOF: Process Licence Fee",            fee:true  },
-      { ministry:"MCIT", serviceType:"BUSINESS_LICENCE_DIGITAL",   label:"MCIT: Issue Digital Licence ✓",       fee:false },
+      { ministry:"MCIL", serviceType:"COMPANY_REGISTRATION",    label:"MCIL: Register & Verify Eligibility", fee:false },
+      { ministry:"MOF",  serviceType:"BUSINESS_LICENCE_DIGITAL", label:"MOF: Issue Licence & Collect Fee ✓",  fee:true  },
     ],
+    note: "MOF issues the Business Licence AND receives the fee. MCIL handles company registration as Step 1.",
+  },
+  "SBS-IDENTITY": {
+    name: "National Digital Identity Registration",
+    icon: "🪪",
+    steps: [
+      { ministry:"SBS",  serviceType:"DIGITAL_ID_ISSUED",       label:"SBS: Issue National Digital ID",      fee:true  },
+      { ministry:"CBS",  serviceType:"ACCOUNT_OPENED",          label:"CBS: Link to Bank Account (optional)", fee:false },
+    ],
+    note: "SBS issues and manages all national identity documents. Biometric capture requires an in-person SBS office visit. Production version will integrate NDIDS biometric device API.",
   },
   "FOREIGN-INV": {
     name: "Foreign Investment Approval",
@@ -452,25 +479,478 @@ const SERVICE_FEES = {
   LOAN_APPROVED:                  { govFee:50,   clientAmount:0,     vatRate:0,    feeLabel:"Loan Application Fee",           note:"Non-refundable credit assessment — WST 50", hasFee:true },
   DIGITAL_PAYMENT_RECORDED:       { govFee:2,    clientAmount:0,     vatRate:0,    feeLabel:"Digital Payment Processing",     note:"Per-transaction fee — enter payment amt",    hasFee:true, override:true },
   STABLECOIN_ISSUANCE:            { govFee:10,   clientAmount:0,     vatRate:0,    feeLabel:"WST Stablecoin Issuance",        note:"CBS digital currency admin — WST 10",        hasFee:true, override:true },
-  // MCIT
-  BUSINESS_LICENCE_DIGITAL:       { govFee:250,  clientAmount:0,     vatRate:0.15, feeLabel:"Digital Business Licence",       note:"Annual licence + VAGST — total WST 287.50", hasFee:true },
+  // MCIT — spectrum, cyber, sector only (biz licence → MOF, digital ID → SBS)
+  BUSINESS_LICENCE_DIGITAL:       { govFee:250,  clientAmount:0,     vatRate:0.15, feeLabel:"Business Licence Fee",          note:"MOF issues licence + VAGST — WST 287.50 total. Fee paid to MOF.",  hasFee:true },
   SPECTRUM_LICENCE_ISSUED:        { govFee:2000, clientAmount:0,     vatRate:0.15, feeLabel:"Spectrum / Radio Licence",       note:"Annual spectrum licence Cat A + VAGST",      hasFee:true },
-  DIGITAL_ID_ISSUED:              { govFee:50,   clientAmount:0,     vatRate:0,    feeLabel:"National Digital ID Card",       note:"One-time issuance — WST 50",                hasFee:true },
   CYBERSECURITY_AUDIT:            { govFee:500,  clientAmount:0,     vatRate:0.15, feeLabel:"Cybersecurity Compliance Audit", note:"MCIT audit and certification + VAGST",       hasFee:true },
-  ICT_REGISTRATION:               { govFee:200,  clientAmount:0,     vatRate:0.15, feeLabel:"Sector Regulatory Clearance",    note:"MCIT sector review and clearance + VAGST",  hasFee:true },
+  ICT_REGISTRATION:               { govFee:200,  clientAmount:0,     vatRate:0.15, feeLabel:"Sector Regulatory Clearance",    note:"MCIT sector review and clearance + VAGST",   hasFee:true },
   // MCIL
-  COMPANY_REGISTRATION:           { govFee:300,  clientAmount:0,     vatRate:0,    feeLabel:"Company Registration Fee",       note:"Companies Act base tier — WST 300",         hasFee:true },
-  TRADE_LICENCE_UPDATED:          { govFee:150,  clientAmount:0,     vatRate:0,    feeLabel:"Trade Licence Verification",     note:"Annual trade licence verification — WST 150",hasFee:true },
+  COMPANY_REGISTRATION:           { govFee:300,  clientAmount:0,     vatRate:0,    feeLabel:"Company Registration Fee",       note:"Companies Act base tier — WST 300",          hasFee:true },
+  TRADE_LICENCE_UPDATED:          { govFee:150,  clientAmount:0,     vatRate:0,    feeLabel:"Trade Licence Verification",     note:"Annual trade licence verification — WST 150", hasFee:true },
   LABOUR_CONTRACT_RECORDED:       { govFee:100,  clientAmount:0,     vatRate:0,    feeLabel:"Investment Certificate Fee",     note:"MCIL certificate issuance — WST 100",        hasFee:true },
-  FOREIGN_INVESTMENT_APPROVED:    { govFee:1500, clientAmount:0,     vatRate:0.15, feeLabel:"Foreign Investment Application", note:"FDI review fee + VAGST — total WST 1,725",  hasFee:true },
-  DISPUTE_RESOLUTION_RECORDED:    { govFee:200,  clientAmount:0,     vatRate:0,    feeLabel:"Dispute Resolution Filing",      note:"Labour/commercial dispute filing — WST 200", hasFee:true },
+  FOREIGN_INVESTMENT_APPROVED:    { govFee:1500, clientAmount:0,     vatRate:0.15, feeLabel:"Foreign Investment Application", note:"FDI review fee + VAGST — total WST 1,725",   hasFee:true },
+  DISPUTE_RESOLUTION_RECORDED:    { govFee:200,  clientAmount:0,     vatRate:0,    feeLabel:"Dispute Resolution Filing",      note:"Labour/commercial dispute filing — WST 200",  hasFee:true },
   // CUSTOMS
-  SHIPMENT_CLEARED_2025:          { govFee:50,   clientAmount:0,     vatRate:0,    feeLabel:"Customs Manifest Entry",         note:"Shipment declaration fee — WST 50",          hasFee:true, override:true },
-  TRADE_FACILITATION_RECORD:      { govFee:100,  clientAmount:0,     vatRate:0,    feeLabel:"Container Release Clearance",    note:"Final customs release fee — WST 100",        hasFee:true },
-  TARIFF_CLASSIFICATION:          { govFee:30,   clientAmount:0,     vatRate:0,    feeLabel:"Tariff Classification Fee",      note:"Per-item tariff code — WST 30",              hasFee:true },
-  PROHIBITED_GOODS_FLAGGED:       { govFee:0,    clientAmount:0,     vatRate:0,    feeLabel:"Prohibited Goods Flagged",       note:"No fee — enforcement action",               hasFee:false },
-  BOND_WAREHOUSE_RECORD:          { govFee:75,   clientAmount:0,     vatRate:0,    feeLabel:"Bond Warehouse Entry",           note:"First 3 days storage incl. — WST 75/3-day", hasFee:true },
+  SHIPMENT_CLEARED_2025:          { govFee:50,   clientAmount:0,     vatRate:0,    feeLabel:"Customs Manifest Entry",         note:"Shipment declaration fee — WST 50",           hasFee:true, override:true },
+  TRADE_FACILITATION_RECORD:      { govFee:100,  clientAmount:0,     vatRate:0,    feeLabel:"Container Release Clearance",    note:"Final customs release fee — WST 100",         hasFee:true },
+  TARIFF_CLASSIFICATION:          { govFee:30,   clientAmount:0,     vatRate:0,    feeLabel:"Tariff Classification Fee",      note:"Per-item tariff code — WST 30",               hasFee:true },
+  PROHIBITED_GOODS_FLAGGED:       { govFee:0,    clientAmount:0,     vatRate:0,    feeLabel:"Prohibited Goods Flagged",       note:"No fee — enforcement action",                hasFee:false },
+  BOND_WAREHOUSE_RECORD:          { govFee:75,   clientAmount:0,     vatRate:0,    feeLabel:"Bond Warehouse Entry",           note:"First 3 days storage incl. — WST 75/3-day",  hasFee:true },
+  // SBS — Samoa Bureau of Statistics
+  // All SBS services paid to SBS account. Elections ID is a free civic service.
+  // Biometric data capture is in-person only for MVP; production version integrates device API.
+  DIGITAL_ID_ISSUED:              { govFee:50,   clientAmount:0,     vatRate:0,    feeLabel:"National Digital ID Card",       note:"One-time SBS issuance — WST 50. Biometric capture in-person.",    hasFee:true },
+  BIRTH_CERT_ISSUED:              { govFee:25,   clientAmount:0,     vatRate:0,    feeLabel:"Birth Certificate Fee",          note:"Official birth cert — WST 25. Downloadable PDF issued on-chain.", hasFee:true },
+  PASSPORT_REGISTERED:            { govFee:150,  clientAmount:0,     vatRate:0,    feeLabel:"Passport Application Fee",       note:"SBS application fee — WST 150. Physical passport via MFAT.",     hasFee:true },
+  DRIVERS_LICENCE_DIGITAL:        { govFee:75,   clientAmount:0,     vatRate:0,    feeLabel:"Digital Driver's Licence Fee",   note:"SBS digital record — WST 75. Physical licence issued by LTA.",   hasFee:true },
+  ELECTIONS_ID_VERIFIED:          { govFee:0,    clientAmount:0,     vatRate:0,    feeLabel:"Voter Registration",             note:"Free civic service — government funded.",                         hasFee:false },
+  IDENTITY_HASH_UPDATE:           { govFee:30,   clientAmount:0,     vatRate:0,    feeLabel:"Identity Record Update Fee",     note:"NDIDS hash update — WST 30.",                                    hasFee:true },
 };
+
+// ---
+// MINISTRY PAYMENT ACCOUNTS
+// Each ministry has its own revenue account. Fees paid for that ministry's services
+// go directly to their account — not pooled. MOF has two accounts: one for citizen
+// service fees (tax compliance etc.), one reserved for donor/UNICEF flows via CBS.
+// CBS remains the settlement rail for mobile money and stablecoin payments.
+//
+// These are PLACEHOLDER values — replace with real account numbers before go-live.
+// Reference format: [MINISTRY_CODE]-[SERVICE_CODE_SHORT]-[CITIZEN_ID_LAST4]-[YYMMDD]
+// e.g. MCIL-COMPREG-3456-260308
+// ---
+// =============================================================================
+// MINISTRY PAYMENT ACCOUNTS  — v14
+// =============================================================================
+// OWNERSHIP RULES (locked in — do not change without updating SERVICE_FEES too):
+//
+//   processingMinistry  = the ministry whose OFFICER handles the workflow step
+//   feeCollector        = the account that RECEIVES the payment
+//
+//   These two can differ. Examples:
+//     • Business Licence: MCIT officer issues it, but fee goes to MOF account
+//     • Digital ID:       MCIT officer issues it, but fee goes to SBS account
+//     • All other MCIT:   MCIT officer issues, MCIT account collects
+//
+// PAYMENT RAILS — MVP SIMPLIFICATION:
+//   All payments are processed as immediately confirmed for the MVP demo.
+//   No live BSP / Vodafone M-Pay / Digicel MyCash API calls are made.
+//   The account numbers and merchant codes below are PLACEHOLDERS.
+//   Production integration will require:
+//     - BSP API (bank transfers, EFTPOS)
+//     - Vodafone Samoa M-Pay API (M-Tala merchant payments)
+//     - Digicel Samoa MyCash API
+//     - WST Stablecoin contract calls (CBS Digital post-funding)
+//   See technical documentation for integration specifications.
+//
+// STATE OWNED ENTERPRISES (SOEs):
+//   SOEs register and pay fees like any business entity.
+//   Their citizenId/businessId should use the SOE prefix format:
+//     SOE-[ENTITY_CODE]-[REGISTRATION_NO]
+//   e.g. SOE-EPC-2025-001 (Electric Power Corporation)
+//        SOE-SWA-2025-002 (Samoa Water Authority)
+//        SOE-STL-2025-003 (SamoaTel)
+//        SOE-SPA-2025-004 (Samoa Port Authority)
+//   This prefix allows the officer and auditor to immediately identify
+//   SOE transactions in the records and apply the correct tariff tier.
+//
+// All account numbers are PLACEHOLDERS — replace with real BSP/ANZ/SCB/CBS
+// account numbers when payment APIs are configured for production.
+// =============================================================================
+
+const MINISTRY_ACCOUNTS = {
+
+  // ── MCIL — Ministry of Commerce, Industry & Labour ──────────────────────
+  // Collects: Company registration, trade licences, FDI, investment certificates
+  // Does NOT collect: Business Licence fee (goes to MOF), Digital ID fee (goes to SBS)
+  MCIL: {
+    ministryName: "Ministry of Commerce, Industry & Labour",
+    shortName:    "MCIL",
+    accounts: [
+      {
+        id:          "MCIL-MAIN",
+        label:       "MCIL Revenue Account",
+        description: "Company registrations, trade licences, FDI applications, investment certificates, dispute resolution",
+        bank:        "Samoa Commercial Bank",
+        accountName: "Ministry of Commerce Industry & Labour",
+        accountNo:   "SCB-0742-0042001",
+        branch:      "SCB Apia — Government Services Branch",
+        swift:       "SAMASWSA",
+        mPayCode:    "MCIL-MPY-4201",
+        myCashCode:  "MCIL-MCH-4201",
+        wstAddress:  "0xA1B2C3D4E5F6000100000000MCIL0000MCIL0001",
+        refFormat:   "MCIL-[SVC]-[LAST4ID]-[YYMMDD]",
+        refExample:  "MCIL-COMPREG-3456-260308",
+        services:    [
+          "COMPANY_REGISTRATION",
+          "TRADE_LICENCE_UPDATED",
+          "LABOUR_CONTRACT_RECORDED",
+          "FOREIGN_INVESTMENT_APPROVED",
+          "DISPUTE_RESOLUTION_RECORDED",
+        ],
+        note: "Business Licence fees are collected by MOF, not MCIL. Digital ID fees go to SBS.",
+      },
+    ],
+  },
+
+  // ── MCIT — Ministry of Communications & Information Technology ──────────
+  // Collects: Spectrum licences, cybersecurity audits, sector clearances
+  // Issues BUT does NOT collect: Business Licence (fee → MOF), Digital ID (fee → SBS)
+  MCIT: {
+    ministryName: "Ministry of Communications & Information Technology",
+    shortName:    "MCIT",
+    accounts: [
+      {
+        id:          "MCIT-MAIN",
+        label:       "MCIT Revenue Account",
+        description: "Spectrum licences, cybersecurity audits, ICT sector clearances — MCIT-issued services only",
+        bank:        "BSP Samoa",
+        accountName: "Ministry of Communications & Information Technology",
+        accountNo:   "BSP-0318-0018001",
+        branch:      "BSP Apia Central Branch",
+        swift:       "BSPKSWSA",
+        mPayCode:    "MCIT-MPY-1802",
+        myCashCode:  "MCIT-MCH-1802",
+        wstAddress:  "0xB2C3D4E5F60001000000000MCIT0000MCIT0002",
+        refFormat:   "MCIT-[SVC]-[LAST4ID]-[YYMMDD]",
+        refExample:  "MCIT-SPECLIC-3456-260308",
+        services:    [
+          "SPECTRUM_LICENCE_ISSUED",
+          "CYBERSECURITY_AUDIT",
+          "ICT_REGISTRATION",
+        ],
+        note: "MCIT collects only spectrum, cybersecurity, and sector clearance fees. Business Licence fees now go to MOF. Digital ID fees go to SBS.",
+      },
+    ],
+  },
+
+  // ── CUSTOMS — Samoa Customs & Revenue Service ────────────────────────────
+  // Largest fee-collecting entity after MOF. All customs fees go here.
+  CUSTOMS: {
+    ministryName: "Samoa Customs & Revenue Service",
+    shortName:    "CUSTOMS",
+    accounts: [
+      {
+        id:          "CUSTOMS-DUTY",
+        label:       "Customs Duty & Revenue Account",
+        description: "Import duties, tariff fees, bond warehouse entries, container release — primary government trade revenue",
+        bank:        "ANZ Samoa",
+        accountName: "Samoa Customs & Revenue Service",
+        accountNo:   "ANZ-0507-0007001",
+        branch:      "ANZ Apia — Government Revenue Branch",
+        swift:       "ANZBSWSA",
+        mPayCode:    "CSTMS-MPY-7003",
+        myCashCode:  "CSTMS-MCH-7003",
+        wstAddress:  "0xC3D4E5F6000100000000CSTMS000CSTMS0003",
+        refFormat:   "CSTMS-[SVC]-[LAST4ID]-[YYMMDD]",
+        refExample:  "CSTMS-CONTREL-3456-260308",
+        services:    [
+          "SHIPMENT_CLEARED_2025",
+          "TRADE_FACILITATION_RECORD",
+          "TARIFF_CLASSIFICATION",
+          "BOND_WAREHOUSE_RECORD",
+          "PROHIBITED_GOODS_FLAGGED",
+        ],
+      },
+    ],
+  },
+
+  // ── EDUCATION — Ministry of Education Sports & Culture ───────────────────
+  EDUCATION: {
+    ministryName: "Ministry of Education Sports & Culture",
+    shortName:    "EDUCATION",
+    accounts: [
+      {
+        id:          "EDUC-MAIN",
+        label:       "Education Ministry Account — Services",
+        description: "Graduation certificate fees, enrolment administration. Scholarships are disbursements out.",
+        bank:        "Samoa Commercial Bank",
+        accountName: "Ministry of Education Sports & Culture",
+        accountNo:   "SCB-0755-0055001",
+        branch:      "SCB Apia — Government Services Branch",
+        swift:       "SAMASWSA",
+        mPayCode:    "EDUC-MPY-5504",
+        myCashCode:  "EDUC-MCH-5504",
+        wstAddress:  "0xD4E5F600010000000000EDUC0000EDUC00004",
+        refFormat:   "EDUC-[SVC]-[LAST4ID]-[YYMMDD]",
+        refExample:  "EDUC-GRAD-3456-260308",
+        services:    [
+          "SCHOOL_ENROLMENT_2025",
+          "ATTENDANCE_RECORD",
+          "GRADUATION_RECORD",
+          "SCHOLARSHIP_AWARDED",
+          "SPECIAL_NEEDS_SUPPORT",
+        ],
+      },
+    ],
+  },
+
+  // ── MOF — Ministry of Finance ────────────────────────────────────────────
+  // TWO ACCOUNTS:
+  //   MOF-SERVICES: citizen and business fees, INCLUDING business licence fee from MCIT
+  //   MOF-DONOR:    UNICEF / World Bank / bilateral donor flows via CBS — not citizen-facing
+  MOF: {
+    ministryName: "Ministry of Finance",
+    shortName:    "MOF",
+    accounts: [
+      {
+        id:          "MOF-SERVICES",
+        label:       "MOF Revenue Account — Citizen & Business Services",
+        description: "Tax compliance certificates, Business Licence fees (collected on behalf of MCIT), MOF budget components",
+        bank:        "Central Bank of Samoa",
+        accountName: "Ministry of Finance — Revenue Services",
+        accountNo:   "CBS-MOF-0001-REV",
+        branch:      "CBS Apia — Ministry Settlement Desk",
+        swift:       "CBSSSWSA",
+        mPayCode:    "MOF-MPY-0105",
+        myCashCode:  "MOF-MCH-0105",
+        wstAddress:  "0xE5F60001000000000000MOF000MOF000005",
+        refFormat:   "MOF-[SVC]-[LAST4ID]-[YYMMDD]",
+        refExample:  "MOF-TAXCMP-3456-260308",
+        services:    [
+          "TAX_COMPLIANCE_VERIFIED",
+          "BUDGET_ALLOCATION_RECORDED",
+          "DUTY_PROCESSED",
+          "BUSINESS_LICENCE_DIGITAL",   // MOF issues AND receives fee (v15)
+        ],
+        note: "MOF issues Business Licences and receives the fee directly. Tax compliance, budget fees, and duty payments also collected here.",
+      },
+      {
+        id:          "MOF-DONOR",
+        label:       "MOF Donor & Aid Flows Account",
+        description: "UNICEF tranches, World Bank grants, bilateral aid — settled via CBS interoperability layer",
+        bank:        "Central Bank of Samoa",
+        accountName: "Ministry of Finance — Aid & Grants",
+        accountNo:   "CBS-MOF-0002-AID",
+        branch:      "CBS Apia — Donor Settlement Desk",
+        swift:       "CBSSSWSA",
+        mPayCode:    null,
+        myCashCode:  null,
+        wstAddress:  "0xF60001000000000000MOFAID0MOFAID006",
+        refFormat:   "MOF-AID-[DONOR_CODE]-[YYMMDD]",
+        refExample:  "MOF-AID-UNICEF-260308",
+        services:    [
+          "EDUCATION_BENEFIT_ELIGIBLE_2025",
+          "SOCIAL_WELFARE_PAYMENT_2025",
+        ],
+        note: "Donor flows only. UNICEF and World Bank payments route through CBS. Not for citizen-facing payments or business licence fees.",
+        donorOnly: true,
+      },
+    ],
+  },
+
+  // ── CBS — Central Bank of Samoa ──────────────────────────────────────────
+  // CBS is both a service ministry AND the payment settlement rail for all others.
+  // This account is for CBS's OWN service fees only (account opening, loans, etc.)
+  CBS: {
+    ministryName: "Central Bank of Samoa",
+    shortName:    "CBS",
+    accounts: [
+      {
+        id:          "CBS-SERVICES",
+        label:       "CBS Banking Services Account",
+        description: "Account opening fees, loan applications, digital payment processing, WST stablecoin issuance",
+        bank:        "Central Bank of Samoa (self-held)",
+        accountName: "Central Bank of Samoa — Services Revenue",
+        accountNo:   "CBS-SVC-0001-REV",
+        branch:      "CBS Apia — Public Services Counter",
+        swift:       "CBSSSWSA",
+        mPayCode:    "CBS-MPY-0106",
+        myCashCode:  "CBS-MCH-0106",
+        wstAddress:  "0x000100000000000000CBS0000CBS0000006",
+        refFormat:   "CBS-[SVC]-[LAST4ID]-[YYMMDD]",
+        refExample:  "CBS-ACCOPN-3456-260308",
+        services:    [
+          "ACCOUNT_OPENED",
+          "REMITTANCE_RECEIVED",
+          "LOAN_APPROVED",
+          "DIGITAL_PAYMENT_RECORDED",
+          "STABLECOIN_ISSUANCE",
+        ],
+        note: "CBS is also the settlement infrastructure for M-Pay, MyCash, and WST Stablecoin payments routed to other ministries. This account covers CBS own service revenue only.",
+      },
+    ],
+  },
+
+  // ── SBS — Samoa Bureau of Statistics ────────────────────────────────────
+  // Full ministry entity — issues all national identity documents and civil registry certificates.
+  // All SBS services paid to this account. Elections ID is free (civic service).
+  // Biometric capture is in-person at SBS office for MVP.
+  // Production: biometric device API integration, LTA driver licence API, MFAT passport API.
+  SBS: {
+    ministryName: "Samoa Bureau of Statistics",
+    shortName:    "SBS",
+    accounts: [
+      {
+        id:          "SBS-IDENTITY",
+        label:       "SBS Identity & Civil Registry Account",
+        description: "National Digital IDs, birth certificates, passports, driver's licences, voter registration, identity updates",
+        bank:        "ANZ Samoa",
+        accountName: "Samoa Bureau of Statistics",
+        accountNo:   "ANZ-0208-0020001",
+        branch:      "ANZ Apia — Government Branch",
+        swift:       "ANZBSWSA",
+        mPayCode:    "SBS-MPY-2007",
+        myCashCode:  "SBS-MCH-2007",
+        wstAddress:  "0x010000000000000000SBS00000SBS000007",
+        refFormat:   "SBS-[SVC]-[LAST4ID]-[YYMMDD]",
+        refExample:  "SBS-DIGIID-3456-260308",
+        services:    [
+          "DIGITAL_ID_ISSUED",
+          "BIRTH_CERT_ISSUED",
+          "PASSPORT_REGISTERED",
+          "DRIVERS_LICENCE_DIGITAL",
+          "ELECTIONS_ID_VERIFIED",    // free — no actual payment, reference only
+          "IDENTITY_HASH_UPDATE",
+        ],
+        note: "Elections ID verification is free — a government-funded civic service. All other SBS services have a fee payable to this account. Biometric capture and physical document issuance requires an in-person SBS office visit. Production version will integrate biometric device API, LTA (driver's licence), and MFAT (passport) systems.",
+      },
+    ],
+  },
+
+  // ── SOE PAYER ACCOUNTS ───────────────────────────────────────────────────
+  // State-Owned Enterprises pay government fees like any business entity.
+  // They are PAYER accounts, not ministry accounts — no dashboard needed.
+  // SOE transactions are identified by citizenId prefix: SOE-[ENTITY]-[YEAR]-[NO]
+  // e.g. SOE-EPC-2025-001, SOE-SWA-2025-002
+  // When an officer sees a citizenId starting with "SOE-", they apply SOE tariff tiers.
+  SOE_EPC: {
+    ministryName: "Electric Power Corporation",
+    shortName:    "EPC",
+    payerOnly:    true,   // payer — not a ministry, has no officer dashboard
+    entityCode:   "SOE-EPC",
+    accounts: [
+      {
+        id:          "EPC-PAYER",
+        label:       "EPC Government Payments Account",
+        description: "EPC pays government fees: business licences, customs duties, compliance audits",
+        bank:        "BSP Samoa",
+        accountName: "Electric Power Corporation of Samoa",
+        accountNo:   "BSP-0421-0041001",
+        branch:      "BSP Apia — Corporate Banking",
+        swift:       "BSPKSWSA",
+        mPayCode:    "EPC-MPY-4100",
+        myCashCode:  null,
+        note:        "SOE payer. Use citizenId: SOE-EPC-[YEAR]-[SEQ] for all EPC transactions.",
+      },
+    ],
+  },
+  SOE_SWA: {
+    ministryName: "Samoa Water Authority",
+    shortName:    "SWA",
+    payerOnly:    true,
+    entityCode:   "SOE-SWA",
+    accounts: [
+      {
+        id:          "SWA-PAYER",
+        label:       "SWA Government Payments Account",
+        description: "SWA pays government fees: business registrations, customs, compliance",
+        bank:        "Samoa Commercial Bank",
+        accountName: "Samoa Water Authority",
+        accountNo:   "SCB-0631-0063001",
+        branch:      "SCB Apia — Corporate Branch",
+        swift:       "SAMASWSA",
+        mPayCode:    "SWA-MPY-6300",
+        myCashCode:  null,
+        note:        "SOE payer. Use citizenId: SOE-SWA-[YEAR]-[SEQ] for all SWA transactions.",
+      },
+    ],
+  },
+};
+
+// =============================================================================
+// SERVICE → FEE COLLECTOR MAP
+// Resolves which account a payment goes to, which may differ from the processing
+// ministry. This is the single source of truth for fee routing.
+// =============================================================================
+// =============================================================================
+// FEE COLLECTOR MAP — Single source of truth for payment routing
+// Rule: Every ministry that provides a service gets paid to their own account.
+// The only free services are donor-funded (UNICEF/World Bank) and civic services.
+// SOE payers: EPC = Electric Power Corporation, SWA = Samoa Water Authority
+//   use citizenId format: SOE-EPC-2025-001 / SOE-SWA-2025-002
+// =============================================================================
+const FEE_COLLECTOR = {
+  // MCIL — collects own fees for all MCIL services
+  COMPANY_REGISTRATION:        "MCIL",
+  TRADE_LICENCE_UPDATED:       "MCIL",
+  LABOUR_CONTRACT_RECORDED:    "MCIL",
+  FOREIGN_INVESTMENT_APPROVED: "MCIL",
+  DISPUTE_RESOLUTION_RECORDED: "MCIL",
+  // MCIT — spectrum, cyber, sector only; no longer collects for biz licence or digital ID
+  SPECTRUM_LICENCE_ISSUED:     "MCIT",
+  CYBERSECURITY_AUDIT:         "MCIT",
+  ICT_REGISTRATION:            "MCIT",
+  // Business Licence: MOF issues AND collects (v15 correction)
+  BUSINESS_LICENCE_DIGITAL:    "MOF",
+  // CUSTOMS — all customs revenue to CUSTOMS account
+  SHIPMENT_CLEARED_2025:       "CUSTOMS",
+  TRADE_FACILITATION_RECORD:   "CUSTOMS",
+  TARIFF_CLASSIFICATION:       "CUSTOMS",
+  BOND_WAREHOUSE_RECORD:       "CUSTOMS",
+  PROHIBITED_GOODS_FLAGGED:    "CUSTOMS",   // free/enforcement — no fee
+  // EDUCATION — graduation cert fee; scholarships/enrolment are free/donor-funded
+  SCHOOL_ENROLMENT_2025:       "EDUCATION", // free — government funded
+  ATTENDANCE_RECORD:           "EDUCATION", // free — admin record
+  GRADUATION_RECORD:           "EDUCATION", // WST 25
+  SCHOLARSHIP_AWARDED:         "EDUCATION", // payout out — donor funded
+  SPECIAL_NEEDS_SUPPORT:       "EDUCATION", // free — government funded
+  // MOF — tax compliance, budget fees, duty, business licence (issued + collected by MOF)
+  TAX_COMPLIANCE_VERIFIED:              "MOF",
+  BUDGET_ALLOCATION_RECORDED:           "MOF",
+  DUTY_PROCESSED:                       "MOF",
+  EDUCATION_BENEFIT_ELIGIBLE_2025:      "MOF", // payout — donor funded
+  SOCIAL_WELFARE_PAYMENT_2025:          "MOF", // payout — donor funded
+  // CBS — banking services
+  ACCOUNT_OPENED:              "CBS",
+  REMITTANCE_RECEIVED:         "CBS",
+  LOAN_APPROVED:               "CBS",
+  DIGITAL_PAYMENT_RECORDED:    "CBS",
+  STABLECOIN_ISSUANCE:         "CBS",
+  // SBS — all identity/civil registry services paid to SBS account
+  // Elections ID is free (civic service, government funded)
+  DIGITAL_ID_ISSUED:           "SBS",
+  BIRTH_CERT_ISSUED:           "SBS",
+  PASSPORT_REGISTERED:         "SBS",
+  DRIVERS_LICENCE_DIGITAL:     "SBS",
+  ELECTIONS_ID_VERIFIED:       "SBS",   // free civic service
+  IDENTITY_HASH_UPDATE:        "SBS",
+};
+
+
+
+// Helper: get the correct PAYMENT ACCOUNT for a service type
+// Uses FEE_COLLECTOR map — the fee-collecting entity may differ from the
+// processing ministry (e.g. BUSINESS_LICENCE_DIGITAL is processed by MCIT
+// but fee goes to MOF; DIGITAL_ID_ISSUED is processed by MCIT but fee goes to SBS)
+function getPaymentAccount(serviceType, processingMinistryCode) {
+  // Look up who actually collects the fee for this service
+  const feeCollectorCode = FEE_COLLECTOR[serviceType] || processingMinistryCode;
+  const feeMinistry = MINISTRY_ACCOUNTS[feeCollectorCode];
+  if (!feeMinistry) return null;
+  // Find the account in that ministry that lists this service, or fallback to first non-donor
+  const acct = feeMinistry.accounts.find(a => a.services?.includes(serviceType));
+  return acct || feeMinistry.accounts.find(a => !a.donorOnly) || feeMinistry.accounts[0];
+}
+
+// Helper: get the fee collector name for display (e.g. "MOF" for business licence)
+function getFeeCollectorName(serviceType) {
+  const code = FEE_COLLECTOR[serviceType];
+  if (!code) return null;
+  return MINISTRY_ACCOUNTS[code]?.ministryName || code;
+}
+
+
+
+// Helper: generate a payment reference for the citizen to use
+function generatePayRef(serviceType, ministryCode, citizenId) {
+  const acct = getPaymentAccount(serviceType, ministryCode);
+  if (!acct) return `PAY-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+  const last4 = (citizenId || "0000").replace(/[^a-zA-Z0-9]/g,"").slice(-4).toUpperCase();
+  const d     = new Date();
+  const ymd   = `${String(d.getFullYear()).slice(-2)}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
+  const svcShort = serviceType.replace(/_/g,"").slice(0,6).toUpperCase();
+  return `${ministryCode}-${svcShort}-${last4}-${ymd}`;
+}
 
 // PAYMENT RAILS
 const PAYMENT_RAILS = [
@@ -1559,6 +2039,29 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
         <div style={{ marginBottom:"14px", padding:"10px 12px", background:C.seafoam+"14", border:`1px solid ${C.seafoam}33`, borderRadius:"8px" }}>
           <div style={{ fontSize:"11px", fontWeight:700, color:C.seafoam }}>⚡ Pre-filled from Pending Actions — fees auto-loaded · review and pay</div>
           {prefill.citizenLabel && <div style={{ fontSize:"11px", color:C.silver, marginTop:"4px" }}>👤 {prefill.citizenLabel}</div>}
+          {/* Show the ministry account this payment should have gone to */}
+          {(() => {
+            const acct = prefill.serviceType ? getPaymentAccount(prefill.serviceType, ministryCode) : null;
+            if (!acct) return null;
+            return (
+              <div style={{ marginTop:"8px", paddingTop:"8px", borderTop:`1px solid ${C.seafoam}22` }}>
+                <div style={{ fontSize:"10px", fontWeight:700, color:C.seafoam, marginBottom:"4px" }}>
+                  🏦 Payment should have been made to: {acct.label}
+                </div>
+                <div style={{ display:"flex", gap:"8px", flexWrap:"wrap" }}>
+                  {[
+                    ["Account", acct.accountNo],
+                    ["Bank", acct.bank],
+                    ...(acct.mPayCode ? [["M-Pay", acct.mPayCode]] : []),
+                  ].map(([l,v])=>(
+                    <span key={l} style={{ fontSize:"10px", color:C.muted, background:C.abyss, padding:"2px 8px", borderRadius:"4px", fontFamily:F.mono }}>
+                      {l}: <strong style={{ color:C.white }}>{v}</strong>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -1757,9 +2260,10 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
   const meta    = MINISTRY_META[ministryCode];
   const addr    = MINISTRY_ADDRS[ministryCode];
 
-  const [tab,          setTab]          = useState("pending");
-  const [lastReceipt,  setLastReceipt]  = useState(null);
-  const [prefill,      setPrefill]      = useState(null);
+  const [tab,           setTab]          = useState("pending");
+  const [lastReceipt,   setLastReceipt]  = useState(null);
+  const [prefill,       setPrefill]      = useState(null);
+  const [paymentSearch, setPaymentSearch]= useState("");  // officer searches by citizen payRef or ID
 
   // My records from global pool
   const myRecords = (allRecords || []).filter(r => r.ministryCode === ministryCode);
@@ -1788,9 +2292,11 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
     // Check if citizen has already paid for this action
     const citizenPmt = (citizenPayments||[]).find(cp =>
       cp.serviceType === action.step.serviceType &&
-      cp.ministryCode === ministryCode &&
-      cp.wfId === action.wfId &&
-      cp.status === "paid"
+      cp.status === "paid" &&
+      // ministryCode match: citizen portal sets this to the owning ministry of the service
+      // so BUSINESS_LICENCE_DIGITAL → MCIT, which correctly matches MCIT's pending action
+      // Fallback: match any paid payment for this serviceType regardless of ministry recorded
+      (cp.ministryCode === ministryCode || !cp.ministryCode)
     );
     setPrefill({
       citizenId:    citizenPmt?.citizenId || action.citizenHash,
@@ -1832,7 +2338,177 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
               title="⚡ Pending Actions"
               sub={`${pendingActions.length} cross-ministry workflow step${pendingActions.length !== 1?"s":""} waiting for ${meta.name}`}
             />
-            {pendingActions.length === 0 ? (
+
+            {/* ── CITIZEN PAYMENT INBOX ─────────────────────────────
+                Shows ALL citizen online payments for this ministry,
+                even before the workflow chain has been triggered on-chain.
+                This is how the officer knows a citizen has paid.
+            ──────────────────────────────────────────────────────── */}
+            {(() => {
+              // All unprocessed payments directed at this ministry
+              const inboxPayments = (citizenPayments||[]).filter(cp =>
+                cp.ministryCode === ministryCode && cp.status === "paid"
+              );
+              if (inboxPayments.length === 0) return null;
+              return (
+                <div style={{ marginBottom:"24px" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                      <span style={{ fontSize:"13px", fontWeight:800, color:C.seafoam }}>
+                        💳 Citizen Payment Inbox
+                      </span>
+                      <span style={{ ...badge(C.seafoam), fontSize:"10px" }}>
+                        {inboxPayments.length} payment{inboxPayments.length!==1?"s":""} received
+                      </span>
+                    </div>
+                    {/* Payment reference search */}
+                    <div style={{ position:"relative" }}>
+                      <input
+                        value={paymentSearch}
+                        onChange={e=>setPaymentSearch(e.target.value)}
+                        placeholder="Search by Ref or Citizen ID…"
+                        style={{ background:C.abyss, border:`1px solid ${C.ocean}`, borderRadius:"8px",
+                          padding:"7px 14px 7px 32px", color:C.white, fontSize:"12px",
+                          fontFamily:F.ui, width:"240px" }}
+                      />
+                      <span style={{ position:"absolute", left:"11px", top:"50%", transform:"translateY(-50%)", fontSize:"12px", color:C.muted }}>🔍</span>
+                    </div>
+                  </div>
+
+                  {inboxPayments
+                    .filter(cp => !paymentSearch.trim() ||
+                      cp.payRef?.toLowerCase().includes(paymentSearch.toLowerCase()) ||
+                      cp.citizenId?.toLowerCase().includes(paymentSearch.toLowerCase())
+                    )
+                    .map((cp, i) => {
+                      const fi = SERVICE_FEES[cp.serviceType] || {};
+                      return (
+                        <div key={i} style={{ ...card({ borderLeft:`4px solid ${C.seafoam}`, marginBottom:"10px", padding:"14px 16px",
+                          background:`linear-gradient(135deg,${C.seafoam}08,${C.navy})` }) }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
+                            <div>
+                              <div style={{ fontWeight:800, fontSize:"14px", color:C.white }}>
+                                {serviceLabel(cp.serviceType)}
+                              </div>
+                              <div style={{ fontSize:"12px", color:C.seafoam, marginTop:"2px" }}>
+                                Citizen paid online · {cp.railLabel}
+                              </div>
+                            </div>
+                            <div style={{ display:"flex", flexDirection:"column", gap:"6px", alignItems:"flex-end" }}>
+                              <span style={{ ...badge(C.seafoam), fontSize:"10px" }}>✅ Payment Received</span>
+                              <span style={{ fontFamily:F.mono, fontSize:"11px", color:C.seafoam, background:C.seafoam+"18", padding:"2px 8px", borderRadius:"4px" }}>
+                                {cp.payRef}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"8px", marginBottom:"12px" }}>
+                            {[
+                              ["Citizen ID",       cp.citizenId],
+                              ["Fee Paid",         `WST ${cp.totalPaid || cp.fee || "0"}`],
+                              ["Method",           cp.railLabel],
+                              ["Received",         new Date(cp.timestamp).toLocaleTimeString()],
+                            ].map(([l,v])=>(
+                              <div key={l} style={{ background:C.abyss, borderRadius:"6px", padding:"7px 10px" }}>
+                                <div style={{ fontSize:"9px", color:C.muted, marginBottom:"2px", textTransform:"uppercase" }}>{l}</div>
+                                <div style={{ fontSize:"12px", color:C.white, fontWeight:700 }}>{v}</div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Bank receipt ref — shown prominently if citizen provided it */}
+                          {cp.bankReceiptRef && (
+                            <div style={{ padding:"10px 12px", background:C.gold+"14", border:`1px solid ${C.gold}44`, borderRadius:"6px", marginBottom:"10px" }}>
+                              <div style={{ fontSize:"10px", fontWeight:700, color:C.gold, marginBottom:"4px", textTransform:"uppercase" }}>
+                                🧾 Citizen's Bank / Mobile Receipt Reference — verify against ministry account
+                              </div>
+                              <div style={{ fontSize:"15px", fontWeight:900, color:C.white, fontFamily:F.mono }}>{cp.bankReceiptRef}</div>
+                              <div style={{ fontSize:"10px", color:C.muted, marginTop:"3px" }}>
+                                Check this ref in the ministry account ({cp.accountNo || "see account panel below"}) before issuing certificate.
+                              </div>
+                            </div>
+                          )}
+                          {!cp.bankReceiptRef && (
+                            <div style={{ padding:"8px 10px", background:C.amber+"10", border:`1px solid ${C.amber}22`, borderRadius:"6px", marginBottom:"10px", fontSize:"11px", color:C.amber }}>
+                              ℹ Citizen did not provide a bank receipt reference. Confirm payment was received in the ministry account manually, or ask citizen to quote their M-Pay/BSP confirmation number.
+                            </div>
+                          )}
+
+                          {/* Ministry account verification — officer checks payment went to right account */}
+                          {(() => {
+                            const acct = getPaymentAccount(cp.serviceType, cp.ministryCode || ministryCode);
+                            if (!acct) return null;
+                            return (
+                              <div style={{ padding:"10px 12px", background:C.seafoam+"10", border:`1px solid ${C.seafoam}33`, borderRadius:"6px", marginBottom:"10px" }}>
+                                <div style={{ fontSize:"10px", fontWeight:700, color:C.seafoam, marginBottom:"6px", textTransform:"uppercase" }}>
+                                  🏦 Verify payment was made to: {acct.label}
+                                </div>
+                                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"6px" }}>
+                                  {[
+                                    ["Account",  acct.accountNo],
+                                    ["Bank",     acct.bank],
+                                    acct.mPayCode ? ["M-Pay Code", acct.mPayCode] : ["Branch", acct.branch],
+                                  ].map(([l,v])=>(
+                                    <div key={l} style={{ background:C.abyss, borderRadius:"4px", padding:"5px 8px" }}>
+                                      <div style={{ fontSize:"8px", color:C.muted, marginBottom:"1px", textTransform:"uppercase" }}>{l}</div>
+                                      <div style={{ fontSize:"11px", color:C.white, fontWeight:700, fontFamily:F.mono }}>{v}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          <div style={{ fontSize:"11px", color:C.muted, marginBottom:"10px", padding:"8px 10px", background:C.abyss, borderRadius:"6px" }}>
+                            ℹ <strong style={{ color:C.silver }}>How to process:</strong> Confirm payment was received in the ministry account above, then click "Process & Issue" to open the Record Service form pre-filled with this citizen's payment details. Submit to blockchain to issue their certificate.
+                            {!pendingActions.some(a=>a.step.serviceType===cp.serviceType) && (
+                              <span style={{ color:C.amber }}> Note: This service starts at Step 1 of the {(SVC_TO_WF[cp.serviceType]||[])[0]?.workflowId || "workflow"} — if no previous step exists on-chain yet, submit directly from Record Service tab.</span>
+                            )}
+                          </div>
+
+                          <div style={{ display:"flex", gap:"10px" }}>
+                            <button
+                              onClick={() => {
+                                setPrefill({
+                                  citizenId:     cp.citizenId,
+                                  citizenLabel:  `✅ Citizen paid online — ${cp.citizenId} · ${cp.railLabel} · WST ${cp.fee||cp.amount}`,
+                                  serviceType:   cp.serviceType,
+                                  amount:        cp.amount,
+                                  fee:           cp.fee,
+                                  paymentMethod: cp.paymentMethod,
+                                  paymentRef:    cp.payRef,
+                                  evidenceNote:  `Citizen online payment: ${cp.payRef} | RAIL:${cp.paymentMethod} | FEE:${cp.fee}WST`,
+                                  workflowId:    cp.wfId,
+                                });
+                                setTab("record");
+                              }}
+                              style={{ ...btn("success") }}>
+                              ✅ Process & Issue Certificate →
+                            </button>
+                            {onPaymentProcessed && (
+                              <button
+                                onClick={() => onPaymentProcessed(cp.payRef)}
+                                style={{ ...btn("ghost"), fontSize:"11px" }}>
+                                Mark Complete
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  }
+                </div>
+              );
+            })()}
+
+            {/* Divider between inbox and workflow-triggered actions */}
+            {(citizenPayments||[]).filter(cp=>cp.ministryCode===ministryCode&&cp.status==="paid").length > 0 && pendingActions.length > 0 && (
+              <div style={{ borderTop:`1px solid ${C.ocean}`, marginBottom:"20px", paddingTop:"16px" }}>
+                <div style={{ fontSize:"12px", fontWeight:700, color:C.silver, marginBottom:"12px" }}>
+                  ⚡ Workflow-Triggered Actions (previous ministry step completed on-chain)
+                </div>
+              </div>
+            )}
               <div style={{ ...card(), textAlign:"center", padding:"48px" }}>
                 <div style={{ fontSize:"32px", marginBottom:"10px" }}>✓</div>
                 <div style={{ color:C.silver, fontSize:"14px", fontWeight:700 }}>No pending actions</div>
@@ -1842,9 +2518,8 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
               // Check if citizen has already paid for this step
               const citizenPmt = (citizenPayments||[]).find(cp =>
                 cp.serviceType === action.step.serviceType &&
-                cp.ministryCode === ministryCode &&
-                cp.wfId === action.wfId &&
-                cp.status === "paid"
+                cp.status === "paid" &&
+                (cp.ministryCode === ministryCode || !cp.ministryCode)
               );
               const isPaid = !!citizenPmt;
               const feeSchedule = SERVICE_FEES[action.step.serviceType] || {};
@@ -2807,6 +3482,309 @@ function HubDashboard({ provider, connected, blockNumber, onBack, allRecords, al
 }
 
 // ---
+// SBS DASHBOARD — Samoa Bureau of Statistics
+// Full ministry dashboard: National Digital ID, Birth Certificates, Passports,
+// Driver's Licences, Elections ID, Identity Hash Updates.
+// Deep purple theme. All fees paid to SBS account.
+// Biometric capture: in-person for MVP; production integrates device API.
+// ---
+function SBSDashboard({ provider, connected, blockNumber, onBack, onNavigate, allRecords, allLoading, citizenPayments, onPaymentProcessed }) {
+  const meta = MINISTRY_META["SBS"];
+  const [tab, setTab] = useState("overview");
+  const [lastReceipt, setLastReceipt] = useState(null);
+  const [prefill,     setPrefill]     = useState(null);
+  const [idLookup,    setIdLookup]    = useState("");
+
+  const SBS_PURPLE = "#7C3AED";
+  const SBS_LIGHT  = "#EDE9FE";
+  const SBS_CARD   = { background:"#1A1030", border:`1px solid ${SBS_PURPLE}44`, borderRadius:"12px", padding:"20px" };
+
+  const myRecords     = (allRecords||[]).filter(r => r.ministryCode === "SBS");
+  const pendingActions = getPendingActions("SBS", allRecords||[]);
+  const inboxPayments  = (citizenPayments||[]).filter(cp => cp.ministryCode === "SBS" && cp.status === "paid");
+
+  const tabs = [
+    { id:"overview",  icon:"🪪", label:"Overview",          badge: null },
+    { id:"pending",   icon:"⚡", label:"Pending Actions",    badge: (pendingActions.length + inboxPayments.length) || null },
+    { id:"record",    icon:"✍",  label:"Record Service" },
+    { id:"registry",  icon:"📋", label:"Identity Registry",  badge: myRecords.length || null },
+  ];
+
+  // SBS identity services with descriptions and production notes
+  const SBS_SERVICES = [
+    { serviceType:"DIGITAL_ID_ISSUED",       icon:"🪪", name:"National Digital ID",         fee:"WST 50",   note:"Hashed on-chain. Biometric capture: in-person at SBS office. Used for elections, passport, bank account, driver's licence.", production:"Biometric device API integration pending." },
+    { serviceType:"BIRTH_CERT_ISSUED",       icon:"👶", name:"Birth Certificate",            fee:"WST 25",   note:"Official birth record — downloadable PDF certificate issued on-chain.", production:"" },
+    { serviceType:"PASSPORT_REGISTERED",     icon:"🛂", name:"Passport Application",         fee:"WST 150",  note:"SBS application + fee. Physical passport issued by MFAT. Biometric in-person.", production:"MFAT passport API integration post-funding." },
+    { serviceType:"DRIVERS_LICENCE_DIGITAL", icon:"🚗", name:"Digital Driver's Licence",     fee:"WST 75",   note:"SBS issues digital record. Physical licence issued by Land Transport Authority (LTA).", production:"LTA API integration post-funding." },
+    { serviceType:"ELECTIONS_ID_VERIFIED",   icon:"🗳", name:"Voter Registration",           fee:"Free",     note:"Free civic service — government funded. Links to National Digital ID for verification.", production:"" },
+    { serviceType:"IDENTITY_HASH_UPDATE",    icon:"🔄", name:"Identity Record Update",       fee:"WST 30",   note:"Update your hashed identity record. Use when name, address, or biometric changes.", production:"" },
+  ];
+
+  const statCards = [
+    { icon:"🪪", label:"Digital IDs Issued",   value: myRecords.filter(r=>r.serviceType==="DIGITAL_ID_ISSUED").length,       color: SBS_PURPLE },
+    { icon:"👶", label:"Birth Certificates",   value: myRecords.filter(r=>r.serviceType==="BIRTH_CERT_ISSUED").length,       color: "#0D9488" },
+    { icon:"🛂", label:"Passports Registered", value: myRecords.filter(r=>r.serviceType==="PASSPORT_REGISTERED").length,     color: "#1B6CA8" },
+    { icon:"🗳", label:"Voter Registrations",  value: myRecords.filter(r=>r.serviceType==="ELECTIONS_ID_VERIFIED").length,   color: "#22C55E" },
+  ];
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#0F0820", fontFamily:F.ui, color:"#E9D5FF" }}>
+      <TopBar
+        title="Samoa Bureau of Statistics"
+        sub={`SBS · ${MINISTRY_ADDRS["SBS"]} · Identity & Civil Registry`}
+        accent={SBS_PURPLE}
+        blockNumber={blockNumber}
+        onBack={onBack}
+      />
+      <ConnectionBanner connected={connected} error={!connected?"Chain offline — showing demo data":null} network={CONFIG.NETWORK} />
+      <TabNav tabs={tabs} active={tab} onChange={setTab} accent={SBS_PURPLE} />
+
+      <div style={{ maxWidth:"1080px", margin:"0 auto", padding:"28px" }}>
+
+        {/* ─── OVERVIEW ─────────────────────────────────────────────── */}
+        {tab === "overview" && (
+          <>
+            {/* Stats row */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"12px", marginBottom:"24px" }}>
+              {statCards.map(s => (
+                <div key={s.label} style={{ ...SBS_CARD, textAlign:"center" }}>
+                  <div style={{ fontSize:"28px", marginBottom:"6px" }}>{s.icon}</div>
+                  <div style={{ fontSize:"24px", fontWeight:900, color:s.color }}>{s.value}</div>
+                  <div style={{ fontSize:"11px", color:"#A78BFA", marginTop:"4px" }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Mission banner */}
+            <div style={{ ...SBS_CARD, marginBottom:"20px", borderLeft:`4px solid ${SBS_PURPLE}`,
+              background:`linear-gradient(135deg,${SBS_PURPLE}18,#0F0820)` }}>
+              <div style={{ fontWeight:800, fontSize:"16px", color:"#E9D5FF", marginBottom:"8px" }}>
+                🪪 National Digital Identity System — Samoa Bureau of Statistics
+              </div>
+              <div style={{ fontSize:"13px", color:"#C4B5FD", lineHeight:1.8 }}>
+                SBS manages all national identity records on the Samoa Pacific Blockchain.
+                Every identity document — Digital ID, Birth Certificate, Passport, Driver's Licence —
+                is recorded as a privacy-preserving <strong style={{ color:"#E9D5FF" }}>cryptographic hash</strong>.
+                Your personal details are never stored on-chain; only the hash is recorded.
+                Fees for all SBS services are paid to the <strong style={{ color:"#E9D5FF" }}>SBS Identity Account (ANZ-0208-0020001)</strong>.
+              </div>
+              <div style={{ marginTop:"12px", display:"flex", gap:"8px", flexWrap:"wrap" }}>
+                {["Elections ID","Passport","Birth Certificate","Driver's Licence","NDIDS Hash"].map(t=>(
+                  <span key={t} style={{ fontSize:"10px", fontWeight:700, color:SBS_PURPLE, background:SBS_PURPLE+"22", padding:"3px 10px", borderRadius:"12px" }}>{t}</span>
+                ))}
+              </div>
+            </div>
+
+            {/* Service grid */}
+            <SectionHead title="SBS Services" sub="All identity and civil registry services — fees paid to SBS account" />
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"14px", marginBottom:"24px" }}>
+              {SBS_SERVICES.map(svc => {
+                const fi = SERVICE_FEES[svc.serviceType] || {};
+                const count = myRecords.filter(r=>r.serviceType===svc.serviceType).length;
+                return (
+                  <div key={svc.serviceType} style={{ ...SBS_CARD, cursor:"pointer", borderTop:`3px solid ${SBS_PURPLE}` }}
+                    onClick={()=>{ setPrefill({ serviceType: svc.serviceType }); setTab("record"); }}
+                    onMouseEnter={e=>e.currentTarget.style.background="#1E1244"}
+                    onMouseLeave={e=>e.currentTarget.style.background="#1A1030"}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
+                      <span style={{ fontSize:"32px" }}>{svc.icon}</span>
+                      <span style={{ fontSize:"10px", fontWeight:700, color:SBS_PURPLE, background:SBS_PURPLE+"22", padding:"2px 8px", borderRadius:"4px" }}>
+                        {count > 0 ? `${count} issued` : svc.fee}
+                      </span>
+                    </div>
+                    <div style={{ fontWeight:800, fontSize:"14px", color:"#E9D5FF", marginBottom:"4px" }}>{svc.name}</div>
+                    <div style={{ fontSize:"12px", color:"#A78BFA", lineHeight:1.5, marginBottom:"8px" }}>{svc.note}</div>
+                    {svc.production && (
+                      <div style={{ fontSize:"10px", color:"#7C3AED", fontStyle:"italic" }}>
+                        🔧 Production: {svc.production}
+                      </div>
+                    )}
+                    {fi.hasFee && (
+                      <div style={{ marginTop:"8px", fontSize:"12px", fontWeight:700, color:"#34D399" }}>
+                        💳 {svc.fee}
+                        {fi.vatRate>0 && ` + VAGST`}
+                        {!fi.hasFee && " — Free"}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Biometric production notice */}
+            <div style={{ ...SBS_CARD, background:`${SBS_PURPLE}14`, borderColor:`${SBS_PURPLE}44` }}>
+              <div style={{ fontWeight:700, fontSize:"13px", color:"#E9D5FF", marginBottom:"8px" }}>
+                🔬 Biometric Data — MVP vs Production
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"16px", fontSize:"12px", color:"#A78BFA" }}>
+                <div>
+                  <div style={{ fontWeight:700, color:"#34D399", marginBottom:"4px" }}>✅ Available Now (MVP)</div>
+                  <ul style={{ margin:0, paddingLeft:"16px", lineHeight:2 }}>
+                    <li>National ID number hashed on-chain (NDIDS)</li>
+                    <li>Birth registration hash</li>
+                    <li>Fee payment recorded on blockchain</li>
+                    <li>Verifiable certificate with keccak256 hash</li>
+                    <li>Online application form + SBS office visit</li>
+                  </ul>
+                </div>
+                <div>
+                  <div style={{ fontWeight:700, color:"#FBBF24", marginBottom:"4px" }}>🔧 Post-Funding (Production)</div>
+                  <ul style={{ margin:0, paddingLeft:"16px", lineHeight:2 }}>
+                    <li>Biometric device API (fingerprint, iris)</li>
+                    <li>Biometric hash stored in NDIDS contract</li>
+                    <li>MFAT passport system API integration</li>
+                    <li>LTA driver's licence API integration</li>
+                    <li>Electoral Commission real-time sync</li>
+                    <li>Inter-ministry identity verification calls</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ─── PENDING ACTIONS ──────────────────────────────────────── */}
+        {tab === "pending" && (
+          <>
+            <SectionHead title="⚡ Pending Actions" sub={`${inboxPayments.length} citizen payment(s) + ${pendingActions.length} workflow step(s) awaiting SBS`} />
+
+            {/* Payment inbox */}
+            {inboxPayments.length > 0 && (
+              <div style={{ marginBottom:"20px" }}>
+                <div style={{ fontSize:"12px", fontWeight:700, color:"#34D399", marginBottom:"10px" }}>
+                  💳 Citizen Payment Inbox — {inboxPayments.length} payment(s) received
+                </div>
+                {inboxPayments.map((cp, i) => {
+                  const fi = SERVICE_FEES[cp.serviceType] || {};
+                  return (
+                    <div key={i} style={{ ...SBS_CARD, borderLeft:`4px solid #34D399`, marginBottom:"12px" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
+                        <div>
+                          <div style={{ fontWeight:800, fontSize:"14px", color:"#E9D5FF" }}>{serviceLabel(cp.serviceType)}</div>
+                          <div style={{ fontSize:"12px", color:"#34D399", marginTop:"2px" }}>Citizen: {cp.citizenId} · {cp.railLabel} · WST {cp.totalPaid || cp.fee}</div>
+                        </div>
+                        <span style={{ fontSize:"10px", fontWeight:700, color:"#34D399", background:"#34D39922", padding:"3px 10px", borderRadius:"6px" }}>✅ Payment Received</span>
+                      </div>
+                      {cp.bankReceiptRef && (
+                        <div style={{ padding:"8px 10px", background:"#FBBF2414", border:"1px solid #FBBF2444", borderRadius:"6px", marginBottom:"10px" }}>
+                          <div style={{ fontSize:"10px", color:"#FBBF24", fontWeight:700, marginBottom:"3px" }}>🧾 Bank / Mobile Receipt Reference</div>
+                          <div style={{ fontSize:"14px", fontWeight:900, color:"#E9D5FF", fontFamily:F.mono }}>{cp.bankReceiptRef}</div>
+                          <div style={{ fontSize:"10px", color:"#A78BFA", marginTop:"2px" }}>Verify against SBS account ANZ-0208-0020001</div>
+                        </div>
+                      )}
+                      <div style={{ display:"flex", gap:"8px" }}>
+                        <button onClick={()=>{ setPrefill({ citizenId:cp.citizenId, serviceType:cp.serviceType, fee:cp.fee, paymentMethod:cp.paymentMethod, paymentRef:cp.payRef, bankReceiptRef:cp.bankReceiptRef, citizenLabel:`✅ Online payment — ${cp.citizenId} · ${cp.railLabel} · WST ${cp.fee}` }); setTab("record"); }} style={{ ...btn("success"), fontSize:"12px" }}>✅ Process & Issue Certificate →</button>
+                        {onPaymentProcessed && <button onClick={()=>onPaymentProcessed(cp.payRef)} style={{ ...btn("ghost"), fontSize:"11px" }}>Mark Complete</button>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Workflow-triggered actions */}
+            {pendingActions.length === 0 && inboxPayments.length === 0 && (
+              <div style={{ ...SBS_CARD, textAlign:"center", padding:"48px" }}>
+                <div style={{ fontSize:"32px", marginBottom:"10px" }}>✓</div>
+                <div style={{ color:"#A78BFA", fontSize:"14px", fontWeight:700 }}>No pending actions</div>
+              </div>
+            )}
+            {pendingActions.map((action, i) => (
+              <div key={i} style={{ ...SBS_CARD, marginBottom:"12px", borderLeft:`4px solid #FBBF24` }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
+                  <div>
+                    <div style={{ fontWeight:800, fontSize:"14px", color:"#E9D5FF" }}>{action.wfName}</div>
+                    <div style={{ fontSize:"12px", color:"#FBBF24", marginTop:"2px" }}>Step {action.stepIndex+1}: {action.step.label}</div>
+                  </div>
+                  <span style={{ fontSize:"10px", fontWeight:700, color:"#FBBF24", background:"#FBBF2422", padding:"3px 10px", borderRadius:"6px" }}>Action Required</span>
+                </div>
+                <WfBar wfId={action.wfId} stepsCompleted={action.stepIndex} />
+                <div style={{ marginTop:"12px" }}>
+                  <button onClick={()=>{ setPrefill({ citizenId:action.citizenHash, serviceType:action.step.serviceType, workflowId:action.wfId, citizenLabel:`Workflow: ${action.wfName} · Citizen ${short(action.citizenHash)}` }); setTab("record"); }} style={{ ...btn("primary"), fontSize:"12px" }}>
+                    ⚡ Action Now →
+                  </button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* ─── RECORD SERVICE ───────────────────────────────────────── */}
+        {tab === "record" && (
+          <RecordServiceTab
+            ministryCode="SBS"
+            provider={provider}
+            connected={connected}
+            prefill={prefill}
+            onSuccess={(data) => { setLastReceipt(data); setTab("registry"); setPrefill(null); }}
+            onNavigate={onNavigate}
+          />
+        )}
+
+        {/* ─── IDENTITY REGISTRY ────────────────────────────────────── */}
+        {tab === "registry" && (
+          <>
+            <SectionHead title="📋 Identity Registry" sub={`${myRecords.length} identity records issued by SBS on-chain`} />
+
+            {/* ID lookup */}
+            <div style={{ ...SBS_CARD, marginBottom:"20px" }}>
+              <div style={{ fontSize:"13px", fontWeight:700, color:"#A78BFA", marginBottom:"10px" }}>🔍 Look up an identity record</div>
+              <div style={{ display:"flex", gap:"10px" }}>
+                <input value={idLookup} onChange={e=>setIdLookup(e.target.value)}
+                  placeholder="Enter National ID, hash, or reference…"
+                  style={{ flex:1, background:"#0F0820", border:`1px solid ${SBS_PURPLE}44`, borderRadius:"8px", padding:"10px 14px", color:"#E9D5FF", fontSize:"13px", fontFamily:F.ui }} />
+                <button onClick={()=>{}} style={{ ...btn("primary"), background:SBS_PURPLE }}>Search</button>
+              </div>
+            </div>
+
+            {lastReceipt && (
+              <div style={{ ...SBS_CARD, marginBottom:"16px", borderLeft:`4px solid #34D399` }}>
+                <div style={{ fontSize:"11px", fontWeight:700, color:"#34D399", marginBottom:"6px" }}>📋 Last Issued Certificate</div>
+                <ReceiptCard {...lastReceipt} ministry={{ code:"SBS", color:SBS_PURPLE, name:"Samoa Bureau of Statistics" }} onAnother={()=>setTab("record")} />
+              </div>
+            )}
+
+            {myRecords.length === 0 ? (
+              <div style={{ ...SBS_CARD, textAlign:"center", padding:"48px" }}>
+                <div style={{ fontSize:"32px", marginBottom:"10px" }}>📭</div>
+                <div style={{ color:"#A78BFA", fontSize:"14px" }}>No SBS records on chain yet</div>
+                <div style={{ color:"#7C3AED", fontSize:"12px", marginTop:"6px" }}>Submit the first identity record via Record Service tab</div>
+              </div>
+            ) : myRecords.map((r, i) => {
+              const fi = SERVICE_FEES[r.serviceType] || {};
+              return (
+                <div key={i} style={{ ...SBS_CARD, marginBottom:"10px", borderLeft:`4px solid ${SBS_PURPLE}` }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"8px" }}>
+                    <div>
+                      <div style={{ fontWeight:700, fontSize:"13px", color:"#E9D5FF" }}>{serviceLabel(r.serviceType)}</div>
+                      <div style={{ fontSize:"11px", color:"#A78BFA", marginTop:"2px" }}>Citizen: <Mono>{short(r.citizenHash)}</Mono></div>
+                    </div>
+                    <span style={{ ...badge(SBS_PURPLE), fontSize:"9px" }}>On-chain ✓</span>
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"6px" }}>
+                    {[
+                      ["Block",    r.blockNumber || "—"],
+                      ["Fee",      fi.hasFee ? `WST ${fi.govFee}` : "Free"],
+                      ["Date",     r.timestamp ? new Date(r.timestamp*1000).toLocaleDateString() : "—"],
+                    ].map(([l,v])=>(
+                      <div key={l} style={{ background:"#0F0820", borderRadius:"4px", padding:"5px 8px" }}>
+                        <div style={{ fontSize:"8px", color:"#7C3AED", textTransform:"uppercase", marginBottom:"1px" }}>{l}</div>
+                        <div style={{ fontSize:"11px", color:"#C4B5FD" }}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+// ---
 // HOME -- landing page with all ministry cards + entry points
 // ---
 function Home({ provider, connected, blockNumber, allRecords, allLoading, onSelect }) {
@@ -2991,45 +3969,53 @@ const CP = {
 // Citizen-friendly service catalogue
 const CITIZEN_SERVICES = [
   // MCIL
-  { ministry:"MCIL", serviceType:"COMPANY_REGISTRATION",        icon:"🏢", name:"Company Registration",          desc:"Register a new business entity",                     category:"Business" },
-  { ministry:"MCIL", serviceType:"FOREIGN_INVESTMENT_APPROVED", icon:"🌏", name:"Foreign Investment Application",  desc:"Apply for foreign investment approval",              category:"Business" },
-  { ministry:"MCIL", serviceType:"TRADE_LICENCE_UPDATED",       icon:"📦", name:"Trade Licence Verification",      desc:"Verify or renew your trade licence",                 category:"Business" },
-  { ministry:"MCIL", serviceType:"LABOUR_CONTRACT_RECORDED",    icon:"📜", name:"Investment Certificate",          desc:"Apply for investment certificate issuance",           category:"Business" },
-  // MCIT
-  { ministry:"MCIT", serviceType:"BUSINESS_LICENCE_DIGITAL",    icon:"💼", name:"Digital Business Licence",        desc:"Apply for or renew digital business licence",        category:"Business" },
-  { ministry:"MCIT", serviceType:"DIGITAL_ID_ISSUED",           icon:"🪪", name:"National Digital ID",             desc:"Apply for your digital identity card",               category:"Identity" },
-  { ministry:"MCIT", serviceType:"SPECTRUM_LICENCE_ISSUED",     icon:"📡", name:"Spectrum / Radio Licence",         desc:"Apply for telecommunications spectrum licence",      category:"Telecoms" },
-  { ministry:"MCIT", serviceType:"ICT_REGISTRATION",            icon:"🖥", name:"ICT Sector Clearance",             desc:"Obtain sector regulatory clearance for investment",  category:"Business" },
+  { ministry:"MCIL", serviceType:"COMPANY_REGISTRATION",        icon:"🏢", name:"Company Registration",          desc:"Register a new business entity",                      category:"Business" },
+  { ministry:"MCIL", serviceType:"FOREIGN_INVESTMENT_APPROVED", icon:"🌏", name:"Foreign Investment Application",  desc:"Apply for foreign investment approval",               category:"Business" },
+  { ministry:"MCIL", serviceType:"TRADE_LICENCE_UPDATED",       icon:"📦", name:"Trade Licence Verification",      desc:"Verify or renew your trade licence",                  category:"Business" },
+  { ministry:"MCIL", serviceType:"LABOUR_CONTRACT_RECORDED",    icon:"📜", name:"Investment Certificate",          desc:"Apply for investment certificate issuance",            category:"Business" },
+  // MOF — Business Licence now issued AND collected by MOF
+  { ministry:"MOF",  serviceType:"BUSINESS_LICENCE_DIGITAL",    icon:"💼", name:"Business Licence",               desc:"Apply for or renew your government business licence — issued by MOF", category:"Business" },
+  { ministry:"MOF",  serviceType:"TAX_COMPLIANCE_VERIFIED",     icon:"🧾", name:"Tax Compliance Certificate",      desc:"Obtain annual tax compliance clearance",              category:"Finance" },
+  { ministry:"MOF",  serviceType:"SOCIAL_WELFARE_PAYMENT_2025", icon:"💚", name:"Social Welfare Registration",     desc:"Register for social welfare payment",                 category:"Welfare" },
+  // MCIT — spectrum, cyber, sector only
+  { ministry:"MCIT", serviceType:"SPECTRUM_LICENCE_ISSUED",     icon:"📡", name:"Spectrum / Radio Licence",        desc:"Apply for telecommunications spectrum licence",       category:"Telecoms" },
+  { ministry:"MCIT", serviceType:"ICT_REGISTRATION",            icon:"🖥", name:"ICT Sector Clearance",            desc:"Obtain sector regulatory clearance for investment",   category:"Business" },
+  { ministry:"MCIT", serviceType:"CYBERSECURITY_AUDIT",         icon:"🔐", name:"Cybersecurity Audit",             desc:"MCIT cybersecurity compliance certification",         category:"Business" },
   // CUSTOMS
-  { ministry:"CUSTOMS", serviceType:"SHIPMENT_CLEARED_2025",    icon:"🚢", name:"Customs Clearance",               desc:"Record and clear an import/export shipment",         category:"Trade" },
-  { ministry:"CUSTOMS", serviceType:"TRADE_FACILITATION_RECORD",icon:"✅", name:"Container Release",               desc:"Finalise clearance and release container",            category:"Trade" },
-  { ministry:"CUSTOMS", serviceType:"TARIFF_CLASSIFICATION",    icon:"🏷", name:"Tariff Classification",            desc:"Get a tariff code assigned for your goods",          category:"Trade" },
-  { ministry:"CUSTOMS", serviceType:"BOND_WAREHOUSE_RECORD",    icon:"🏭", name:"Bond Warehouse Entry",             desc:"Register goods into a bonded warehouse",             category:"Trade" },
+  { ministry:"CUSTOMS", serviceType:"SHIPMENT_CLEARED_2025",    icon:"🚢", name:"Customs Clearance",              desc:"Record and clear an import/export shipment",          category:"Trade" },
+  { ministry:"CUSTOMS", serviceType:"TRADE_FACILITATION_RECORD",icon:"✅", name:"Container Release",              desc:"Finalise clearance and release container",             category:"Trade" },
+  { ministry:"CUSTOMS", serviceType:"TARIFF_CLASSIFICATION",    icon:"🏷", name:"Tariff Classification",           desc:"Get a tariff code assigned for your goods",           category:"Trade" },
+  { ministry:"CUSTOMS", serviceType:"BOND_WAREHOUSE_RECORD",    icon:"🏭", name:"Bond Warehouse Entry",            desc:"Register goods into a bonded warehouse",              category:"Trade" },
   // EDUCATION
-  { ministry:"EDUCATION", serviceType:"SCHOOL_ENROLMENT_2025",  icon:"🎒", name:"School Enrolment",                desc:"Enrol a child in the national school programme",     category:"Education" },
-  { ministry:"EDUCATION", serviceType:"SCHOLARSHIP_AWARDED",    icon:"🎓", name:"Scholarship Application",          desc:"Apply for or record a scholarship award",            category:"Education" },
-  { ministry:"EDUCATION", serviceType:"GRADUATION_RECORD",      icon:"📋", name:"Graduation Certificate",          desc:"Record and receive graduation certificate",           category:"Education" },
-  // MOF
-  { ministry:"MOF", serviceType:"TAX_COMPLIANCE_VERIFIED",      icon:"🧾", name:"Tax Compliance Certificate",       desc:"Obtain annual tax compliance clearance",             category:"Finance" },
-  { ministry:"MOF", serviceType:"SOCIAL_WELFARE_PAYMENT_2025",  icon:"💚", name:"Social Welfare Registration",      desc:"Register for social welfare payment",                category:"Welfare" },
+  { ministry:"EDUCATION", serviceType:"SCHOOL_ENROLMENT_2025",  icon:"🎒", name:"School Enrolment",               desc:"Enrol a child in the national school programme",      category:"Education" },
+  { ministry:"EDUCATION", serviceType:"SCHOLARSHIP_AWARDED",    icon:"🎓", name:"Scholarship Application",         desc:"Apply for or record a scholarship award",             category:"Education" },
+  { ministry:"EDUCATION", serviceType:"GRADUATION_RECORD",      icon:"📋", name:"Graduation Certificate",         desc:"Record and receive graduation certificate",            category:"Education" },
   // CBS
-  { ministry:"CBS", serviceType:"ACCOUNT_OPENED",               icon:"🏦", name:"Bank Account Opening",             desc:"Open a new CBS-registered bank account",             category:"Banking" },
-  { ministry:"CBS", serviceType:"DIGITAL_PAYMENT_RECORDED",     icon:"💸", name:"Digital Payment",                  desc:"Record a digital or mobile payment transaction",     category:"Banking" },
-  { ministry:"CBS", serviceType:"STABLECOIN_ISSUANCE",          icon:"💎", name:"WST Stablecoin Issuance",          desc:"Request WST digital currency from CBS",              category:"Banking" },
+  { ministry:"CBS",  serviceType:"ACCOUNT_OPENED",              icon:"🏦", name:"Bank Account Opening",            desc:"Open a new CBS-registered bank account",              category:"Banking" },
+  { ministry:"CBS",  serviceType:"DIGITAL_PAYMENT_RECORDED",    icon:"💸", name:"Digital Payment",                 desc:"Record a digital or mobile payment transaction",      category:"Banking" },
+  { ministry:"CBS",  serviceType:"STABLECOIN_ISSUANCE",         icon:"💎", name:"WST Stablecoin Issuance",         desc:"Request WST digital currency from CBS",               category:"Banking" },
+  // SBS — all identity and civil registry services
+  { ministry:"SBS",  serviceType:"DIGITAL_ID_ISSUED",           icon:"🪪", name:"National Digital ID",             desc:"Apply for your National Digital ID card — hashed on blockchain", category:"Identity" },
+  { ministry:"SBS",  serviceType:"BIRTH_CERT_ISSUED",           icon:"👶", name:"Birth Certificate",               desc:"Request an official birth certificate — downloadable online",     category:"Identity" },
+  { ministry:"SBS",  serviceType:"PASSPORT_REGISTERED",         icon:"🛂", name:"Passport Application",            desc:"Lodge your passport application — biometric data at SBS office",  category:"Identity" },
+  { ministry:"SBS",  serviceType:"DRIVERS_LICENCE_DIGITAL",     icon:"🚗", name:"Digital Driver's Licence",        desc:"Apply for digital driver's licence — LTA issues physical licence", category:"Identity" },
+  { ministry:"SBS",  serviceType:"ELECTIONS_ID_VERIFIED",       icon:"🗳", name:"Voter Registration / Elections ID", desc:"Register to vote — free civic service, government funded",      category:"Identity" },
+  { ministry:"SBS",  serviceType:"IDENTITY_HASH_UPDATE",        icon:"🔄", name:"Identity Record Update",          desc:"Update your hashed identity record on the national NDIDS",        category:"Identity" },
 ];
 
-const CP_CATEGORIES = ["All", "Business", "Identity", "Trade", "Education", "Finance", "Welfare", "Banking", "Telecoms"];
+const CP_CATEGORIES = ["All", "Identity", "Business", "Trade", "Education", "Finance", "Welfare", "Banking", "Telecoms"];
 
 function CitizenPortal({ onBack, citizenPayments, onCitizenPayment, connected }) {
-  const [screen,    setScreen]    = useState("home");     // "home"|"browse"|"pay"|"track"|"success"
-  const [lookup,    setLookup]    = useState("");
-  const [lookupRef, setLookupRef] = useState("");
-  const [selected,  setSelected]  = useState(null);       // selected CITIZEN_SERVICES entry
-  const [category,  setCategory]  = useState("All");
-  const [citizenId, setCitizenId] = useState("");
-  const [payMethod, setPayMethod] = useState("MPAY_VODAFONE");
-  const [paying,    setPaying]    = useState(false);
-  const [lastPayment, setLastPayment] = useState(null);
+  const [screen,       setScreen]       = useState("home");
+  const [lookup,       setLookup]       = useState("");
+  const [lookupRef,    setLookupRef]    = useState("");
+  const [selected,     setSelected]     = useState(null);
+  const [category,     setCategory]     = useState("All");
+  const [citizenId,    setCitizenId]    = useState("");
+  const [bankReceiptRef, setBankReceiptRef] = useState("");  // citizen enters their bank/mobile receipt ref
+  const [payMethod,    setPayMethod]    = useState("MPAY_VODAFONE");
+  const [paying,       setPaying]       = useState(false);
+  const [lastPayment,  setLastPayment]  = useState(null);
 
   const filtered = CITIZEN_SERVICES.filter(s =>
     category === "All" || s.category === category
@@ -3053,28 +4039,60 @@ function CitizenPortal({ onBack, citizenPayments, onCitizenPayment, connected })
   const handlePay = () => {
     if (!citizenId.trim()) return;
     setPaying(true);
+    // MVP: payments are auto-confirmed immediately — no live payment rail API calls.
+    // Production version will integrate BSP, Vodafone M-Pay, and Digicel MyCash APIs.
     setTimeout(() => {
-      const payRef = `CPZ-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+      const feeCollectorCode = FEE_COLLECTOR[selected.serviceType] || selected.ministry;
+      const acct = getPaymentAccount(selected.serviceType, selected.ministry);
+      // Generate platform reference — distinct from bank receipt ref entered by citizen
+      const payRef = generatePayRef(selected.serviceType, selected.ministry, citizenId.trim());
+      // Determine next workflow step so officer alert is specific
+      const wfEntry  = (SVC_TO_WF[selected.serviceType]||[])[0];
+      const wfDef    = wfEntry ? WORKFLOW_DEFS[wfEntry.workflowId] : null;
+      const thisStep = wfDef?.steps[wfEntry.stepIndex];
+      const nextStep = wfDef?.steps[wfEntry.stepIndex + 1] || null;
       const pmt = {
+        // Identity
         payRef,
-        citizenId:     citizenId.trim(),
-        serviceType:   selected.serviceType,
-        ministryCode:  selected.ministry,
-        amount:        feeInfo.isPaymentOut ? String(feeInfo.clientAmount) : "0",
-        fee:           String(feeInfo.govFee || 0),
-        paymentMethod: payMethod,
-        railLabel:     railInfo.label,
-        wfId:          (SVC_TO_WF[selected.serviceType]||[])[0]?.workflowId || null,
-        timestamp:     Date.now(),
-        status:        "paid",
-        service:       selected,
+        citizenId:        citizenId.trim(),
+        // Service
+        serviceType:      selected.serviceType,
+        serviceName:      selected.name,
+        // Ministry routing — processing ministry may differ from fee collector
+        processingMinistry: selected.ministry,
+        ministryCode:     feeCollectorCode,    // fee collector — this is what the officer account check uses
+        feeCollectorName: MINISTRY_ACCOUNTS[feeCollectorCode]?.ministryName,
+        accountNo:        acct?.accountNo,
+        // Amounts
+        amount:           feeInfo.isPaymentOut ? String(feeInfo.clientAmount) : "0",
+        fee:              String(feeInfo.govFee || 0),
+        totalPaid:        feeInfo.vatRate > 0
+                            ? String(((feeInfo.govFee||0)*(1+feeInfo.vatRate)).toFixed(2))
+                            : String(feeInfo.govFee || 0),
+        // Payment method
+        paymentMethod:    payMethod,
+        railLabel:        railInfo.label,
+        // Bank/mobile receipt reference entered by citizen — key for officer verification
+        bankReceiptRef:   bankReceiptRef.trim() || null,
+        // Workflow context
+        wfId:             wfEntry?.workflowId || null,
+        wfName:           wfDef?.name || null,
+        currentStepLabel: thisStep?.label || null,
+        nextStepMinistry: nextStep?.ministry || null,
+        nextStepLabel:    nextStep?.label || null,
+        // Metadata
+        timestamp:        Date.now(),
+        status:           "paid",   // auto-confirmed for MVP
+        service:          selected,
       };
       onCitizenPayment(pmt);
       setLastPayment(pmt);
+      setBankReceiptRef("");
       setPaying(false);
       setScreen("success");
-    }, 1200);
+    }, 900);
   };
+
 
   // ── Light theme card helper
   const cpCard = (extra={}) => ({
@@ -3311,6 +4329,101 @@ function CitizenPortal({ onBack, citizenPayments, onCitizenPayment, connected })
               </div>
             )}
 
+            {/* ── MINISTRY PAYMENT ACCOUNT ─────────────────────────────
+                Shows the exact account the citizen must pay into.
+                Each ministry has its own account — fees go directly there.
+                No pooling. This makes the system sustainable and auditable.
+            ──────────────────────────────────────────────────────────── */}
+            {(() => {
+              if (!selected || feeInfo.isPaymentOut || !feeInfo.hasFee) return null;
+              const acct = getPaymentAccount(selected.serviceType, selected.ministry);
+              if (!acct) return null;
+              const feeCollectorCode = FEE_COLLECTOR[selected.serviceType] || selected.ministry;
+              const feeCollectorName = MINISTRY_ACCOUNTS[feeCollectorCode]?.ministryName;
+              const processorDiffers = feeCollectorCode !== selected.ministry;
+              const suggestedRef = generatePayRef(selected.serviceType, selected.ministry, citizenId || "0000");
+              return (
+                <div style={{ ...cpCard({ background:"#F0F9FF", borderColor:"#7DD3FC", marginBottom:"20px", borderLeft:`4px solid ${CP.blue}` }) }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"14px" }}>
+                    <div>
+                      <div style={{ fontWeight:800, fontSize:"14px", color:CP.navy }}>
+                        🏦 Pay to this Ministry Account
+                      </div>
+                      <div style={{ fontSize:"12px", color:CP.sub, marginTop:"3px" }}>
+                        {acct.description}
+                      </div>
+                    </div>
+                    <span style={{ fontSize:"10px", fontWeight:700, color:CP.blue, background:"#DBEAFE", padding:"3px 8px", borderRadius:"4px", whiteSpace:"nowrap" }}>
+                      {acct.label}
+                    </span>
+                  </div>
+
+                  {/* Fee routing notice — shown when processor ≠ fee collector */}
+                  {processorDiffers && (
+                    <div style={{ padding:"10px 12px", background:"#FEF9C3", border:"1px solid #FDE047", borderRadius:"8px", marginBottom:"14px", fontSize:"12px", color:"#854D0E" }}>
+                      ⚠ <strong>Note:</strong> This service is processed by{" "}
+                      <strong>{MINISTRY_META[selected.ministry]?.icon} {MINISTRY_META[selected.ministry]?.name}</strong>,
+                      but the fee is paid to{" "}
+                      <strong>{feeCollectorName}</strong>.
+                      Make sure your payment goes to the account below — not to {MINISTRY_META[selected.ministry]?.name}.
+                    </div>
+                  )}
+
+                  {/* Account details grid */}
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", marginBottom:"14px" }}>
+                    {[
+                      ["Account Name",   acct.accountName],
+                      ["Account Number", acct.accountNo],
+                      ["Bank",           acct.bank],
+                      ["Branch",         acct.branch],
+                    ].map(([l,v])=>(
+                      <div key={l} style={{ background:"#EFF6FF", borderRadius:"8px", padding:"10px 12px" }}>
+                        <div style={{ fontSize:"10px", fontWeight:700, color:CP.muted, textTransform:"uppercase", marginBottom:"3px" }}>{l}</div>
+                        <div style={{ fontSize:"13px", fontWeight:700, color:CP.navy, fontFamily:l==="Account Number"?F.mono:"inherit" }}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Mobile money codes */}
+                  {(acct.mPayCode || acct.myCashCode) && (
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", marginBottom:"14px" }}>
+                      {acct.mPayCode && (
+                        <div style={{ background:"#F0FDF4", border:"1px solid #86EFAC", borderRadius:"8px", padding:"10px 12px" }}>
+                          <div style={{ fontSize:"10px", fontWeight:700, color:"#166534", textTransform:"uppercase", marginBottom:"3px" }}>📱 M-Pay / M-Tala Merchant Code</div>
+                          <div style={{ fontSize:"15px", fontWeight:900, color:"#166534", fontFamily:F.mono }}>{acct.mPayCode}</div>
+                          <div style={{ fontSize:"10px", color:"#4B7C5A", marginTop:"2px" }}>Vodafone Samoa</div>
+                        </div>
+                      )}
+                      {acct.myCashCode && (
+                        <div style={{ background:"#FFF7ED", border:"1px solid #FED7AA", borderRadius:"8px", padding:"10px 12px" }}>
+                          <div style={{ fontSize:"10px", fontWeight:700, color:"#9A3412", textTransform:"uppercase", marginBottom:"3px" }}>📱 MyCash Merchant Code</div>
+                          <div style={{ fontSize:"15px", fontWeight:900, color:"#9A3412", fontFamily:F.mono }}>{acct.myCashCode}</div>
+                          <div style={{ fontSize:"10px", color:"#C2410C", marginTop:"2px" }}>Digicel Samoa</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Suggested payment reference */}
+                  <div style={{ background:CP.navy, borderRadius:"8px", padding:"12px 14px", marginBottom:"10px" }}>
+                    <div style={{ fontSize:"10px", fontWeight:700, color:"#94A3B8", textTransform:"uppercase", marginBottom:"6px" }}>
+                      📋 Use this Payment Reference (enter it at the counter / on your mobile payment)
+                    </div>
+                    <div style={{ fontSize:"16px", fontWeight:900, color:"#22C55E", fontFamily:F.mono, letterSpacing:"1px" }}>
+                      {citizenId ? suggestedRef : acct.refExample + " ← example format"}
+                    </div>
+                    <div style={{ fontSize:"10px", color:"#64748B", marginTop:"6px" }}>
+                      Format: {acct.refFormat} — include this on your bank transfer or mobile payment so the officer can match your record.
+                    </div>
+                  </div>
+
+                  {acct.note && (
+                    <div style={{ fontSize:"11px", color:CP.sub, fontStyle:"italic" }}>ℹ {acct.note}</div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Citizen ID / Application form */}
             <div style={{ ...cpCard({ marginBottom:"20px" }) }}>
               <div style={{ fontWeight:800, fontSize:"15px", color:CP.navy, marginBottom:"16px" }}>Your Details</div>
@@ -3318,12 +4431,34 @@ function CitizenPortal({ onBack, citizenPayments, onCitizenPayment, connected })
               <div style={{ marginBottom:"14px" }}>
                 <label style={cpLabel}>Your National ID / Business Number *</label>
                 <input value={citizenId} onChange={e=>setCitizenId(e.target.value)}
-                  placeholder="e.g. WS-123456 or your National ID number"
+                  placeholder="e.g. WS-123456 · Business No. · or SOE-EPC-2025-001 for State-Owned Enterprises"
                   style={cpInput} />
                 <div style={{ fontSize:"11px", color:CP.light, marginTop:"5px" }}>
-                  Your ID is converted to a privacy-preserving hash before being stored on-chain. Your personal details remain private.
+                  Your ID is converted to a privacy-preserving hash before being stored on-chain. Personal details remain private.
+                  State-Owned Enterprises use format: <strong style={{ color:CP.sub }}>SOE-[ENTITY]-[YEAR]-[NO]</strong> e.g. SOE-EPC-2025-001.
                 </div>
               </div>
+
+              {/* Bank / mobile receipt reference — key field for officer verification */}
+              {feeInfo.hasFee && !feeInfo.isPaymentOut && (
+                <div style={{ marginBottom:"14px" }}>
+                  <label style={cpLabel}>
+                    Bank / Mobile Receipt Reference
+                    <span style={{ fontWeight:400, color:CP.light, marginLeft:"6px" }}>(recommended)</span>
+                  </label>
+                  <input
+                    value={bankReceiptRef}
+                    onChange={e=>setBankReceiptRef(e.target.value)}
+                    placeholder={`e.g. your M-Pay SMS confirmation number, BSP receipt no., or cheque no.`}
+                    style={{ ...cpInput, borderColor: bankReceiptRef ? "#86EFAC" : CP.border }}
+                  />
+                  <div style={{ fontSize:"11px", color:CP.light, marginTop:"5px" }}>
+                    Enter the receipt or confirmation number from your bank transfer, M-Pay, or MyCash payment.
+                    The ministry officer will use this to verify your payment in the ministry account before issuing your certificate.
+                    If you haven't paid yet, leave blank — the officer can confirm manually at the counter.
+                  </div>
+                </div>
+              )}
 
               {/* Payment method */}
               {feeInfo.hasFee && !feeInfo.isPaymentOut && (
@@ -3339,6 +4474,9 @@ function CitizenPortal({ onBack, citizenPayments, onCitizenPayment, connected })
                         <div style={{ fontSize:"11px", color:CP.muted, marginTop:"2px" }}>{rail.sub}</div>
                       </div>
                     ))}
+                  </div>
+                  <div style={{ fontSize:"11px", color:CP.light, marginTop:"6px" }}>
+                    MVP: Payment is auto-confirmed for the demo. Production version will connect to live BSP, Vodafone M-Pay, and Digicel MyCash APIs.
                   </div>
                 </div>
               )}
@@ -3382,40 +4520,73 @@ function CitizenPortal({ onBack, citizenPayments, onCitizenPayment, connected })
           <div style={{ maxWidth:"600px", margin:"0 auto", textAlign:"center" }}>
             <div style={{ ...cpCard({ borderTop:`4px solid ${CP.green}`, marginBottom:"24px" }) }}>
               <div style={{ fontSize:"56px", marginBottom:"12px" }}>✅</div>
-              <div style={{ fontSize:"22px", fontWeight:900, color:CP.navy, marginBottom:"8px" }}>Payment Confirmed!</div>
+              <div style={{ fontSize:"22px", fontWeight:900, color:CP.navy, marginBottom:"8px" }}>Application Submitted!</div>
               <div style={{ fontSize:"14px", color:CP.sub, marginBottom:"20px" }}>
-                Your application has been submitted to the <strong>{MINISTRY_META[lastPayment.ministryCode]?.name}</strong>. The ministry officer has been notified and will process your request.
+                Your application has been submitted.{" "}
+                {lastPayment.processingMinistry !== lastPayment.ministryCode
+                  ? <>Processed by <strong>{MINISTRY_META[lastPayment.processingMinistry]?.name}</strong> · fee paid to <strong>{lastPayment.feeCollectorName}</strong>.</>
+                  : <>The <strong>{MINISTRY_META[lastPayment.processingMinistry]?.name}</strong> officer has been notified.</>
+                }
               </div>
 
-              {/* Payment reference hero */}
-              <div style={{ background:CP.navy, borderRadius:"10px", padding:"16px 20px", marginBottom:"20px" }}>
-                <div style={{ fontSize:"11px", color:"#94A3B8", marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>Your Payment Reference — Keep this safe</div>
-                <div style={{ fontSize:"22px", fontWeight:900, color:"#22C55E", fontFamily:F.mono, letterSpacing:"2px" }}>
+              {/* Platform reference hero */}
+              <div style={{ background:CP.navy, borderRadius:"10px", padding:"16px 20px", marginBottom:"16px" }}>
+                <div style={{ fontSize:"10px", color:"#94A3B8", marginBottom:"4px", textTransform:"uppercase", letterSpacing:"0.5px" }}>Platform Reference — keep this safe</div>
+                <div style={{ fontSize:"20px", fontWeight:900, color:"#22C55E", fontFamily:F.mono, letterSpacing:"2px" }}>
                   {lastPayment.payRef}
                 </div>
-                <div style={{ fontSize:"11px", color:"#94A3B8", marginTop:"6px" }}>
-                  Use this reference to track your application or quote it to the ministry officer
+                <div style={{ fontSize:"11px", color:"#94A3B8", marginTop:"4px" }}>
+                  Use this to track your application or quote to the officer
                 </div>
+                {lastPayment.bankReceiptRef && (
+                  <div style={{ marginTop:"10px", paddingTop:"10px", borderTop:"1px solid #334155" }}>
+                    <div style={{ fontSize:"10px", color:"#94A3B8", marginBottom:"4px", textTransform:"uppercase" }}>Your Bank / Mobile Receipt Ref</div>
+                    <div style={{ fontSize:"14px", fontWeight:700, color:"#FCD34D", fontFamily:F.mono }}>{lastPayment.bankReceiptRef}</div>
+                    <div style={{ fontSize:"10px", color:"#64748B", marginTop:"2px" }}>Saved — officer will verify this against {lastPayment.accountNo}</div>
+                  </div>
+                )}
               </div>
 
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"20px", textAlign:"left" }}>
+              {/* Payment details grid */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"16px", textAlign:"left" }}>
                 {[
-                  ["Service",        serviceLabel(lastPayment.serviceType)],
-                  ["Ministry",       MINISTRY_META[lastPayment.ministryCode]?.name],
-                  ["Amount Paid",    `WST ${lastPayment.fee || lastPayment.amount || "0"}`],
-                  ["Method",         lastPayment.railLabel],
-                  ["Status",         "✅ Payment Confirmed"],
-                  ["Submitted",      new Date(lastPayment.timestamp).toLocaleString()],
+                  ["Service",         serviceLabel(lastPayment.serviceType)],
+                  ["Processed by",    MINISTRY_META[lastPayment.processingMinistry]?.name || lastPayment.processingMinistry],
+                  ["Fee paid to",     lastPayment.feeCollectorName],
+                  ["Account No.",     lastPayment.accountNo || "—"],
+                  ["Total Paid",      `WST ${lastPayment.totalPaid || lastPayment.fee || "0"}`],
+                  ["Method",          lastPayment.railLabel],
+                  ["Status",          "✅ Auto-confirmed (MVP)"],
+                  ["Submitted",       new Date(lastPayment.timestamp).toLocaleString()],
                 ].map(([l,v])=>(
                   <div key={l} style={{ background:CP.bg, borderRadius:"8px", padding:"10px 12px" }}>
                     <div style={{ fontSize:"10px", color:CP.light, fontWeight:700, textTransform:"uppercase", marginBottom:"3px" }}>{l}</div>
-                    <div style={{ fontSize:"13px", color:CP.text, fontWeight:700 }}>{v}</div>
+                    <div style={{ fontSize:"12px", color:CP.text, fontWeight:700 }}>{v}</div>
                   </div>
                 ))}
               </div>
 
-              <div style={{ padding:"12px 14px", background:"#FEF3C7", borderRadius:"8px", marginBottom:"20px", textAlign:"left", fontSize:"12px", color:"#92400E" }}>
-                ⏰ <strong>What happens next:</strong> The ministry officer will see your payment in their dashboard and process your service record on-chain, usually within 1 business day. You will receive a verifiable blockchain certificate once complete.
+              {/* Next workflow step alert */}
+              {lastPayment.nextStepMinistry && (
+                <div style={{ padding:"12px 14px", background:"#EFF6FF", border:"1px solid #BFDBFE", borderRadius:"8px", marginBottom:"16px", textAlign:"left", fontSize:"12px", color:"#1E3A5F" }}>
+                  <div style={{ fontWeight:800, marginBottom:"6px" }}>🔄 What happens next in your workflow</div>
+                  <div style={{ color:CP.sub, lineHeight:1.6 }}>
+                    <strong>Current step:</strong> {lastPayment.currentStepLabel} → {MINISTRY_META[lastPayment.processingMinistry]?.icon} {MINISTRY_META[lastPayment.processingMinistry]?.name} officer will process this.<br/>
+                    <strong>Next step:</strong> {lastPayment.nextStepLabel} → {MINISTRY_META[lastPayment.nextStepMinistry]?.icon} {MINISTRY_META[lastPayment.nextStepMinistry]?.name} will be automatically notified once this step is complete.
+                  </div>
+                </div>
+              )}
+
+              {/* Officer notification confirmation */}
+              <div style={{ padding:"12px 14px", background:"#F0FDF4", border:"1px solid #86EFAC", borderRadius:"8px", marginBottom:"16px", textAlign:"left", fontSize:"12px", color:"#166534" }}>
+                <div style={{ fontWeight:800, marginBottom:"4px" }}>🔔 Officer has been notified</div>
+                <div>
+                  Your payment has appeared in the <strong>{MINISTRY_META[lastPayment.processingMinistry]?.name}</strong> officer's
+                  Pending Actions dashboard with status <strong>"✅ Payment Received"</strong>.
+                  They can see your payment reference {lastPayment.payRef}
+                  {lastPayment.bankReceiptRef && <>, bank receipt <strong>{lastPayment.bankReceiptRef}</strong>,</>} and fee of <strong>WST {lastPayment.totalPaid || lastPayment.fee}</strong>.
+                  The officer will process and issue your certificate on-chain — usually within 1 business day.
+                </div>
               </div>
 
               <div style={{ display:"flex", gap:"10px", justifyContent:"center", flexWrap:"wrap" }}>
@@ -4464,7 +5635,19 @@ export default function App() {
         <Home {...sharedProps} onSelect={v => setView(v)} />
       )}
 
-      {ministry && (
+      {ministry === "SBS" && (
+        <SBSDashboard
+          {...sharedProps}
+          onBack={() => setView("home")}
+          onNavigate={v => setView(v)}
+          citizenPayments={citizenPayments}
+          onPaymentProcessed={(payRef) =>
+            setCitizenPayments(p => p.map(cp => cp.payRef===payRef ? {...cp, status:"complete"} : cp))
+          }
+        />
+      )}
+
+      {ministry && ministry !== "SBS" && (
         <MinistryDashboard
           {...sharedProps}
           ministryCode={ministry}

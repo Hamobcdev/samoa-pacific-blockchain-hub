@@ -2248,27 +2248,78 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
       </div>
 
       {/* ── NDIDS VERIFICATION PANEL ──────────────────────────────────── */}
-      <div style={{ marginBottom:"14px", padding:"12px 14px", background:C.ocean, borderRadius:"8px", border:`1px solid ${form.ndidsVerified?C.seafoam+"66":C.wave}` }}>
-        <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"4px" }}>
-          <input type="checkbox" id="ndids" checked={form.ndidsVerified} onChange={e=>setForm(f=>({...f,ndidsVerified:e.target.checked}))} style={{ width:"16px", height:"16px", accentColor:C.seafoam }} />
-          <label htmlFor="ndids" style={{ fontSize:"12px", color:C.silver, cursor:"pointer", fontWeight:700 }}>
-            {form.viewMode==="citizen" ? "Verify my identity via National Digital ID System (NDIDS)" : "Verify identity via NDIDS"}
-          </label>
-          <span style={{ ...badge(form.ndidsVerified ? C.seafoam : C.amber), fontSize:"9px" }}>
-            {form.ndidsVerified ? "✓ IDENTITY VERIFIED" : "PAYMENT ONLY"}
-          </span>
-        </div>
-        <div style={{ fontSize:"11px", color:C.muted, marginLeft:"26px" }}>
-          {form.ndidsVerified
-            ? `${ministryCode} has NDIDS read access — your identity hash will be verified on chain before service is processed.`
-            : "Payment-only step — identity was verified by the initiating ministry. This step processes the payment and service record."}
-        </div>
-        {!shouldVerifyNDIDS(ministryCode, form.serviceType) && form.ndidsVerified && (
-          <div style={{ fontSize:"11px", color:C.danger, marginTop:"6px", marginLeft:"26px", fontWeight:700 }}>
-            ⚠ {ministryCode} does not have NDIDS access for this service — the transaction will revert. Uncheck NDIDS.
+      {(() => {
+        const ndidsAllowed   = shouldVerifyNDIDS(ministryCode, form.serviceType);
+        const isBlockingError = form.ndidsVerified && !ndidsAllowed;
+        const isCrossMinistry = !ndidsAllowed; // cross-sector step — NDIDS must be unchecked
+        return (
+          <div style={{ marginBottom:"14px", borderRadius:"10px", overflow:"hidden", border:`2px solid ${isBlockingError ? C.danger+"88" : ndidsAllowed && form.ndidsVerified ? C.seafoam+"66" : C.amber+"66"}` }}>
+
+            {/* Header bar — coloured by state */}
+            <div style={{ padding:"10px 14px", background: isBlockingError ? C.danger+"22" : isCrossMinistry ? C.amber+"18" : C.seafoam+"12",
+              display:"flex", alignItems:"center", gap:"10px" }}>
+              <input type="checkbox" id="ndids" checked={form.ndidsVerified}
+                onChange={e=>setForm(f=>({...f,ndidsVerified:e.target.checked}))}
+                style={{ width:"16px", height:"16px", accentColor: ndidsAllowed ? C.seafoam : C.amber }} />
+              <label htmlFor="ndids" style={{ fontSize:"12px", fontWeight:800,
+                color: isBlockingError ? C.danger : ndidsAllowed ? C.seafoam : C.amber, cursor:"pointer", flex:1 }}>
+                {isCrossMinistry
+                  ? "🔒 NDIDS Verification — Must be UNCHECKED for this step"
+                  : "🪪 NDIDS Identity Verification"}
+              </label>
+              <span style={{ ...badge(isBlockingError ? C.danger : form.ndidsVerified ? C.seafoam : C.amber), fontSize:"9px" }}>
+                {isBlockingError ? "⛔ WILL REVERT" : form.ndidsVerified ? "✓ IDENTITY VERIFIED" : "PAYMENT / CROSS-MINISTRY"}
+              </span>
+            </div>
+
+            {/* Explanation panel */}
+            <div style={{ padding:"10px 14px", background:C.abyss, fontSize:"11px", lineHeight:1.8 }}>
+              {isCrossMinistry ? (
+                <>
+                  <div style={{ color:C.amber, fontWeight:700, marginBottom:"4px" }}>
+                    ⚠ This is a cross-ministry or payment-processing step.
+                  </div>
+                  <div style={{ color:C.silver }}>
+                    <strong style={{ color:C.white }}>{ministryCode}</strong> does not hold NDIDS access for <code style={{ color:C.seafoam }}>{form.serviceType}</code>.
+                    Identity was verified by the initiating ministry upstream — this step processes the payment or service record only.
+                  </div>
+                  <div style={{ marginTop:"6px", color:C.muted }}>
+                    ✅ <strong style={{ color:C.white }}>Correct action:</strong> Leave NDIDS <strong>unchecked</strong>. The transaction will go through cleanly.
+                    If you check it, the smart contract will <strong style={{ color:C.danger }}>revert</strong> and the transaction will fail.
+                  </div>
+                </>
+              ) : form.ndidsVerified ? (
+                <div style={{ color:C.silver }}>
+                  ✅ <strong style={{ color:C.white }}>{ministryCode}</strong> has NDIDS read access for this service.
+                  The citizen's identity hash will be verified on chain before the service record is committed.
+                  This is the correct setting for this step.
+                </div>
+              ) : (
+                <div style={{ color:C.muted }}>
+                  <strong style={{ color:C.seafoam }}>{ministryCode}</strong> can verify NDIDS for this service.
+                  Check the box above to assert identity verification — or leave unchecked for payment-only recording.
+                </div>
+              )}
+
+              {/* Hard block — user has checked when they shouldn't */}
+              {isBlockingError && (
+                <div style={{ marginTop:"8px", padding:"8px 12px", background:C.danger+"22", border:`1px solid ${C.danger}66`, borderRadius:"6px", color:C.danger, fontWeight:700, fontSize:"12px" }}>
+                  ⛔ NDIDS is checked but <strong>{ministryCode}</strong> is NOT authorised for this service type.
+                  The contract will revert. <strong>Uncheck the NDIDS box above</strong> before submitting.
+                </div>
+              )}
+
+              {/* New workflow / container / repeat service guidance */}
+              <div style={{ marginTop:"8px", borderTop:`1px solid ${C.ocean}22`, paddingTop:"8px", color:C.muted, fontSize:"10px" }}>
+                ℹ <strong style={{ color:C.silver }}>New transaction, repeat service, or different container?</strong>{" "}
+                Each service event is a separate blockchain transaction with its own receipt. A new shipment clearance, a second birth certificate,
+                or a renewal always starts a fresh submission — use a different evidence note reference to distinguish records.
+                Duplicate submissions for the same citizen + same service type are blocked automatically.
+              </div>
+            </div>
           </div>
-        )}
-      </div>
+        );
+      })()}
 
       {/* ── PAYMENT SECTION ─── appears when NDIDS verified OR payment required ──── */}
       {hasPayment && (

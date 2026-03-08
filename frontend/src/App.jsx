@@ -184,9 +184,12 @@ import { ethers } from "ethers";
 // NETWORK CONFIG
 // ---
 const CONFIG = {
-  RPC_URL: "http://127.0.0.1:8545",   // Anvil local
-  NETWORK: "Anvil Local",
-  POLL_MS: 3000,
+  RPC_URL:  "http://127.0.0.1:8545",   // Anvil local
+  NETWORK:  "Anvil Local",
+  POLL_MS:  3000,
+  // Explicit network passed to JsonRpcProvider to prevent ethers v6
+  // attempting ENS resolution on unknown networks (chainId 31337 = Anvil/Hardhat)
+  ETH_NETWORK: { chainId: 31337, name: "anvil" },
 };
 
 const DEPLOYER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
@@ -209,6 +212,8 @@ const ADDR = {
   MCIL:      "0x0165878A594ca255338adfa4d48449f69242Eb8F",
   EDUCATION: "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
   CUSTOMS:   "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+  // SBS uses the NDIDSRegistry contract for MVP — dedicated SBSRegistry contract post-funding
+  SBS:       "0x5FbDB2315678afecb367f032d93F642f64180aa3",
 };
 
 // ---
@@ -295,7 +300,7 @@ const MINISTRY_META = {
 const MINISTRY_ADDRS = {
   CBS:ADDR.CBS, MCIT:ADDR.MCIT, MOF:ADDR.MOF,
   MCIL:ADDR.MCIL, EDUCATION:ADDR.EDUCATION, CUSTOMS:ADDR.CUSTOMS,
-  SBS: "0x0000000000000000000000000000000000000SBS", // placeholder — deploy SBSRegistry post-funding
+  SBS: ADDR.SBS,
 };
 
 // ---
@@ -1033,6 +1038,63 @@ Object.entries(WORKFLOW_DEFS).forEach(([wfId, wf]) => {
 // Rule: true  = this ministry CAN verify this serviceType via NDIDS
 //       false = payment/processing step -- identity already verified upstream
 // ---
+// =============================================================================
+// EVIDENCE NOTE GUIDANCE
+// Contextual placeholder text shown to officers/citizens for each service type.
+// The evidence note is hashed on-chain — it creates an immutable link between
+// the blockchain record and the supporting documentation held by the ministry.
+// Examples of what to enter are shown per service type.
+// =============================================================================
+const EVIDENCE_GUIDANCE = {
+  // SBS identity services
+  DIGITAL_ID_ISSUED:        "SBS office verification date, ID application ref, biometric capture ref (in-person). e.g. SBS-APP-2025-001 | In-person verified 08/03/2026 | Photo ID confirmed",
+  BIRTH_CERT_ISSUED:        "Birth registration number, parents' names (initials only), hospital/location. e.g. BREG-2025-4521 | Born Motootua Hospital | Parents: S.F. & L.F.",
+  PASSPORT_REGISTERED:      "Passport application reference, SBS officer ID, MFAT submission ref. e.g. PASS-APP-2026-0089 | Submitted to MFAT 08/03/2026 | Officer: SBS-OFF-003",
+  DRIVERS_LICENCE_DIGITAL:  "Licence application ref, LTA test pass date, licence class. e.g. LTA-2026-1234 | Class 2 | Test passed 01/03/2026 | SBS digital record issued",
+  ELECTIONS_ID_VERIFIED:    "Electoral roll entry ref, electorate, verification method. e.g. ELEC-2026-APIA-WEST-0456 | Electorate: Apia West | ID verified via National Digital ID",
+  IDENTITY_HASH_UPDATE:     "Reason for update, changed fields (no PII), authorising officer. e.g. Name change — marriage certificate ref MC-2026-0123 | Officer: SBS-OFF-002",
+  // MCIL services
+  COMPANY_REGISTRATION:     "Company name, Companies Act reference, directors count. e.g. Pacific Trading Ltd | Co. No. 2025-1234 | 2 directors | Registered capital WST 50,000",
+  TRADE_LICENCE_UPDATED:    "Trade licence number, business category, renewal period. e.g. TL-2025-0892 | General Merchandise | Valid 01/01/2026–31/12/2026",
+  FOREIGN_INVESTMENT_APPROVED: "Investment amount (WST), sector, country of origin. e.g. NZD 500,000 | Tourism sector | NZ investor | MCIL-FDI-2026-008",
+  LABOUR_CONTRACT_RECORDED: "Certificate number, investment amount, employment commitment. e.g. MCIL-IC-2026-045 | WST 200,000 investment | 15 local jobs committed",
+  DISPUTE_RESOLUTION_RECORDED: "Case reference, parties (initials), outcome summary. e.g. CASE-2026-112 | Employer S.F. vs Employee L.T. | Resolved: compensation awarded",
+  // MOF services
+  BUSINESS_LICENCE_DIGITAL: "Company registration ref, licence category, MOF file ref. e.g. Co. No. 2025-1234 | Licence Cat B — Retail | MOF-BL-2026-0234",
+  TAX_COMPLIANCE_VERIFIED:  "TIN number (last 4 digits only), tax year, compliance status. e.g. TIN ****5678 | FY2025 | All returns filed | No outstanding balance",
+  BUDGET_ALLOCATION_RECORDED: "Budget line ref, ministry, purpose, financial year. e.g. MOF-BL-2026-034 | EDUCATION | School programme | FY2026 Q1",
+  DUTY_PROCESSED:           "Customs entry ref, shipment ref, duty amount. e.g. CUS-2026-0445 | Shipment SPC-2026-112 | Duty WST 4,250 confirmed",
+  EDUCATION_BENEFIT_ELIGIBLE_2025: "School enrolment ref, beneficiary ref (no name), approved amount. e.g. EDU-BEN-2026-0234 | School: Leifiifi College | WST 350 approved",
+  SOCIAL_WELFARE_PAYMENT_2025: "Welfare case ref, payment method, amount. e.g. WEL-2026-0567 | Direct to CBS account | WST 350 | MOF-WEL approved",
+  // CBS services
+  ACCOUNT_OPENED:           "Account type, branch, application ref. e.g. Savings account | Apia Branch | CBS-ACC-2026-1234 | Initial deposit WST 50",
+  REMITTANCE_RECEIVED:      "Sender country, transfer ref, receiving bank. e.g. From NZ | WU-2026-ABC123 | WST 1,200 | Received Apia CBS",
+  LOAN_APPROVED:            "Loan type, amount, term, application ref. e.g. Personal loan | WST 5,000 | 24 months | CBS-LOAN-2026-0089",
+  DIGITAL_PAYMENT_RECORDED: "Payment purpose, from/to (refs only), transaction ref. e.g. School fee payment | EDUC to CBS | TXN-2026-0123 | WST 350",
+  STABLECOIN_ISSUANCE:      "Fiat deposit ref, WST amount issued, purpose. e.g. Bank deposit BSP-DEP-2026-0056 | WST 1,000 issued | Trade settlement",
+  // MCIT services
+  SPECTRUM_LICENCE_ISSUED:  "Frequency band, licence category, term. e.g. 900MHz Band | Cat A Mobile | Digicel Samoa | Valid 2026–2028 | MCIT-SPEC-2026-003",
+  CYBERSECURITY_AUDIT:      "Organisation ref, audit scope, pass/fail, auditor ref. e.g. BSP Samoa | Network security audit | PASSED | Auditor: MCIT-AUD-006 | 08/03/2026",
+  ICT_REGISTRATION:         "Sector, investment amount, clearance type. e.g. Telecommunications | WST 2,000,000 | Spectrum and licensing clearance | MCIT-ICT-2026-012",
+  // CUSTOMS services
+  SHIPMENT_CLEARED_2025:    "Bill of lading, vessel/airline, origin country, cargo type. e.g. BL-2026-PSC-0892 | MV Pacific Star | China | Electronics — 3 containers",
+  TRADE_FACILITATION_RECORD: "Customs entry ref, duty paid ref, inspection result. e.g. CE-2026-4521 | Duty WST 12,400 — MOF confirmed | Inspection: PASS | Released",
+  TARIFF_CLASSIFICATION:    "HS code assigned, goods description, ruling ref. e.g. HS 8471.30 — Laptops | Qty 200 | Tariff ruling CSTMS-TR-2026-0045",
+  BOND_WAREHOUSE_RECORD:    "Warehouse operator, entry ref, goods description, bond amount. e.g. Pacific Logistics Bond Store | BWR-2026-0123 | Electronics | Bond WST 25,000",
+  PROHIBITED_GOODS_FLAGGED: "Item description (generic), reason flagged, enforcement ref. e.g. Suspected counterfeit goods — Customs Act s.47 | ENF-2026-0089 | Seized pending review",
+  // EDUCATION services
+  SCHOOL_ENROLMENT_2025:    "School name, year level, enrolment ref. e.g. Leifiifi College | Year 11 | ENROL-2026-0234 | Identity verified via SBS NDIDS",
+  ATTENDANCE_RECORD:        "School, term, attendance percentage, period. e.g. Leifiifi College | Term 1 2026 | 92% attendance | Benefit confirmed received",
+  GRADUATION_RECORD:        "School, qualification, year, certificate ref. e.g. Samoa College | Year 13 NCEA Level 3 | 2025 | GRAD-2025-0456",
+  SCHOLARSHIP_AWARDED:      "Scholarship name, institution, value, ref. e.g. Samoa Government Scholarship | USP Suva | WST 12,000/year | SCHOL-2026-0023",
+  SPECIAL_NEEDS_SUPPORT:    "Support type, school, provider, assessment ref. e.g. Learning support | Vaimauga Primary | OT assessment SNS-2026-0034",
+};
+
+// Helper: get evidence guidance for a service type
+function getEvidenceGuidance(serviceType) {
+  return EVIDENCE_GUIDANCE[serviceType] || "Reference number, supporting document ref, officer notes, date of verification.";
+}
+
 const NDIDS_POLICY = {
   // EDUCATION -- owns edu citizens, verifies all its own service types
   EDUCATION: {
@@ -1757,7 +1819,7 @@ function useProvider() {
   useEffect(() => {
     let p;
     try {
-      p = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
+      p = new ethers.JsonRpcProvider(CONFIG.RPC_URL, CONFIG.ETH_NETWORK, { staticNetwork: true });
       p.getBlockNumber()
         .then(() => { setProvider(p); setConnected(true); setError(null); })
         .catch(() => { setError("Cannot connect to "+CONFIG.RPC_URL); setConnected(false); });
@@ -1904,7 +1966,7 @@ function RecordsTab({ records, totalRecords, loading, connected, ministry }) {
 // ---
 // RECORD SERVICE TAB -- full payment flow, dual officer/citizen view, fee schedule, credential generation
 // ---
-function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefill }) {
+function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefill, allRecords }) {
   const meta         = MINISTRY_META[ministryCode];
   const addr         = MINISTRY_ADDRS[ministryCode];
   const serviceTypes = SERVICE_TYPES[ministryCode] || [];
@@ -1995,6 +2057,35 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
       const rawId    = form.citizenId.trim();
       const cHash    = (rawId.startsWith("0x") && rawId.length === 66)
         ? rawId : ethers.keccak256(ethers.toUtf8Bytes(rawId));
+
+      // ── Duplicate detection ─────────────────────────────────────────────
+      // Check 1: Has this citizen already received this exact service?
+      const existingServiceRecord = (allRecords||[]).find(r =>
+        r.citizenHash?.toLowerCase() === cHash.toLowerCase() &&
+        r.serviceType === form.serviceType
+      );
+      if (existingServiceRecord) {
+        const blockRef = existingServiceRecord.blockNumber ? ` (block ${existingServiceRecord.blockNumber})` : "";
+        setTxMsg({ type:"error",
+          text:`⚠ Duplicate detected: this citizen already has a ${serviceLabel(form.serviceType)} record on-chain${blockRef}. `+
+               `If this is a renewal or update, change the service type or add a renewal note to the evidence field. `+
+               `Production version will flag duplicate identities across ministries.`
+        });
+        setSubmitting(false);
+        return;
+      }
+      // Check 2: Same citizen hash appearing under multiple raw IDs (cross-ministry duplicate)
+      // In production this will query the InteroperabilityHub — for MVP we check local records
+      const otherMinistryRecords = (allRecords||[]).filter(r =>
+        r.citizenHash?.toLowerCase() === cHash.toLowerCase() &&
+        r.ministryCode && r.ministryCode !== ministryCode
+      );
+      if (otherMinistryRecords.length >= 3) {
+        // Not a block — just a soft warning surfaced in txMsg after success
+        // We store it to show after submit
+        console.info(`[NDIDS] Citizen hash seen in ${otherMinistryRecords.length} other ministry records — normal for workflow steps`);
+      }
+      // ── End duplicate detection ─────────────────────────────────────────
       // Evidence includes payment reference for immutable audit
       const payRef   = form.paymentRef?.trim() || `${form.paymentMethod}|REF-${Date.now().toString(36).toUpperCase()}`;
       const evidence = form.evidenceNote?.trim()
@@ -2287,12 +2378,18 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
 
       {/* Evidence note */}
       <div style={{ marginBottom:"16px" }}>
-        <label style={labelStyle}>Evidence Note {form.viewMode==="citizen"?"(optional supporting details)":"(hashed on chain)"}</label>
+        <label style={labelStyle}>Evidence Note {form.viewMode==="citizen"?"(optional supporting details)":"(hashed on chain — required for audit)"}</label>
         <textarea value={form.evidenceNote} onChange={e=>setForm(f=>({...f,evidenceNote:e.target.value}))}
           placeholder={form.viewMode==="citizen"
             ? "Optional: reference number, invoice number, supporting context…"
-            : "Reference number, supporting documents, details…"}
+            : getEvidenceGuidance(form.serviceType)}
           rows={3} style={{ ...inStyle, resize:"vertical" }} />
+        {form.viewMode !== "citizen" && form.serviceType && (
+          <div style={{ fontSize:"10px", color:C.muted, marginTop:"4px", lineHeight:1.6 }}>
+            ℹ The evidence note is hashed with <code>keccak256</code> and stored on-chain, creating an immutable link to your supporting documents.
+            No PII should be included — use reference numbers, initials, and codes only.
+          </div>
+        )}
       </div>
 
       {/* Payment gate warning */}
@@ -2750,6 +2847,7 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
             connected={connected}
             onSuccess={handleSuccess}
             prefill={prefill}
+            allRecords={allRecords}
           />
         )}
 
@@ -4183,6 +4281,7 @@ function SBSDashboard({ provider, connected, blockNumber, onBack, onNavigate, al
             provider={provider}
             connected={connected}
             prefill={prefill}
+            allRecords={allRecords}
             onSuccess={(data) => { setLastReceipt(data); setTab("registry"); setPrefill(null); }}
             onNavigate={onNavigate}
           />

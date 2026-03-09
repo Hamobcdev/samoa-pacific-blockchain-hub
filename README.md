@@ -279,6 +279,45 @@ We are asking UNICEF and technical reviewers to run this system locally. Everyth
 
 ---
 
+## Security Practices — Key Management
+
+### Local development vs. real deployments
+
+This repository contains references to Anvil's **well-known public demo key** (`0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`). This is not a secret. It is printed in plaintext by every `anvil` instance, documented in every Foundry tutorial, and holds no value on any real network. Any Foundry developer will recognise it on sight.
+
+It appears in this repository for one reason only: it makes local contract addresses **deterministic** — the same every time you deploy to a fresh Anvil instance, so the test guide and frontend configuration always match without manual updates.
+
+### What we actually do for testnet and production
+
+For all non-local deployments, Synergy Blockchain Pacific uses **Foundry's encrypted keystore workflow**:
+
+```bash
+# Import a private key into an encrypted, password-protected keystore
+cast wallet import deployer --interactive
+# Enter private key when prompted — never stored in plaintext
+
+# Deploy using the keystore (prompts for password at runtime)
+forge script script/Deploy.s.sol:DeploySamoaHub \
+  --rpc-url https://rpc-endpoint \
+  --account deployer \
+  --broadcast -vvvv
+```
+
+During our attempted Polygon Amoy testnet deployment (blocked by RPC rate limits and gas constraints on the free tier — see the Testnet Barrier section), all signing was done via the encrypted keystore. The raw `--private-key` flag was not used for any non-local transaction.
+
+### Production officer authentication
+
+In the MVP, all ministry dashboards share the Anvil deployer key for simplicity. **This is an explicit proof-of-concept shortcut.** Production deployments will use:
+
+- One hardware wallet (Ledger Nano X) per ministry officer
+- Wallet-based authentication via MetaMask / WalletConnect in the frontend
+- Every transaction permanently signed by the individual officer's credential
+- Ministry administrator multi-sig for contract governance
+
+This architecture is costed in the Technical Costing document and is a confirmed Phase 2 deliverable.
+
+---
+
 ## Running Locally
 
 ### Prerequisites
@@ -297,11 +336,21 @@ npm run dev
 
 ### Full live system — all contracts on local chain
 
+> **🔐 Security note — Anvil demo key (local development only)**
+>
+> The key below (`0xac0974...`) is **Anvil's well-known public Account #0** — it is printed in plaintext by every `anvil` instance, appears in every Foundry tutorial, and holds no value on any real network. It is used here solely for deterministic local deployment so contract addresses are always the same.
+>
+> **For testnet and production deployments, Synergy Blockchain Pacific uses Foundry's encrypted keystore (`cast wallet import`) — never a raw private key in any command, environment variable, or file.** During our attempted Polygon Amoy testnet deployment, all transactions were signed via the encrypted keystore workflow. The `--private-key` flag below is a local-only convenience for demo reproducibility and is explicitly not our practice for any non-local environment.
+>
+> See [Foundry keystore docs](https://book.getfoundry.sh/reference/cast/cast-wallet-import) for the production signing workflow we use.
+
 ```bash
 # Terminal 1 — start local blockchain
 anvil
 
 # Terminal 2 — deploy all contracts
+# NOTE: Key below is Anvil's universal public demo key — local chain only.
+# Testnet/production: use `cast wallet import` encrypted keystore (see security note above).
 cd contracts
 forge script script/Deploy.s.sol:DeploySamoaHub \
   --rpc-url http://127.0.0.1:8545 \

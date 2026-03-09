@@ -314,13 +314,6 @@ const SERVICE_TYPES = {
     { value:"GRADUATION_RECORD",       label:"Graduation / Completion",    desc:"Student completed education level" },
     { value:"SPECIAL_NEEDS_SUPPORT",   label:"Special Needs Support",      desc:"Additional educational support services recorded" },
   ],
-  MOF: [
-    { value:"EDUCATION_BENEFIT_ELIGIBLE_2025", label:"Education Benefit Approved", desc:"Citizen approved for school fee subsidy" },
-    { value:"SOCIAL_WELFARE_PAYMENT_2025",     label:"Social Welfare Payment",     desc:"Welfare payment disbursed and recorded" },
-    { value:"TAX_COMPLIANCE_VERIFIED",         label:"Tax Compliance Verified",    desc:"Citizen or business tax status confirmed" },
-    { value:"BUDGET_ALLOCATION_RECORDED",      label:"Budget / Licence Fee",       desc:"Ministry budget allocation or government fee" },
-    { value:"DUTY_PROCESSED",                  label:"Customs Duty Processed",     desc:"Import/export duty payment confirmed by MOF" },
-  ],
   CBS: [
     { value:"ACCOUNT_OPENED",          label:"Bank Account Opened",        desc:"New bank account created — identity verified" },
     { value:"REMITTANCE_RECEIVED",     label:"Remittance Received",        desc:"International remittance received and recorded" },

@@ -360,9 +360,34 @@ forge script script/Deploy.s.sol:DeploySamoaHub \
 # Terminal 3 — start frontend
 cd frontend && npm run dev
 
-# Optional — register demo citizens into NDIDSRegistry
+# Terminal 2 — register demo citizens into NDIDSRegistry
 node register_citizens.js
 ```
+
+> ⚠️ **IMPORTANT — Run `register_citizens.js` after every Anvil restart.**
+>
+> Anvil is a local in-memory blockchain. Every time it stops and restarts, the chain resets to zero — all contracts are gone and must be redeployed. This means all citizen registrations are also wiped. The deploy script re-deploys the contracts; `register_citizens.js` re-registers the seed citizens into NDIDSRegistry.
+>
+> **If you skip `register_citizens.js`, every identity lookup will return `false`** — even for citizens that appear in the UI seed data list. This is not a bug. The blockchain simply has no record of them yet because the registration transactions were reset with the chain.
+>
+> **The full sequence after every Anvil restart:**
+> ```bash
+> # 1. Kill and restart Anvil
+> pkill anvil && anvil &
+>
+> # 2. Redeploy all contracts (from /contracts directory)
+> forge script script/Deploy.s.sol:DeploySamoaHub \
+>   --rpc-url http://127.0.0.1:8545 \
+>   --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
+>   --broadcast -vvvv
+>
+> # 3. Re-register seed citizens (from repo root)
+> node register_citizens.js
+>
+> # 4. Reload the frontend in your browser (Ctrl+R or Cmd+R)
+> ```
+>
+> After step 3, the Identity Registry tab in the SBS dashboard will show all seed citizens as ✅ On-chain, and identity lookups for `CITIZEN-WS-001` through `CITIZEN-WS-010` will return `true`.
 
 ### Run tests
 

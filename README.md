@@ -4,7 +4,7 @@
 
 Built by [Synergy Blockchain Pacific](https://github.com/Hamobcdev) · UNICEF Venture Fund 2026 Application
 
-🌐 **Live Demo:** [hamobcdev.github.io/samoa-pacific-blockchain-hub](https://hamobcdev.github.io/samoa-pacific-blockchain-hub/)
+🌐 **Live Demo:** [hamobcdev.github.io/samoa-pacific-blockchain-hub](https://youtu.be/fe1tNsUf40s)
 
 ---
 

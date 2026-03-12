@@ -54,7 +54,7 @@ contract AIDisbursementTracker {
 
     // ── State ────────────────────────────────────────────────────
 
-    address public immutable admin;
+    address public immutable ADMIN;
     uint256 public totalGrants;
     uint256 public totalDisbursed;
     uint256 public totalVerified;
@@ -106,22 +106,33 @@ contract AIDisbursementTracker {
     error GrantNotActive();
     error TrancheNotPending();
     error TrancheNotReleased();
+    error ZeroAddress();
 
     // ── Constructor ──────────────────────────────────────────────
 
     constructor(address _admin) {
-        admin = _admin;
+        if (_admin == address(0)) revert ZeroAddress();
+        ADMIN = _admin;
     }
 
     modifier onlyAdmin() {
-        if (msg.sender != admin) revert Unauthorised();
+        _onlyAdmin();
         _;
     }
 
+    function _onlyAdmin() internal view {
+        if (msg.sender != ADMIN) revert Unauthorised();
+        
+    }
+
     modifier onlyVerifier() {
-        if (msg.sender != admin && !authorisedVerifiers[msg.sender])
-            revert Unauthorised();
+        _onlyVerifier();
         _;
+    }
+
+    function _onlyVerifier() internal view {
+        if (msg.sender != ADMIN && !authorisedVerifiers[msg.sender])
+            revert Unauthorised();
     }
 
     // ── Grant Creation ───────────────────────────────────────────
@@ -177,7 +188,7 @@ contract AIDisbursementTracker {
 
     /**
      * @notice Release a funding tranche when milestone is achieved
-     *         Called by admin (or in production: triggered by ministry node confirmation)
+     *         Called by ADMIN (or in production: triggered by ministry node confirmation)
      */
     function releaseTranche(uint256 grantId, uint256 trancheId) external onlyAdmin {
         Grant storage g = _grants[grantId];

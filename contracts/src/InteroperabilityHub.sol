@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./NDIDSRegistry.sol";
-import "./MinistryNode.sol";
-import "./AIDisbursementTracker.sol";
+import { NDIDSRegistry } from "./NDIDSRegistry.sol";
+import { MinistryNode } from "./MinistryNode.sol";
+import { AIDisbursementTracker } from "./AIDisbursementTracker.sol";
 
 /**
  * @title InteroperabilityHub
@@ -32,7 +32,7 @@ contract InteroperabilityHub {
 
     // ── State ────────────────────────────────────────────────────
 
-    address public immutable admin;
+    address public immutable ADMIN;
     NDIDSRegistry      public ndids;
     AIDisbursementTracker public aidTracker;
 
@@ -73,16 +73,23 @@ contract InteroperabilityHub {
     error Unauthorised();
     error MinistryNotFound();
     error AlreadyExists();
+    error ZeroAddress();
 
     // ── Constructor ──────────────────────────────────────────────
 
     constructor(address _admin) {
-        admin = _admin;
+        if (_admin == address(0)) revert ZeroAddress();
+        ADMIN = _admin;
     }
 
     modifier onlyAdmin() {
-        if (msg.sender != admin) revert Unauthorised();
+        _onlyAdmin();
         _;
+    }
+
+    function _onlyAdmin() internal {
+        if (msg.sender != ADMIN) revert Unauthorised();
+        
     }
 
     // ── Setup ────────────────────────────────────────────────────

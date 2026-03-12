@@ -15,7 +15,7 @@ contract NDIDSRegistry {
 
     // ── State ────────────────────────────────────────────────────
 
-    address public immutable admin;            // NDIDS authority (SBS/MCIT)
+    address public immutable ADMIN;            // NDIDS authority (SBS/MCIT)
     uint256 public totalRegistered;
 
     // citizenHash => registered
@@ -40,17 +40,19 @@ contract NDIDSRegistry {
     error AlreadyRegistered();
     error NotRegistered();
     error AccessDenied();
+    error ZeroAddress();
 
     // ── Constructor ──────────────────────────────────────────────
 
     constructor(address _admin) {
-        admin = _admin;
+        if (_admin == address(0)) revert ZeroAddress();
+        ADMIN = _admin;
     }
 
     // ── Modifiers ────────────────────────────────────────────────
 
     modifier onlyAdmin() {
-        if (msg.sender != admin) revert Unauthorised();
+        if (msg.sender != ADMIN) revert Unauthorised();
         _;
     }
 
@@ -85,7 +87,7 @@ contract NDIDSRegistry {
 
     /**
      * @notice Grant a ministry contract permission to verify this citizen
-     * @dev Called by admin — citizen consent recorded off-chain per GDPR/privacy law
+     * @dev Called by ADMIN — citizen consent recorded off-chain per GDPR/privacy law
      */
     function grantReadAccess(bytes32 citizenHash, address ministry) external onlyAdmin {
         if (!_registered[citizenHash]) revert NotRegistered();

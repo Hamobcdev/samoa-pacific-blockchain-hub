@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./NDIDSRegistry.sol";
+import { NDIDSRegistry } from "./NDIDSRegistry.sol";
 
 /**
  * @title MinistryNode
@@ -23,9 +23,9 @@ contract MinistryNode {
 
     string  public ministryName;
     string  public ministryCode;
-    address public immutable ministryAdmin;
-    address public immutable deployer;
-    NDIDSRegistry public immutable ndids;
+    address public immutable MINISTRY_ADMIN;
+    address public immutable DEPLOYER;
+    address public immutable NDIDS_ADDRESS;
     address public hub;
 
     // ── Service Records ──────────────────────────────────────────
@@ -62,6 +62,7 @@ contract MinistryNode {
 
     error Unauthorised();
     error ReadAccessDenied();
+    error ZeroAddress();
 
     // ── Constructor ──────────────────────────────────────────────
 
@@ -71,32 +72,47 @@ contract MinistryNode {
         address _admin,
         address _ndids
     ) {
+        if (_admin == address(0)) revert ZeroAddress();
+        if (_ndids == address(0)) revert ZeroAddress();
         ministryName  = _name;
         ministryCode  = _code;
-        ministryAdmin = _admin;
-        ndids         = NDIDSRegistry(_ndids);
-        deployer      = msg.sender;
+        MINISTRY_ADMIN = _admin;
+        NDIDS_ADDRESS = _ndids;
+        DEPLOYER = msg.sender;
     }
 
     modifier onlyAdmin() {
-        if (msg.sender != ministryAdmin) revert Unauthorised();
+        _onlyAdmin();
         _;
+    }
+    function _onlyAdmin() internal view {
+        if (msg.sender != MINISTRY_ADMIN) revert Unauthorised();
+        
     }
 
     modifier onlyAdminOrHub() {
-        if (msg.sender != ministryAdmin && msg.sender != hub) revert Unauthorised();
+        _onlyAdminOrHub();
         _;
+    }
+     
+    function _onlyAdminOrHub() internal view {
+        if (msg.sender != MINISTRY_ADMIN && msg.sender != hub) revert Unauthorised();
+        
     }
 
     modifier onlyAuthorised() {
-        if (msg.sender != ministryAdmin && !authorisedReaders[msg.sender])
-            revert ReadAccessDenied();
-        _;
+         _onlyAuthorized();
+         _;
     }
+    function _onlyAuthorized() internal view {
+        if (msg.sender != MINISTRY_ADMIN && !authorisedReaders[msg.sender])
+            revert ReadAccessDenied();
+    }    
+    
 
     function setHub(address _hub) external {
         if (hub != address(0)) revert Unauthorised();
-        if (msg.sender != deployer && msg.sender != ministryAdmin) revert Unauthorised();
+        if (msg.sender != DEPLOYER && msg.sender != MINISTRY_ADMIN) revert Unauthorised();
         hub = _hub;
     }
 
@@ -114,6 +130,7 @@ contract MinistryNode {
     ) external onlyAdminOrHub returns (uint256 recordId) {
         bool verified = false;
         if (verifyViaNDIDS) {
+            NDIDSRegistry ndids = NDIDSRegistry(NDIDS_ADDRESS);
             verified = ndids.verifyCitizen(citizenHash);
         }
 

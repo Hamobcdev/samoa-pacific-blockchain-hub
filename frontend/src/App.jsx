@@ -191,6 +191,8 @@ const CONFIG = {
   ETH_NETWORK: { chainId: 80002, name: "amoy" },
 };
 
+const DEPLOYER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+
 // Read-only provider for public testnet — no private key needed for reads
 // Transactions require MetaMask or a connected wallet
 function getSigner(provider) {

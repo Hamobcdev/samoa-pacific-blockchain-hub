@@ -4,7 +4,31 @@
 
 Built by [Synergy Blockchain Pacific](https://github.com/Hamobcdev) · UNICEF Venture Fund 2026 Application
 
-🌐 **Live Demo:** [hamobcdev.github.io/samoa-pacific-blockchain-hub](https://youtu.be/fe1tNsUf40s)
+🌐 **Live Demo:** [hamobcdev.github.io/samoa-pacific-blockchain-hub](https://hamobcdev.github.io/samoa-pacific-blockchain-hub/)
+📹 **Demo Video:** [youtu.be/fe1tNsUf40s](https://youtu.be/fe1tNsUf40s)
+
+---
+
+## 🚀 Testnet Deployment — Live on Polygon Amoy (March 2026)
+
+All contracts are deployed, verified, and publicly readable on the Polygon Amoy public testnet. This is no longer a local proof of concept — it is live public blockchain infrastructure.
+
+| Contract | Address | Explorer |
+|---|---|---|
+| **NDIDSRegistry** | `0x0E832d0C324Cd70ca58Dd1B0965151167853cE42` | [Polygonscan ↗](https://amoy.polygonscan.com/address/0x0e832d0c324cd70ca58dd1b0965151167853ce42) |
+| **AIDisbursementTracker** | `0x3fD12fe1400BD9B8cd7ebE59C47EA27ab6bF5EdB` | [Polygonscan ↗](https://amoy.polygonscan.com/address/0x3fd12fe1400bd9b8cd7ebe59c47ea27ab6bf5edb) |
+| **InteroperabilityHub** | `0x6c213b53b41c325317dF0443442b0eae9c7618Cc` | [Polygonscan ↗](https://amoy.polygonscan.com/address/0x6c213b53b41c325317df0443442b0eae9c7618cc) |
+| **MinistryNode — CBS** | `0xeC404FB5564da6f6c77DD7C8A694B1A3fFCe99c1` | [Polygonscan ↗](https://amoy.polygonscan.com/address/0xec404fb5564da6f6c77dd7c8a694b1a3ffce99c1) |
+| **MinistryNode — MCIT** | `0x4F117fdC9BB2b781d52731E5674f669Bfe1E6402` | [Polygonscan ↗](https://amoy.polygonscan.com/address/0x4f117fdc9bb2b781d52731e5674f669bfe1e6402) |
+| **MinistryNode — MOF** | `0x8c26B5E477d6feFf2a75C0Fbd7f3667c4dB07FC4` | [Polygonscan ↗](https://amoy.polygonscan.com/address/0x8c26b5e477d6feff2a75c0fbd7f3667c4db07fc4) |
+| **MinistryNode — MCIL** | `0xe9b67Df4a062C20167D963DD74fc436c1B83EceD` | [Polygonscan ↗](https://amoy.polygonscan.com/address/0xe9b67df4a062c20167d963dd74fc436c1b83eced) |
+| **MinistryNode — Education** | `0xa3Cb3B9A6DF26cd550A6D8A49EF693c78750F27d` | [Polygonscan ↗](https://amoy.polygonscan.com/address/0xa3cb3b9a6df26cd550a6d8a49ef693c78750f27d) |
+| **MinistryNode — Customs** | `0x6462197ff41c7EbA925e0F9EB980e61454e40366` | [Polygonscan ↗](https://amoy.polygonscan.com/address/0x6462197ff41c7eba925e0f9eb980e61454e40366) |
+
+**Network:** Polygon Amoy (Chain ID: 80002) · **Deployer:** `0x2C80200932C8733b09B70F9962d6302D9E6dB2C5`
+**Compiler:** Solidity 0.8.24 · **Audit:** Slither static analysis — 0 critical, 0 high findings · **Tests:** 29/29 passing
+
+> All contracts are open source under MIT licence. Source code is verified and publicly readable on Polygonscan. The full deployment receipt is in `contracts/broadcast/Deploy.s.sol/80002/run-latest.json`.
 
 ---
 
@@ -26,6 +50,10 @@ For a small nation like Samoa, where institutional trust is hard-won and public 
 
 Samoa's government has committed to a unified "One Government Portal" — a single digital access point for all citizen services. The Samoa Pacific Blockchain Hub is designed to be the trust infrastructure beneath that portal. The portal is the front door citizens walk through. This system is the foundation that ensures every transaction recorded through that door is permanent, auditable, and shared correctly across all relevant ministries — without any ministry having to trust that another ministry's data is accurate, because the blockchain guarantees it.
 
+**The Maritime Single Window connection:**
+
+Since 1 January 2024, all IMO Member States including Samoa are required under the FAL Convention to operate a Maritime Single Window — a unified digital platform for all vessel arrival, stay, and departure documentation. SBP's InteroperabilityHub architecture is directly aligned with the IMO FAL once-only data submission principle. SBP is in active discussion with MWTI and Samoa Ports Authority regarding MSW implementation.
+
 ---
 
 ## Who We Are
@@ -44,11 +72,14 @@ We are asking UNICEF not just to fund a product, but to fund the beginning of an
 
 ## The Honest State of This Project
 
-This repository is a working proof of concept — not a live production system. Here is exactly what exists today.
+This repository is a working proof of concept — now deployed to public testnet. Here is exactly what exists today.
 
 **What is real and working:**
-- 4 smart contracts written, deployed, and tested — 28+ passing tests
-- A live multi-ministry dashboard reading directly from real contract state on a local blockchain
+- 4 smart contracts written, deployed to Polygon Amoy public testnet, and verified on Polygonscan
+- 29 passing automated tests — unit, integration, and fuzz tests
+- Slither static analysis audit complete — 0 critical, 0 high findings, all medium/low fixes applied
+- Security improvements in this version: ReentrancyGuard on InteroperabilityHub, CEI pattern on MinistryNode, indexed event parameters, gas-optimised batch registration
+- A live multi-ministry dashboard reading directly from real contract state
 - 7 ministry dashboards: CBS, MCIT, MOF, MCIL, Education, Customs, and the Samoa Bureau of Statistics (SBS)
 - Cross-ministry workflows with automatic pending action detection — a completed step in one ministry triggers the next step in another
 - A National Digital Identity System (NDIDS) with privacy-preserving citizen identity — zero personal information stored on the blockchain, only cryptographic hashes
@@ -61,10 +92,9 @@ This repository is a working proof of concept — not a live production system. 
 - A citizen-facing view and an officer-facing view of every service
 
 **What is not yet real:**
-- Not yet deployed to a public testnet or mainnet — see the section below on why
-- No actual Samoa government ministry is using this system yet
+- No actual Samoa government ministry is using this system yet — active engagement in progress with CBS, MCIT, MOF, MCIL, Customs, MWTI, and Samoa Ports Authority
 - The citizens and records are demo data — not real government data
-- We have not yet had formal government sign-off on a pilot
+- We have not yet had formal government sign-off on a pilot — CBS Regulatory Sandbox application submitted
 
 **Why we are submitting now:**
 We are submitting because this is the level of work a two-person unfunded team can produce to demonstrate genuine capability and commitment. With UNICEF support, we can move from proof of concept to a real government pilot. Without it, we continue building as best we can with what we have.
@@ -106,310 +136,221 @@ Four stakeholder views — no login required:
 
 | Role | What you see |
 |---|---|
-| 💰 UNICEF Donor | Live grant state, tranche tracker, field evidence hashes, full audit trail |
-| 🏛 Ministry Officer | Record service delivery, cross-ministry pending actions, payment inbox, certificate generation |
-| 🪪 NDIDS / SBS Admin | Citizen identity registry, bulk registration tool, live on-chain verification, privacy architecture |
-| 🌍 Public / Auditor | Ministry network, live workflow events, contract addresses, interoperability permissions |
+| **UNICEF Donor** | Grant lifecycle, milestone progress, tranche releases, full audit trail |
+| **Ministry Officer** | Service recording, citizen verification, cross-ministry workflow status |
+| **Citizen** | Your own service history, verified identity status, benefit eligibility |
+| **Administrator** | Full system overview, all ministry nodes, workflow log, permission grants |
 
-The dashboard reads directly from smart contracts. Every transaction appears within 3 seconds. This is demonstrable live, not a recorded video.
+🌐 [hamobcdev.github.io/samoa-pacific-blockchain-hub](https://hamobcdev.github.io/samoa-pacific-blockchain-hub/)
 
 ---
 
-## System Architecture — What Each Component Does
+## Standards Alignment
 
-### 7 Ministry Nodes
+SBP's Version 2 architecture is being built in full alignment with the international standards that are converging as the global digital trade framework:
 
-Each ministry has a dedicated blockchain node — a smart contract that only that ministry controls. Officers record service events to their own ministry's node. No ministry can write to another ministry's records.
-
-| Ministry | Code | Key Services |
+| Standard | What It Governs | SBP Implementation |
 |---|---|---|
-| Central Bank of Samoa | CBS | Account opening, remittance, loans, stablecoin issuance, payment processing |
-| Ministry of Finance | MOF | Business licensing, tax compliance, duty confirmation, welfare and education benefit disbursement |
-| Ministry of Commerce, Industry & Labour | MCIL | Company registration, trade licences, foreign investment approval, labour contracts |
-| Ministry of Communications & IT | MCIT | Spectrum licences, ICT registration, cybersecurity audit records |
-| Ministry of Education, Sports & Culture | EDUCATION | School enrolment, attendance records, graduation, scholarships, special needs support |
-| Ministry of Customs & Revenue | CUSTOMS | Shipment clearance, trade facilitation, tariff classification, bond warehouse records |
-| Samoa Bureau of Statistics | SBS | National Digital ID, birth certificates, passport registration, driver's licence digital records, elections ID, identity hash updates |
-
-### National Digital Identity System (NDIDS)
-
-The NDIDS is how ministries know they are all looking at the same person — without any ministry holding a copy of that person's personal information.
-
-When a citizen is registered, their National ID (e.g. WS-123456) is converted into a cryptographic hash using a mathematical function called `keccak256`. The result is a string of letters and numbers that uniquely identifies that person — but cannot be reversed to reveal the original ID. Only the hash is stored on the blockchain.
-
-When a ministry records a service for that citizen, they submit the same hash. The blockchain confirms: this hash is registered. Service recorded. No names, dates of birth, addresses, or identity documents ever touch the chain.
-
-This architecture is aligned with Samoa's data sovereignty obligations and compatible with emerging global privacy frameworks including GDPR and the Pacific Data Governance Framework.
-
-**Auto-sync:** From v18 onwards, every time a ministry officer records a service for a citizen, the system automatically registers that citizen's hash in the NDIDS if they are not already there. The identity registry and service records stay permanently in sync without any manual action.
-
-### Cross-Ministry Workflow Engine
-
-Many government services require multiple ministries acting in sequence. The workflow engine tracks these automatically.
-
-**Example — School Benefit:**
-1. **Education** records a school enrolment → triggers a pending action for MOF
-2. **MOF** approves the education benefit → triggers a pending action for CBS
-3. **CBS** processes the payment → triggers a pending action for Education
-4. **Education** confirms benefit received → workflow complete
-
-At every step, each ministry only sees the action relevant to them. The system detects when a prerequisite step is complete and surfaces the next required action automatically in the relevant ministry's dashboard.
-
-**Current workflows:**
-
-| Workflow | Ministries Involved |
-|---|---|
-| School Benefit & UNICEF Grant | Education → MOF → CBS → Education |
-| Customs Trade Clearance | Customs → MCIL → MOF → CBS → Customs |
-| Social Welfare Disbursement | MOF → CBS → MOF |
-| Business Licence | MCIL → MOF |
-| Foreign Investment Approval | MCIL → MOF → MCIT → MCIL |
-| UNICEF Tranche Release | Education → MOF |
-| SBS Identity Registration | SBS → CBS (optional bank link) |
-
-### Payment Routing
-
-Every service that carries a government fee is routed to the correct ministry's bank account automatically. The system enforces a single rule: the ministry that provides the service receives the payment. This is immutable — it is configured in the smart contract, not in a spreadsheet that someone can edit.
-
-Ministry fee accounts are held at BSP, ANZ Samoa, SCB Apia, and CBS — reflecting the real banking relationships of Samoa's government ministries.
-
-### AID Disbursement Tracker
-
-Tracks international aid from commitment to delivery. The current demo models a WST 100,000 UNICEF programme for education access with three milestone-based tranches. Tranche release requires field evidence to be submitted and verified on chain — funds cannot be released by administrative instruction alone.
-
-### Certificate and Receipt Generation
-
-Every completed service transaction generates a downloadable, print-ready government certificate with the blockchain transaction hash, evidence hash, credential hash, and payment reference. These certificates are independently verifiable — anyone with the transaction hash can confirm the record exists on chain.
+| **DCSA eBL 3.0.2** | Electronic Bill of Lading — 190+ fields, digital title transfer | `TradeDocument.sol` — Phase 2 |
+| **UNCITRAL MLETR** | Legal equivalence of electronic transferable records | Legislative advocacy via MCIL/MFAT |
+| **WCO SAFE 2025** | Customs security, AEO trusted trader programme | `SupplyChain.sol` + Customs node |
+| **UN/CEFACT** | Multimodal transport data models and message formats | `TradeDocument.sol` struct fields |
+| **GS1** | Global supply chain identifiers (GTIN, GLN, SSCC) | `SupplyChain.sol` — Phase 2 |
+| **IMO FAL Convention** | Maritime Single Window — mandatory since Jan 2024 | `InteroperabilityHub` MSW extension |
+| **FATF / MLPA 2007** | AML/CFT compliance, risk tier classification | `ComplianceGuard.sol` — Phase 2 |
+| **ISO TC 307** | Blockchain terminology, security, interoperability | Slither audit framework reference |
 
 ---
 
-## Technical Architecture
+## Security Audit
 
-### Smart Contracts
+Slither static analysis completed across all four contracts. **Zero critical findings. Zero high findings.**
 
-```
-InteroperabilityHub
-├── NDIDSRegistry          — Privacy-preserving citizen identity (hash-only)
-├── AIDisbursementTracker  — Milestone-based aid accountability
-└── Ministry Nodes (×7)
-    ├── Central Bank of Samoa (CBS)
-    ├── Ministry of Finance (MOF)
-    ├── Ministry of Commerce, Industry & Labour (MCIL)
-    ├── Ministry of Communications & IT (MCIT)
-    ├── Ministry of Education, Sports & Culture (EDUCATION)
-    ├── Ministry of Customs & Revenue (CUSTOMS)
-    └── Samoa Bureau of Statistics (SBS) — post-funding dedicated contract
-```
+| Severity | Count | Status |
+|---|---|---|
+| Critical | 0 | — |
+| High | 0 | — |
+| Medium | 4 | ✅ All fixed |
+| Low | 18 | ✅ All fixed |
 
-**Key design principles:**
-- Zero PII on chain — only `keccak256` hashes of citizen identifiers
-- Each ministry owns its node — data sovereignty enforced at contract level
-- Cross-ministry reads require explicit on-chain permission grants
-- Auto-registration — `registerCitizen()` called automatically on every service record
-- Duplicate detection — same citizen + same service type blocked at submission
-- Atomic workflows — multi-step processes cannot partially complete
-- Aid disbursement tied to verified evidence hashes, not manual approval
-- `staticNetwork: true` on the provider — prevents ENS resolution on local chain
-
-### Frontend Stack
-
-- React 18 with ethers.js v6 — reads live state from contracts every 3 seconds
-- No backend server — the blockchain is the backend
-- Citizen-facing and officer-facing views of every service form
-- Contextual evidence note guidance for every service type — officers always know what to enter
-- Full certificate and receipt generation with downloadable PDF output
-- Privacy-first: citizen IDs are hashed in the browser before any network call — the plain ID never leaves the officer's machine
-
-### Privacy Architecture
-
-```
-Officer enters: WS-123456
-        ↓
-Browser computes: keccak256("WS-123456")
-        ↓
-Sends to chain:   0x8f4a2b...c7d1  (hash only)
-        ↓
-NDIDSRegistry:    isRegistered(hash) → true/false
-        ↓
-Ministry node:    recordService(hash, serviceType, evidenceHash, ndidsVerified)
-```
-
-Personal information never leaves the browser. The blockchain never sees it.
-
----
-
-## Deployed Contracts
-
-### Anvil Local (current development environment)
-
-| Contract | Address |
-|---|---|
-| NDIDSRegistry | `0x5FbDB2315678afecb367f032d93F642f64180aa3` |
-| AIDisbursementTracker | `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512` |
-| InteroperabilityHub | `0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0` |
-| CBS Node | `0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9` |
-| MCIT Node | `0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9` |
-| MOF Node | `0x5FC8d32690cc91D4c39d9d3abcBD16989F875707` |
-| MCIL Node | `0x0165878A594ca255338adfa4d48449f69242Eb8F` |
-| Education Node | `0xa513E6E4b8f2a923D98304ec87F64353C4D5C853` |
-| Customs Node | `0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6` |
-| SBS Node | `deploying — dedicated SBSRegistry contract post-funding` |
-
-### Public Testnet / Mainnet
-
-| Contract | Address |
-|---|---|
-| All contracts | *deploying as part of this application — see testnet barrier section below* |
-
----
-
-## The Testnet Barrier — A Real Example of Why Funding Matters
-
-We attempted to deploy this system to Polygon Amoy testnet. We hit two hard walls that a funded team would not face.
-
-**The deployment script exceeds free-tier infrastructure limits.** The full deployment — 9 contracts, citizens registered, ministry nodes wired, cross-ministry permissions set, a UNICEF grant with tranches seeded — is a single Foundry script that exceeds the gas limits on free RPC endpoints. We attempted deployment through Alchemy's free tier. Transactions dropped mid-sequence. The contracts that did land were orphaned — wired to addresses that didn't exist because later transactions failed.
-
-**Free RPC tier rate limits block the full test suite.** The dashboard's 3-second polling and the full integration test suite both exceed Alchemy's free tier request limits. Running all 28+ tests against a live testnet endpoint hits those limits within the first few scenarios.
-
-This is not a technical failure. The same deployment script runs perfectly on Anvil local chain — every contract, every citizen, every permission, every test. The barrier is purely financial: a paid RPC endpoint ($50–200/month) and a small MATIC allocation for testnet gas would resolve both issues immediately.
-
-We are not deploying to mainnet. Spending real cryptocurrency on a proof-of-concept system not yet serving real users would be financially irresponsible. The right path is: funded RPC endpoint → complete testnet deployment with public transaction hashes on Polygonscan → pilot with one Samoa government ministry → production mainnet deployment when real data is moving.
-
-We are asking UNICEF and technical reviewers to run this system locally. Everything verifiable on a testnet block explorer is verifiable locally. The only thing missing is a public URL — and that is a funding problem, not a capability problem.
-
----
-
-## Security Practices — Key Management
-
-### Local development vs. real deployments
-
-This repository contains references to Anvil's **well-known public demo key** (`0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`). This is not a secret. It is printed in plaintext by every `anvil` instance, documented in every Foundry tutorial, and holds no value on any real network. Any Foundry developer will recognise it on sight.
-
-It appears in this repository for one reason only: it makes local contract addresses **deterministic** — the same every time you deploy to a fresh Anvil instance, so the test guide and frontend configuration always match without manual updates.
-
-### What we actually do for testnet and production
-
-For all non-local deployments, Synergy Blockchain Pacific uses **Foundry's encrypted keystore workflow**:
-
-```bash
-# Import a private key into an encrypted, password-protected keystore
-cast wallet import deployer --interactive
-# Enter private key when prompted — never stored in plaintext
-
-# Deploy using the keystore (prompts for password at runtime)
-forge script script/Deploy.s.sol:DeploySamoaHub \
-  --rpc-url https://rpc-endpoint \
-  --account deployer \
-  --broadcast -vvvv
-```
-
-During our attempted Polygon Amoy testnet deployment (blocked by RPC rate limits and gas constraints on the free tier — see the Testnet Barrier section), all signing was done via the encrypted keystore. The raw `--private-key` flag was not used for any non-local transaction.
-
-### Production officer authentication
-
-In the MVP, all ministry dashboards share the Anvil deployer key for simplicity. **This is an explicit proof-of-concept shortcut.** Production deployments will use:
-
-- One hardware wallet (Ledger Nano X) per ministry officer
-- Wallet-based authentication via MetaMask / WalletConnect in the frontend
-- Every transaction permanently signed by the individual officer's credential
-- Ministry administrator multi-sig for contract governance
-
-This architecture is costed in the Technical Costing document and is a confirmed Phase 2 deliverable.
+**Security improvements applied in this version:**
+- `ReentrancyGuard` (`nonReentrant`) on `InteroperabilityHub.executeEnrollmentWorkflow()`
+- Check-Effects-Interactions (CEI) pattern enforced on `MinistryNode.recordService()`
+- `indexed` parameters added to all key events for efficient CBS monitoring queries
+- Gas-optimised `batchRegister()` — single `SSTORE` write after loop, not per iteration
+- `HubSet` event added to `MinistryNode.setHub()` for full audit trail
+- Zero-address guards added to all setup functions
+- Wrapped modifier pattern throughout — `_onlyAdmin()` internal function
 
 ---
 
 ## Running Locally
 
-### Prerequisites
-- [Foundry](https://book.getfoundry.sh/getting-started/installation)
-- Node.js 18+
-
-### Quick start — frontend only (demo data)
-
 ```bash
-git clone https://github.com/Hamobcdev/samoa-pacific-blockchain-hub.git
-cd samoa-pacific-blockchain-hub/frontend
-npm install
-npm run dev
-# Open http://localhost:5173
+git clone https://github.com/Hamobcdev/samoa-pacific-blockchain-hub
+cd samoa-pacific-blockchain-hub/contracts
+forge install
+forge build
+forge test -vv
 ```
 
-### Full live system — all contracts on local chain
+Expected output: `29 passed; 0 failed`
 
-> **🔐 Security note — Anvil demo key (local development only)**
->
-> The key below (`0xac0974...`) is **Anvil's well-known public Account #0** — it is printed in plaintext by every `anvil` instance, appears in every Foundry tutorial, and holds no value on any real network. It is used here solely for deterministic local deployment so contract addresses are always the same.
->
-> **For testnet and production deployments, Synergy Blockchain Pacific uses Foundry's encrypted keystore (`cast wallet import`) — never a raw private key in any command, environment variable, or file.** During our attempted Polygon Amoy testnet deployment, all transactions were signed via the encrypted keystore workflow. The `--private-key` flag below is a local-only convenience for demo reproducibility and is explicitly not our practice for any non-local environment.
->
-> See [Foundry keystore docs](https://book.getfoundry.sh/reference/cast/cast-wallet-import) for the production signing workflow we use.
-
+**Local demo with Anvil:**
 ```bash
-# Terminal 1 — start local blockchain
-anvil
-
-# Terminal 2 — deploy all contracts
-# NOTE: Key below is Anvil's universal public demo key — local chain only.
-# Testnet/production: use `cast wallet import` encrypted keystore (see security note above).
-cd contracts
-forge script script/Deploy.s.sol:DeploySamoaHub \
-  --rpc-url http://127.0.0.1:8545 \
+anvil &
+forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8545 \
   --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
   --broadcast -vvvv
-
-# Terminal 3 — start frontend
-cd frontend && npm run dev
-
-# Terminal 2 — register demo citizens into NDIDSRegistry
-node register_citizens.js
-```
-
-> ⚠️ **IMPORTANT — Run `register_citizens.js` after every Anvil restart.**
->
-> Anvil is a local in-memory blockchain. Every time it stops and restarts, the chain resets to zero — all contracts are gone and must be redeployed. This means all citizen registrations are also wiped. The deploy script re-deploys the contracts; `register_citizens.js` re-registers the seed citizens into NDIDSRegistry.
->
-> **If you skip `register_citizens.js`, every identity lookup will return `false`** — even for citizens that appear in the UI seed data list. This is not a bug. The blockchain simply has no record of them yet because the registration transactions were reset with the chain.
->
-> **The full sequence after every Anvil restart:**
-> ```bash
-> # 1. Kill and restart Anvil
-> pkill anvil && anvil &
->
-> # 2. Redeploy all contracts (from /contracts directory)
-> forge script script/Deploy.s.sol:DeploySamoaHub \
->   --rpc-url http://127.0.0.1:8545 \
->   --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
->   --broadcast -vvvv
->
-> # 3. Re-register seed citizens (from repo root)
-> node register_citizens.js
->
-> # 4. Reload the frontend in your browser (Ctrl+R or Cmd+R)
-> ```
->
-> After step 3, the Identity Registry tab in the SBS dashboard will show all seed citizens as ✅ On-chain, and identity lookups for `CITIZEN-WS-001` through `CITIZEN-WS-010` will return `true`.
-
-### Run tests
-
-```bash
-cd contracts && forge test -vv
+cd ../frontend && npm install && npm run dev
 ```
 
 ---
 
-## The Broader Programme
+## Testnet Barrier — The Honest Funding Argument
 
-This government interoperability pilot is one part of a wider suite of work Synergy Blockchain Pacific is developing in parallel.
+The previous version of this README noted testnet deployment as blocked. **That barrier is now resolved.** All 9 contracts are live and verified on Polygon Amoy.
 
-**Government Interoperability Hub** (this repository) — the foundation layer. Seven ministry nodes connected through a permissioned hub. This same architecture scales to enterprise supply chain, cross-border trade facilitation, and any use case requiring trusted data sharing between organisations that do not fully trust each other.
+This section is retained to document the honest reality of building infrastructure without funding: what took a well-resourced team hours took us significantly longer — navigating RPC limits, gas configuration for a new network, dependency management on an isolated connection, and debugging deployment tooling without a support team. Every one of those barriers was a resource problem, not a technical one.
 
-**CBS Stablecoin / CBDC Consultation** — we are in early conversations with the Central Bank of Samoa about a WST-pegged stablecoin pilot. The CBS ministry node in this system is designed as the foundation for that payment rail. Benefit disbursements tracked on chain today, settled in digital WST when the infrastructure is ready.
+UNICEF funding does not just accelerate development. It removes the friction that makes every step harder than it needs to be for a team building in the Pacific without institutional support.
 
-**Indigenous Community DAO Pilot** — a parallel pilot applying permissioned blockchain governance to an indigenous Iwi community in Aotearoa New Zealand. This work informs our approach to data sovereignty and community-controlled identity in the Pacific context, and demonstrates that our team can operate across different community governance structures.
+---
 
-**Enterprise and Supply Chain** — the same permissioned network architecture that connects government ministries applies directly to enterprise supply chain tracking, financial management, and cross-border trade — aligned with the UNCTAD Trade Facilitation standards targeted for global adoption by 2029. This is the long-term business model that makes Synergy Blockchain Pacific sustainable.
+## Phase 2 — What We Are Building Next
 
-None of these are funded. All of them are active. This is what a committed small team looks like before the funding arrives.
+Layer 2 contracts currently in architecture and design:
+
+| Contract | Function | Standards |
+|---|---|---|
+| `TradeDocument.sol` | eBL, Certificate of Origin, SPS Certificate, Letter of Credit | DCSA eBL 3.0.2, UNCITRAL MLETR, ICC DSI |
+| `BusinessRegistry.sol` | MCIL-anchored business identity, AML risk tier | WCO SAFE AEO, FATF |
+| `SupplyChain.sol` | Product provenance, custody chain, IoT oracle hooks, anti-theft alerts | GS1, Codex Alimentarius, HACCP |
+| `TradeFinance.sol` | Smart contract escrow, milestone L/C, INCOTERM-conditional release | DCSA eBL, UCP 600 |
+| `WorkflowB2B.sol` | Purchase order, delivery confirmation, invoice settlement | UN/CEFACT |
+| `ComplianceGuard.sol` | AML risk tier, Chainlink watchlist oracle, CTR/STR auto-reporting | FATF, MLPA 2007 |
+| `IMaritimerSingleWindow.sol` | IMO FAL Convention MSW — vessel arrival/departure coordination | IMO FAL 2024 |
+
+**IoT Integration:** LoRaWAN cold chain monitoring, GPS route verification, tamper-evident seals — feeding parametric insurance smart contracts via Chainlink oracle adapters.
+
+---
+
+## Roadmap
+
+### Phase 1 — Proof of Concept ✅ Complete (self-funded)
+- [x] 4 smart contracts written and tested — 29 passing tests
+- [x] Slither static analysis audit — 0 critical, 0 high findings
+- [x] Security hardening — ReentrancyGuard, CEI pattern, indexed events, gas optimisation
+- [x] **Deployed and verified on Polygon Amoy public testnet — March 2026**
+- [x] 7 ministry dashboards with live contract reads
+- [x] Cross-ministry workflow engine with automatic pending action detection
+- [x] National Digital Identity System — privacy-preserving, hash-only, GDPR-aligned
+- [x] Auto-registration of citizens into NDIDS on every service record
+- [x] Duplicate submission detection across service records
+- [x] Payment routing with fee ownership enforcement per ministry
+- [x] AID Disbursement Tracker with milestone-based tranche release
+- [x] Samoa Bureau of Statistics (SBS) full identity dashboard
+- [x] Citizen-facing and officer-facing views of every service
+- [x] Contextual evidence note guidance for every service type
+- [x] Batch citizen registration tool for backfilling into NDIDS
+- [x] Downloadable blockchain-verified government certificates
+- [x] Government engagement suite — letters, proposals, briefings submitted to CBS, MCIT, MOF, MCIL, Customs, MWTI, SPA, MESC, MOR
+
+### Phase 2 — Trade & Supply Chain Layer (in active development)
+- [ ] `MilestoneEscrow.sol` abstract base — shared library extraction
+- [ ] `TradeDocument.sol` — DCSA eBL 3.0.2 full field implementation
+- [ ] `BusinessRegistry.sol` — MCIL-anchored business identity
+- [ ] `SupplyChain.sol` — GS1 provenance, IoT oracle hooks, anti-theft alerts
+- [ ] `TradeFinance.sol` — escrow, milestone L/C, dispute resolution
+- [ ] `WorkflowB2B.sol` — PO to invoice settlement pipeline
+- [ ] `ComplianceGuard.sol` — AML/CFT, Chainlink watchlist oracle
+- [ ] Maritime Single Window module — IMO FAL Convention compliance
+- [ ] Formal engagement with at least one Samoa government ministry
+- [ ] CBS Regulatory Sandbox MOU
+- [ ] Wallet-based authentication for ministry officers
+- [ ] IPFS integration for off-chain document storage with on-chain hash anchoring
+- [ ] ZK proof layer for NDIDS privacy enhancement
+- [ ] Government and youth education programme
+- [ ] CBS stablecoin pilot consultation
+
+### Phase 3 — Payment Rail (parallel track)
+- [ ] Stellar testnet anchor — WST Digital Payment Instrument pilot
+- [ ] SEP-0012 KYC/AML integration with NDIDS bridge
+- [ ] SEP-0031 NZ/AU to Samoa remittance corridor
+- [ ] Purpose-locked remittance product for diaspora (RemitSafe)
+- [ ] CBS mainnet deployment — conditional on sandbox MOU signature
+
+### Phase 4 — Privacy, Compliance & Security
+- [ ] Full AML/CFT oracle — Chainlink external adapter, OFAC + UN sanctions
+- [ ] IoT parametric insurance — cold chain, route deviation, tamper detection
+- [ ] Selective disclosure ZK proof implementation
+- [ ] Independent security audit — Code4rena or Sherlock competitive audit
+- [ ] UUPS proxy + timelock pattern across all production contracts
+
+### Phase 5 — Sovereign Geth Network
+- [ ] Three-node Geth QBFT consensus on physical hardware in Apia
+- [ ] Validator nodes: CBS + MCIT + neutral government data centre
+- [ ] Migration from Amoy testnet to sovereign chain
+- [ ] Island-mode operation testing — graceful degradation verification
+
+### Phase 6 — Pacific Regional Consortium
+- [ ] PacificChain white-label deployment — Fiji as first partner node
+- [ ] ADB Pacific regional infrastructure funding application
+- [ ] Multi-nation permissioned chain — each nation sovereign over own node
+- [ ] Samoa national project → Pacific Digital Sovereignty Infrastructure
+
+---
+
+## Built With
+
+- [Solidity 0.8.24](https://soliditylang.org/) — Smart contracts
+- [Foundry](https://book.getfoundry.sh/) — Testing, auditing, and deployment framework
+- [OpenZeppelin Contracts v5.1.0](https://openzeppelin.com/contracts/) — Security primitives (ReentrancyGuard)
+- [Polygon Amoy](https://polygon.technology/) — Public testnet deployment
+- [ethers.js v6](https://docs.ethers.org/v6/) — Live contract reads and transaction signing
+- [React 18](https://react.dev/) — Multi-stakeholder dashboard frontend
+- [Vite](https://vitejs.dev/) — Build tooling
+- [Slither](https://github.com/crytic/slither) — Static analysis security audit
+
+---
+
+## Repository Structure
+
+```
+samoa-pacific-blockchain-hub/
+├── contracts/
+│   ├── src/                          # Smart contracts
+│   │   ├── NDIDSRegistry.sol         # National Digital ID System
+│   │   ├── AIDisbursementTracker.sol # UNICEF grant milestone tracker
+│   │   ├── InteroperabilityHub.sol   # Cross-ministry coordination
+│   │   └── MinistryNode.sol          # Individual ministry logic
+│   ├── test/                         # 29 automated tests
+│   ├── script/                       # Deployment scripts
+│   ├── broadcast/                    # Deployment receipts
+│   │   └── Deploy.s.sol/80002/       # Amoy testnet deployment record
+│   └── lib/                          # Dependencies (forge-std, OpenZeppelin)
+└── frontend/                         # React/Vite dashboard
+```
+
+---
+
+## License
+
+MIT — Open source for the Pacific and beyond.
+
+See [LICENSE.txt](./LICENSE.txt) for full terms. Built and owned by Synergy Blockchain Pacific · Anthony George Williams · 2026.
+
+---
+
+## Parallel Applications and Submissions
+
+This repository is the primary submission to the **UNICEF Venture Fund 2026** — focused on the children, aid accountability, and government service delivery dimensions of the system.
+
+We are also preparing a parallel submission to **UNCTAD** focused on the trade facilitation, customs workflow, and interoperability framework components — directly aligned with the UNCTAD Trade Facilitation blockchain standard targeted for global adoption by 2029.
+
+A separate **CBS Stablecoin Pilot** is in development — a WST-pegged digital currency architecture designed in consultation with the Central Bank of Samoa, intended as the payment rail that connects this interoperability system to real financial settlement.
+
+These are not separate projects. They are three layers of the same Pacific blockchain infrastructure programme — identity and interoperability, trade facilitation, and digital currency — being built in parallel by the same small team with no external funding.
 
 ---
 
@@ -427,90 +368,16 @@ A young Samoan developer trained in permissioned blockchain networks today is no
 
 ## What UNICEF Funding Would Enable
 
-- Move from proof of concept to a real government pilot with at least one Samoa ministry
-- Fund the education programme running alongside development — workshops, government briefings, public literacy about what blockchain is and is not
+- Complete Phase 2 trade document and supply chain layer — six new standards-aligned contracts
+- Maritime Single Window implementation for Samoa Ports Authority — IMO FAL Convention compliance
+- Formal government pilot with at least one Samoa ministry
+- CBS Regulatory Sandbox progression to MOU and WST stablecoin pilot
+- IoT cold chain monitoring integration — parametric insurance for Pacific perishable imports
+- Fund the education programme running alongside development — workshops, government briefings, public literacy
 - Establish the first formal blockchain infrastructure deployment in Samoa's public sector
 - Create replicable open-source documentation so other Pacific nations can adopt the same approach without starting from zero
 - Grow the team to deliver education and development in parallel
-- Begin the CBS stablecoin pilot consultation with proper resourcing
-- Deploy dedicated SBSRegistry contract for the Samoa Bureau of Statistics identity system
-- Integrate BSP, Vodafone M-Pay, and Digicel MyCash payment APIs for live transaction processing
 - Demonstrate to Samoa's government that the 2029 commitments are achievable with local capability, not just imported solutions
-
----
-
-## Parallel Applications and Submissions
-
-This repository is the primary submission to the **UNICEF Venture Fund 2026** — focused on the children, aid accountability, and government service delivery dimensions of the system.
-
-We are also preparing a parallel submission to **UNCTAD** focused on the trade facilitation, customs workflow, and interoperability framework components — directly aligned with the UNCTAD Trade Facilitation blockchain standard targeted for global adoption by 2029.
-
-A separate **CBS Stablecoin Pilot** repository is in development — a WST-pegged digital currency architecture designed in consultation with the Central Bank of Samoa, intended as the payment rail that connects this interoperability system to real financial settlement.
-
-These are not separate projects. They are three layers of the same Pacific blockchain infrastructure programme — identity and interoperability, trade facilitation, and digital currency — being built in parallel by the same small team with no external funding.
-
----
-
-## Roadmap
-
-### Phase 1 — Proof of Concept ✅ Complete (self-funded)
-- [x] 4 smart contracts written and tested — 28+ passing tests
-- [x] 7 ministry dashboards with live contract reads
-- [x] Cross-ministry workflow engine with automatic pending action detection
-- [x] National Digital Identity System — privacy-preserving, hash-only, GDPR-aligned
-- [x] Auto-registration of citizens into NDIDS on every service record
-- [x] Duplicate submission detection across service records
-- [x] Payment routing with fee ownership enforcement per ministry
-- [x] AID Disbursement Tracker with milestone-based tranche release
-- [x] Samoa Bureau of Statistics (SBS) full identity dashboard
-- [x] Citizen-facing and officer-facing views of every service
-- [x] Contextual evidence note guidance for every service type
-- [x] Batch citizen registration tool for backfilling into NDIDS
-- [x] Downloadable blockchain-verified government certificates
-- [x] Government engagement suite — letters, proposals, briefings
-- [ ] Testnet deployment — blocked by RPC rate limits and gas constraints
-
-### Phase 2 — Pilot (requires funding — applying now)
-- [ ] Paid RPC endpoint to complete public testnet deployment
-- [ ] Formal engagement with at least one Samoa government ministry
-- [ ] Dedicated SBSRegistry smart contract deployment
-- [ ] Wallet-based authentication for ministry officers
-- [ ] BSP, Vodafone M-Pay, and Digicel MyCash payment API integration
-- [ ] IPFS integration for off-chain document storage with on-chain hash anchoring
-- [ ] ZK proof layer for NDIDS privacy enhancement
-- [ ] Government and youth education programme
-- [ ] CBS stablecoin pilot with proper resourcing
-- [ ] UNCTAD trade facilitation submission
-- [ ] Public launch and Pacific regional documentation
-
-### Phase 3 — Production and Regional Expansion (2027–2029)
-- [ ] Live government deployment in Samoa — One Government Portal integration
-- [ ] Enterprise and supply chain implementations
-- [ ] Regional Pacific expansion — replicable model for Pacific Island nations
-- [ ] AI-assisted anomaly detection and cross-ministry fraud flagging
-- [ ] Multi-sig wallet governance for ministry administrators
-- [ ] SMS gateway for outer islands with limited internet connectivity
-- [ ] Alignment with UNCTAD 2029 global trade facilitation standard
-- [ ] Contribution to Samoa 2025–2030 ICT Development Plan targets
-
----
-
-## Built With
-
-- [Solidity 0.8.20](https://soliditylang.org/) — Smart contracts
-- [Foundry](https://book.getfoundry.sh/) — Testing and deployment framework
-- [Polygon](https://polygon.technology/) — EVM-compatible public blockchain (testnet target)
-- [ethers.js v6](https://docs.ethers.org/v6/) — Live contract reads and transaction signing
-- [React 18](https://react.dev/) — Multi-stakeholder dashboard frontend
-- [Vite](https://vitejs.dev/) — Build tooling
-
----
-
-## License
-
-MIT — Open source for the Pacific and beyond.
-
-See [LICENSE.txt](./LICENSE.txt) for full terms. Built and owned by Synergy Blockchain Pacific · Anthony George Williams · 2026.
 
 ---
 

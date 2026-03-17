@@ -183,37 +183,38 @@ import { ethers } from "ethers";
 // ---
 // NETWORK CONFIG
 // ---
+// LIVE — Polygon Amoy Testnet (Chain ID 80002) — deployed March 2026
 const CONFIG = {
-  RPC_URL:  "http://127.0.0.1:8545",   // Anvil local
-  NETWORK:  "Anvil Local",
-  POLL_MS:  3000,
-  // Explicit network passed to JsonRpcProvider to prevent ethers v6
-  // attempting ENS resolution on unknown networks (chainId 31337 = Anvil/Hardhat)
-  ETH_NETWORK: { chainId: 31337, name: "anvil" },
+  RPC_URL:     "https://polygon-amoy.g.alchemy.com/v2/BFqRyw7KgnGNql0DYQbZf",
+  NETWORK:     "Polygon Amoy Testnet",
+  POLL_MS:     6000,
+  ETH_NETWORK: { chainId: 80002, name: "amoy" },
 };
 
-const DEPLOYER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-
+// Read-only provider for public testnet — no private key needed for reads
+// Transactions require MetaMask or a connected wallet
 function getSigner(provider) {
   if (!provider) return null;
-  return new ethers.Wallet(DEPLOYER_KEY, provider);
+  // Return provider as read-only — write functions will prompt MetaMask
+  return provider;
 }
 
 // ---
-// CONTRACT ADDRESSES -- deterministic Anvil
+// CONTRACT ADDRESSES — Polygon Amoy Testnet
+// Deployed: 18 March 2026 | Verified on Polygonscan
 // ---
 const ADDR = {
-  NDIDS:     "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-  AID:       "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-  HUB:       "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-  CBS:       "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
-  MCIT:      "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
-  MOF:       "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
-  MCIL:      "0x0165878A594ca255338adfa4d48449f69242Eb8F",
-  EDUCATION: "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
-  CUSTOMS:   "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
-  // SBS uses the NDIDSRegistry contract for MVP — dedicated SBSRegistry contract post-funding
-  SBS:       "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  NDIDS:     "0x0E832d0C324Cd70ca58Dd1B0965151167853cE42",
+  AID:       "0x3fD12fe1400BD9B8cd7ebE59C47EA27ab6bF5EdB",
+  HUB:       "0x6c213b53b41c325317dF0443442b0eae9c7618Cc",
+  CBS:       "0xeC404FB5564da6f6c77DD7C8A694B1A3fFCe99c1",
+  MCIT:      "0x4F117fdC9BB2b781d52731E5674f669Bfe1E6402",
+  MOF:       "0x8c26B5E477d6feFf2a75C0Fbd7f3667c4dB07FC4",
+  MCIL:      "0xe9b67Df4a062C20167D963DD74fc436c1B83EceD",
+  EDUCATION: "0xa3Cb3B9A6DF26cd550A6D8A49EF693c78750F27d",
+  CUSTOMS:   "0x6462197ff41c7EbA925e0F9EB980e61454e40366",
+  // SBS uses NDIDSRegistry for MVP — dedicated SBSRegistry contract in Phase 2
+  SBS:       "0x0E832d0C324Cd70ca58Dd1B0965151167853cE42",
 };
 
 // ---

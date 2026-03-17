@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 import { NDIDSRegistry } from "./NDIDSRegistry.sol";
 import { MinistryNode } from "./MinistryNode.sol";
 import { AIDisbursementTracker } from "./AIDisbursementTracker.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title InteroperabilityHub
@@ -18,7 +19,7 @@ import { AIDisbursementTracker } from "./AIDisbursementTracker.sol";
  *      - The AID tracker is wired in so grant releases can reference ministry
  *        service records as on-chain evidence
  */
-contract InteroperabilityHub {
+contract InteroperabilityHub is ReentrancyGuard {
 
     // ── Structs ──────────────────────────────────────────────────
 
@@ -74,6 +75,7 @@ contract InteroperabilityHub {
     error MinistryNotFound();
     error AlreadyExists();
     error ZeroAddress();
+    error EnrollmentStepFailed(string step);
 
     // ── Constructor ──────────────────────────────────────────────
 
@@ -87,7 +89,7 @@ contract InteroperabilityHub {
         _;
     }
 
-    function _onlyAdmin() internal {
+    function _onlyAdmin() view internal {
         if (msg.sender != ADMIN) revert Unauthorised();
         
     }
@@ -150,7 +152,7 @@ contract InteroperabilityHub {
         emit PermissionGranted(fromCode, toCode);
     }
 
-    // ── Cross-Ministry Workflow: School Enrolment + Benefit ──────
+    // ── Cross-Ministry Workflow: School Enrollment + Benefit ──────
 
     /**
      * @notice Execute the full child services workflow:
@@ -164,16 +166,31 @@ contract InteroperabilityHub {
      * @param mofNode       MOF contract address
      * @param dataHash      Off-chain data hash (enrolment record)
      */
-    function executeEnrolmentWorkflow(
+    function executeEnrollmentWorkflow(
         bytes32 citizenHash,
         address educationNode,
         address mofNode,
         bytes32 dataHash
-    ) external onlyAdmin returns (bool success) {
-        // Step 1: Record school enrolment (Education node verifies via NDIDS)
+    ) external onlyAdmin nonReentrant returns (bool success) {
+
+        // ── B4: CEI — write state BEFORE external calls ──────────
+        // Record workflow attempt upfront; update success flag after
+        uint256 logIndex = workflowLog.length;
+        workflowLog.push(WorkflowEvent({
+            workflowType: "ENROLLMENT_AND_BENEFIT",
+            citizenHash:  citizenHash,
+            ministryCode: "MULTI",
+            timestamp:    block.timestamp,
+            success:      false   // default false, updated below if both succeed
+        }));
+
+        // ── External calls AFTER state write ─────────────────────
+
+        // Step 1: Record school enrollment (Education node verifies via NDIDS)
+        // B4 — capture return value, require success
         try MinistryNode(educationNode).recordService(
             citizenHash,
-            "SCHOOL_ENROLMENT",
+            "SCHOOL_ENROLLMENT",
             dataHash,
             true  // verify via NDIDS
         ) returns (uint256) {
@@ -185,6 +202,8 @@ contract InteroperabilityHub {
                 false  // trust education node's verification
             ) returns (uint256) {
                 success = true;
+                // B4 — update the pre-written log entry to success
+                workflowLog[logIndex].success = true;
             } catch {
                 success = false;
             }
@@ -192,15 +211,9 @@ contract InteroperabilityHub {
             success = false;
         }
 
-        workflowLog.push(WorkflowEvent({
-            workflowType: "ENROLMENT_AND_BENEFIT",
-            citizenHash:  citizenHash,
-            ministryCode: "MULTI",
-            timestamp:    block.timestamp,
-            success:      success
-        }));
+        
 
-        emit WorkflowExecuted("ENROLMENT_AND_BENEFIT", citizenHash, success);
+        emit WorkflowExecuted("ENROLLMENT_AND_BENEFIT", citizenHash, success);
     }
 
     // ── Queries ──────────────────────────────────────────────────

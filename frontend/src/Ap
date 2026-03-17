@@ -184,9 +184,12 @@ import { ethers } from "ethers";
 // NETWORK CONFIG
 // ---
 const CONFIG = {
-  RPC_URL: "http://127.0.0.1:8545",   // Anvil local
-  NETWORK: "Anvil Local",
-  POLL_MS: 3000,
+  RPC_URL:  "http://127.0.0.1:8545",   // Anvil local
+  NETWORK:  "Anvil Local",
+  POLL_MS:  3000,
+  // Explicit network passed to JsonRpcProvider to prevent ethers v6
+  // attempting ENS resolution on unknown networks (chainId 31337 = Anvil/Hardhat)
+  ETH_NETWORK: { chainId: 31337, name: "anvil" },
 };
 
 const DEPLOYER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
@@ -209,6 +212,8 @@ const ADDR = {
   MCIL:      "0x0165878A594ca255338adfa4d48449f69242Eb8F",
   EDUCATION: "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
   CUSTOMS:   "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+  // SBS uses the NDIDSRegistry contract for MVP — dedicated SBSRegistry contract post-funding
+  SBS:       "0x5FbDB2315678afecb367f032d93F642f64180aa3",
 };
 
 // ---
@@ -220,6 +225,8 @@ const ABI = {
     "function isRegistered(bytes32) view returns (bool)",
     "function hasAccess(bytes32, address) view returns (bool)",
     "function serviceCount(bytes32) view returns (uint256)",
+    "function registerCitizen(bytes32 citizenHash) external",
+    "function batchRegisterCitizens(bytes32[] citizenHashes) external",
     "event CitizenRegistered(bytes32 indexed citizenHash, uint256 timestamp)",
   ],
   AID: [
@@ -293,7 +300,7 @@ const MINISTRY_META = {
 const MINISTRY_ADDRS = {
   CBS:ADDR.CBS, MCIT:ADDR.MCIT, MOF:ADDR.MOF,
   MCIL:ADDR.MCIL, EDUCATION:ADDR.EDUCATION, CUSTOMS:ADDR.CUSTOMS,
-  SBS: "0x0000000000000000000000000000000000000SBS", // placeholder — deploy SBSRegistry post-funding
+  SBS: ADDR.SBS,
 };
 
 // ---
@@ -1031,6 +1038,63 @@ Object.entries(WORKFLOW_DEFS).forEach(([wfId, wf]) => {
 // Rule: true  = this ministry CAN verify this serviceType via NDIDS
 //       false = payment/processing step -- identity already verified upstream
 // ---
+// =============================================================================
+// EVIDENCE NOTE GUIDANCE
+// Contextual placeholder text shown to officers/citizens for each service type.
+// The evidence note is hashed on-chain — it creates an immutable link between
+// the blockchain record and the supporting documentation held by the ministry.
+// Examples of what to enter are shown per service type.
+// =============================================================================
+const EVIDENCE_GUIDANCE = {
+  // SBS identity services
+  DIGITAL_ID_ISSUED:        "SBS office verification date, ID application ref, biometric capture ref (in-person). e.g. SBS-APP-2025-001 | In-person verified 08/03/2026 | Photo ID confirmed",
+  BIRTH_CERT_ISSUED:        "Birth registration number, parents' names (initials only), hospital/location. e.g. BREG-2025-4521 | Born Motootua Hospital | Parents: S.F. & L.F.",
+  PASSPORT_REGISTERED:      "Passport application reference, SBS officer ID, MFAT submission ref. e.g. PASS-APP-2026-0089 | Submitted to MFAT 08/03/2026 | Officer: SBS-OFF-003",
+  DRIVERS_LICENCE_DIGITAL:  "Licence application ref, LTA test pass date, licence class. e.g. LTA-2026-1234 | Class 2 | Test passed 01/03/2026 | SBS digital record issued",
+  ELECTIONS_ID_VERIFIED:    "Electoral roll entry ref, electorate, verification method. e.g. ELEC-2026-APIA-WEST-0456 | Electorate: Apia West | ID verified via National Digital ID",
+  IDENTITY_HASH_UPDATE:     "Reason for update, changed fields (no PII), authorising officer. e.g. Name change — marriage certificate ref MC-2026-0123 | Officer: SBS-OFF-002",
+  // MCIL services
+  COMPANY_REGISTRATION:     "Company name, Companies Act reference, directors count. e.g. Pacific Trading Ltd | Co. No. 2025-1234 | 2 directors | Registered capital WST 50,000",
+  TRADE_LICENCE_UPDATED:    "Trade licence number, business category, renewal period. e.g. TL-2025-0892 | General Merchandise | Valid 01/01/2026–31/12/2026",
+  FOREIGN_INVESTMENT_APPROVED: "Investment amount (WST), sector, country of origin. e.g. NZD 500,000 | Tourism sector | NZ investor | MCIL-FDI-2026-008",
+  LABOUR_CONTRACT_RECORDED: "Certificate number, investment amount, employment commitment. e.g. MCIL-IC-2026-045 | WST 200,000 investment | 15 local jobs committed",
+  DISPUTE_RESOLUTION_RECORDED: "Case reference, parties (initials), outcome summary. e.g. CASE-2026-112 | Employer S.F. vs Employee L.T. | Resolved: compensation awarded",
+  // MOF services
+  BUSINESS_LICENCE_DIGITAL: "Company registration ref, licence category, MOF file ref. e.g. Co. No. 2025-1234 | Licence Cat B — Retail | MOF-BL-2026-0234",
+  TAX_COMPLIANCE_VERIFIED:  "TIN number (last 4 digits only), tax year, compliance status. e.g. TIN ****5678 | FY2025 | All returns filed | No outstanding balance",
+  BUDGET_ALLOCATION_RECORDED: "Budget line ref, ministry, purpose, financial year. e.g. MOF-BL-2026-034 | EDUCATION | School programme | FY2026 Q1",
+  DUTY_PROCESSED:           "Customs entry ref, shipment ref, duty amount. e.g. CUS-2026-0445 | Shipment SPC-2026-112 | Duty WST 4,250 confirmed",
+  EDUCATION_BENEFIT_ELIGIBLE_2025: "School enrolment ref, beneficiary ref (no name), approved amount. e.g. EDU-BEN-2026-0234 | School: Leifiifi College | WST 350 approved",
+  SOCIAL_WELFARE_PAYMENT_2025: "Welfare case ref, payment method, amount. e.g. WEL-2026-0567 | Direct to CBS account | WST 350 | MOF-WEL approved",
+  // CBS services
+  ACCOUNT_OPENED:           "Account type, branch, application ref. e.g. Savings account | Apia Branch | CBS-ACC-2026-1234 | Initial deposit WST 50",
+  REMITTANCE_RECEIVED:      "Sender country, transfer ref, receiving bank. e.g. From NZ | WU-2026-ABC123 | WST 1,200 | Received Apia CBS",
+  LOAN_APPROVED:            "Loan type, amount, term, application ref. e.g. Personal loan | WST 5,000 | 24 months | CBS-LOAN-2026-0089",
+  DIGITAL_PAYMENT_RECORDED: "Payment purpose, from/to (refs only), transaction ref. e.g. School fee payment | EDUC to CBS | TXN-2026-0123 | WST 350",
+  STABLECOIN_ISSUANCE:      "Fiat deposit ref, WST amount issued, purpose. e.g. Bank deposit BSP-DEP-2026-0056 | WST 1,000 issued | Trade settlement",
+  // MCIT services
+  SPECTRUM_LICENCE_ISSUED:  "Frequency band, licence category, term. e.g. 900MHz Band | Cat A Mobile | Digicel Samoa | Valid 2026–2028 | MCIT-SPEC-2026-003",
+  CYBERSECURITY_AUDIT:      "Organisation ref, audit scope, pass/fail, auditor ref. e.g. BSP Samoa | Network security audit | PASSED | Auditor: MCIT-AUD-006 | 08/03/2026",
+  ICT_REGISTRATION:         "Sector, investment amount, clearance type. e.g. Telecommunications | WST 2,000,000 | Spectrum and licensing clearance | MCIT-ICT-2026-012",
+  // CUSTOMS services
+  SHIPMENT_CLEARED_2025:    "Bill of lading, vessel/airline, origin country, cargo type. e.g. BL-2026-PSC-0892 | MV Pacific Star | China | Electronics — 3 containers",
+  TRADE_FACILITATION_RECORD: "Customs entry ref, duty paid ref, inspection result. e.g. CE-2026-4521 | Duty WST 12,400 — MOF confirmed | Inspection: PASS | Released",
+  TARIFF_CLASSIFICATION:    "HS code assigned, goods description, ruling ref. e.g. HS 8471.30 — Laptops | Qty 200 | Tariff ruling CSTMS-TR-2026-0045",
+  BOND_WAREHOUSE_RECORD:    "Warehouse operator, entry ref, goods description, bond amount. e.g. Pacific Logistics Bond Store | BWR-2026-0123 | Electronics | Bond WST 25,000",
+  PROHIBITED_GOODS_FLAGGED: "Item description (generic), reason flagged, enforcement ref. e.g. Suspected counterfeit goods — Customs Act s.47 | ENF-2026-0089 | Seized pending review",
+  // EDUCATION services
+  SCHOOL_ENROLMENT_2025:    "School name, year level, enrolment ref. e.g. Leifiifi College | Year 11 | ENROL-2026-0234 | Identity verified via SBS NDIDS",
+  ATTENDANCE_RECORD:        "School, term, attendance percentage, period. e.g. Leifiifi College | Term 1 2026 | 92% attendance | Benefit confirmed received",
+  GRADUATION_RECORD:        "School, qualification, year, certificate ref. e.g. Samoa College | Year 13 NCEA Level 3 | 2025 | GRAD-2025-0456",
+  SCHOLARSHIP_AWARDED:      "Scholarship name, institution, value, ref. e.g. Samoa Government Scholarship | USP Suva | WST 12,000/year | SCHOL-2026-0023",
+  SPECIAL_NEEDS_SUPPORT:    "Support type, school, provider, assessment ref. e.g. Learning support | Vaimauga Primary | OT assessment SNS-2026-0034",
+};
+
+// Helper: get evidence guidance for a service type
+function getEvidenceGuidance(serviceType) {
+  return EVIDENCE_GUIDANCE[serviceType] || "Reference number, supporting document ref, officer notes, date of verification.";
+}
+
 const NDIDS_POLICY = {
   // EDUCATION -- owns edu citizens, verifies all its own service types
   EDUCATION: {
@@ -1130,6 +1194,47 @@ const WORKFLOWS = {
 };
 
 // ---
+// =============================================================================
+// SEED CITIZENS — demo citizens pre-loaded into the SBS registry
+// =============================================================================
+// These are the citizens already recorded across ministry dashboards in the
+// demo/test transactions. Their hashes match what is stored on-chain when
+// demo transactions are run. Replace with real WS- IDs when going to production.
+//
+// Hash format: keccak256(citizenId) — same as what the Record Service form produces.
+// e.g. ethers.keccak256(ethers.toUtf8Bytes("CITIZEN-WS-001"))
+//
+// To add real citizens: enter their WS- National ID or business number in the
+// SBS Bulk Register tool — the app hashes it before sending to chain.
+// PII (the plain ID) is NEVER sent to or stored on-chain.
+// =============================================================================
+const SEED_CITIZENS = [
+  // ── Demo citizens from existing ministry transactions ──────────────────
+  { id:"CITIZEN-WS-001", label:"Demo Citizen 01",        sector:"Education/Welfare",  note:"Used in EDU-BENEFIT workflow demo" },
+  { id:"CITIZEN-WS-002", label:"Demo Citizen 02",        sector:"Trade/Business",     note:"Used in CUSTOMS-CLEAR workflow demo" },
+  { id:"CITIZEN-WS-003", label:"Demo Citizen 03",        sector:"Business",           note:"Used in BIZ-LICENCE workflow demo" },
+  { id:"CITIZEN-WS-004", label:"Demo Citizen 04",        sector:"Education",          note:"Used in UNICEF-TRANCHE workflow demo" },
+  { id:"CITIZEN-WS-005", label:"Demo Citizen 05",        sector:"Welfare/Finance",    note:"Used in WELFARE workflow demo" },
+  // ── SOE payers ────────────────────────────────────────────────────────
+  { id:"SOE-EPC-2025-001", label:"Electric Power Corporation", sector:"Business/SOE", note:"SOE payer — government fee account" },
+  { id:"SOE-SWA-2025-002", label:"Samoa Water Authority",      sector:"Business/SOE", note:"SOE payer — government fee account" },
+  // ── Additional demo citizens for SBS services ─────────────────────────
+  { id:"CITIZEN-WS-006", label:"Demo Citizen 06",        sector:"Identity",           note:"SBS Digital ID demo" },
+  { id:"CITIZEN-WS-007", label:"Demo Citizen 07",        sector:"Identity",           note:"SBS Birth Certificate demo" },
+  { id:"CITIZEN-WS-008", label:"Demo Citizen 08",        sector:"Identity/Elections", note:"SBS Voter Registration demo" },
+  { id:"CITIZEN-WS-009", label:"Demo Business 01",       sector:"Business/Trade",     note:"Company Registration + Trade Licence demo" },
+  { id:"CITIZEN-WS-010", label:"Demo Foreign Investor",  sector:"Business/FDI",       note:"FOREIGN-INV workflow demo" },
+];
+
+// Pre-compute hashes for SEED_CITIZENS so the SBS dashboard can display them
+// without needing ethers at render time. These are deterministic keccak256 hashes.
+// Production note: real citizen hashes are computed at point of registration —
+// the plain ID never leaves the officer's browser.
+function getSeedHash(citizenId) {
+  // We use a simple consistent hash derivation matching what the Record Service form does
+  return ethers.keccak256(ethers.toUtf8Bytes(citizenId));
+}
+
 // FALLBACK MOCK DATA
 // ---
 const MOCK = {
@@ -1714,7 +1819,7 @@ function useProvider() {
   useEffect(() => {
     let p;
     try {
-      p = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
+      p = new ethers.JsonRpcProvider(CONFIG.RPC_URL, CONFIG.ETH_NETWORK, { staticNetwork: true });
       p.getBlockNumber()
         .then(() => { setProvider(p); setConnected(true); setError(null); })
         .catch(() => { setError("Cannot connect to "+CONFIG.RPC_URL); setConnected(false); });
@@ -1861,7 +1966,7 @@ function RecordsTab({ records, totalRecords, loading, connected, ministry }) {
 // ---
 // RECORD SERVICE TAB -- full payment flow, dual officer/citizen view, fee schedule, credential generation
 // ---
-function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefill }) {
+function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefill, allRecords }) {
   const meta         = MINISTRY_META[ministryCode];
   const addr         = MINISTRY_ADDRS[ministryCode];
   const serviceTypes = SERVICE_TYPES[ministryCode] || [];
@@ -1952,6 +2057,35 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
       const rawId    = form.citizenId.trim();
       const cHash    = (rawId.startsWith("0x") && rawId.length === 66)
         ? rawId : ethers.keccak256(ethers.toUtf8Bytes(rawId));
+
+      // ── Duplicate detection ─────────────────────────────────────────────
+      // Check 1: Has this citizen already received this exact service?
+      const existingServiceRecord = (allRecords||[]).find(r =>
+        r.citizenHash?.toLowerCase() === cHash.toLowerCase() &&
+        r.serviceType === form.serviceType
+      );
+      if (existingServiceRecord) {
+        const blockRef = existingServiceRecord.blockNumber ? ` (block ${existingServiceRecord.blockNumber})` : "";
+        setTxMsg({ type:"error",
+          text:`⚠ Duplicate detected: this citizen already has a ${serviceLabel(form.serviceType)} record on-chain${blockRef}. `+
+               `If this is a renewal or update, change the service type or add a renewal note to the evidence field. `+
+               `Production version will flag duplicate identities across ministries.`
+        });
+        setSubmitting(false);
+        return;
+      }
+      // Check 2: Same citizen hash appearing under multiple raw IDs (cross-ministry duplicate)
+      // In production this will query the InteroperabilityHub — for MVP we check local records
+      const otherMinistryRecords = (allRecords||[]).filter(r =>
+        r.citizenHash?.toLowerCase() === cHash.toLowerCase() &&
+        r.ministryCode && r.ministryCode !== ministryCode
+      );
+      if (otherMinistryRecords.length >= 3) {
+        // Not a block — just a soft warning surfaced in txMsg after success
+        // We store it to show after submit
+        console.info(`[NDIDS] Citizen hash seen in ${otherMinistryRecords.length} other ministry records — normal for workflow steps`);
+      }
+      // ── End duplicate detection ─────────────────────────────────────────
       // Evidence includes payment reference for immutable audit
       const payRef   = form.paymentRef?.trim() || `${form.paymentMethod}|REF-${Date.now().toString(36).toUpperCase()}`;
       const evidence = form.evidenceNote?.trim()
@@ -1961,6 +2095,29 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
       const tx       = await contract.recordService(cHash, form.serviceType, dHash, form.ndidsVerified);
       setTxMsg({ type:"info", text:"Awaiting confirmation…" });
       const receipt  = await tx.wait();
+
+      // ── Auto-register citizen in NDIDSRegistry ──────────────────────────
+      // Every citizen who receives a service record is automatically registered
+      // in NDIDSRegistry so the two systems stay permanently in sync.
+      // Runs silently — "already registered" errors are ignored.
+      // This ensures backfill happens naturally as officers process services.
+      try {
+        const ndidsSigner   = new ethers.Contract(ADDR.NDIDS, ABI.NDIDS, signer);
+        const alreadyInNDIDS = await ndidsSigner.isRegistered(cHash).catch(()=>false);
+        if (!alreadyInNDIDS) {
+          const ndidsTx = await ndidsSigner.registerCitizen(cHash);
+          await ndidsTx.wait();
+          // Silent success — no user-facing message needed
+        }
+      } catch(ndidsErr) {
+        // Never block the service record on an NDIDS registration failure.
+        // Officer sees a soft warning only — the service record is already confirmed.
+        const msg = ndidsErr?.reason || ndidsErr?.message || "";
+        if (!msg.toLowerCase().includes("already") && !msg.toLowerCase().includes("exist")) {
+          console.warn("NDIDS auto-register note:", msg);
+        }
+      }
+      // ── End auto-register ───────────────────────────────────────────────
       onSuccess({
         txHash:receipt.hash, citizenId:form.citizenId, serviceType:form.serviceType,
         evidenceNote:evidence, amount:form.amount, fee:form.fee,
@@ -2221,12 +2378,18 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
 
       {/* Evidence note */}
       <div style={{ marginBottom:"16px" }}>
-        <label style={labelStyle}>Evidence Note {form.viewMode==="citizen"?"(optional supporting details)":"(hashed on chain)"}</label>
+        <label style={labelStyle}>Evidence Note {form.viewMode==="citizen"?"(optional supporting details)":"(hashed on chain — required for audit)"}</label>
         <textarea value={form.evidenceNote} onChange={e=>setForm(f=>({...f,evidenceNote:e.target.value}))}
           placeholder={form.viewMode==="citizen"
             ? "Optional: reference number, invoice number, supporting context…"
-            : "Reference number, supporting documents, details…"}
+            : getEvidenceGuidance(form.serviceType)}
           rows={3} style={{ ...inStyle, resize:"vertical" }} />
+        {form.viewMode !== "citizen" && form.serviceType && (
+          <div style={{ fontSize:"10px", color:C.muted, marginTop:"4px", lineHeight:1.6 }}>
+            ℹ The evidence note is hashed with <code>keccak256</code> and stored on-chain, creating an immutable link to your supporting documents.
+            No PII should be included — use reference numbers, initials, and codes only.
+          </div>
+        )}
       </div>
 
       {/* Payment gate warning */}
@@ -2684,6 +2847,7 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
             connected={connected}
             onSuccess={handleSuccess}
             prefill={prefill}
+            allRecords={allRecords}
           />
         )}
 
@@ -3483,6 +3647,405 @@ function HubDashboard({ provider, connected, blockNumber, onBack, allRecords, al
   );
 }
 
+// =============================================================================
+// REGISTRY TAB — SBS Identity Registry
+// Three sections:
+//   1. Bulk Register tool — register citizens on-chain via NDIDSRegistry
+//   2. NDIDS Sync status — shows SEED_CITIZENS with on-chain verification
+//   3. SBS service records — on-chain records of SBS-issued documents
+// =============================================================================
+function RegistryTab({ SBS_CARD, SBS_PURPLE, myRecords, lastReceipt, idLookup, setIdLookup, provider, connected, onGoRecord }) {
+  const SBS_INPUT = { width:"100%", background:"#0F0820", border:`1px solid ${SBS_PURPLE}44`,
+    borderRadius:"8px", padding:"10px 14px", color:"#E9D5FF", fontSize:"13px",
+    fontFamily:F.ui, boxSizing:"border-box" };
+
+  // ── State ───────────────────────────────────────────────────────────────
+  const [bulkInput,      setBulkInput]      = useState("");        // textarea of WS- IDs
+  const [bulkMode,       setBulkMode]       = useState("seed");    // "seed" | "manual" | "csv"
+  const [registering,    setRegistering]    = useState(false);
+  const [regResults,     setRegResults]     = useState([]);        // [{id, hash, status, error}]
+  const [lookupResult,   setLookupResult]   = useState(null);
+  const [lookupLoading,  setLookupLoading]  = useState(false);
+  const [seedStatus,     setSeedStatus]     = useState({});        // { citizenId: "registered"|"not_registered"|"checking"|"error" }
+  const [seedChecked,    setSeedChecked]    = useState(false);
+
+  const ndidsContract = provider
+    ? new ethers.Contract(ADDR.NDIDS, ABI.NDIDS, provider)
+    : null;
+  const ndidsSigner = provider
+    ? new ethers.Contract(ADDR.NDIDS, ABI.NDIDS, provider.getSigner ? provider.getSigner() : provider)
+    : null;
+
+  // ── Check all seed citizens against NDIDSRegistry ───────────────────────
+  const checkSeedStatus = async () => {
+    if (!ndidsContract) {
+      // Offline mode — mark all as unverifiable
+      const s = {};
+      SEED_CITIZENS.forEach(c => { s[c.id] = "offline"; });
+      setSeedStatus(s);
+      setSeedChecked(true);
+      return;
+    }
+    const s = {};
+    SEED_CITIZENS.forEach(c => { s[c.id] = "checking"; });
+    setSeedStatus({...s});
+    for (const citizen of SEED_CITIZENS) {
+      try {
+        const h = getSeedHash(citizen.id);
+        const registered = await ndidsContract.isRegistered(h);
+        s[citizen.id] = registered ? "registered" : "not_registered";
+      } catch(e) {
+        s[citizen.id] = "error";
+      }
+      setSeedStatus({...s});
+    }
+    setSeedChecked(true);
+  };
+
+  // ── Register a single citizen by ID ────────────────────────────────────
+  const registerOne = async (citizenId) => {
+    const h = getSeedHash(citizenId.trim());
+    try {
+      if (!ndidsSigner) throw new Error("No signer — connect wallet");
+      const tx = await ndidsSigner.registerCitizen(h);
+      await tx.wait();
+      return { id:citizenId, hash:h, status:"registered", txHash:tx.hash };
+    } catch(e) {
+      const msg = e.message || "Unknown error";
+      // "already registered" is not a real error for our purposes
+      if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("exist")) {
+        return { id:citizenId, hash:h, status:"already_registered" };
+      }
+      return { id:citizenId, hash:h, status:"error", error:msg };
+    }
+  };
+
+  // ── Bulk register all seed citizens ────────────────────────────────────
+  const handleRegisterSeed = async () => {
+    setRegistering(true);
+    setRegResults([]);
+    const results = [];
+    for (const citizen of SEED_CITIZENS) {
+      const r = await registerOne(citizen.id);
+      results.push({ ...r, label: citizen.label });
+      setRegResults([...results]);
+    }
+    setRegistering(false);
+    // Refresh seed status
+    await checkSeedStatus();
+  };
+
+  // ── Register from manual textarea input ────────────────────────────────
+  const handleRegisterManual = async () => {
+    const ids = bulkInput.split("\n").map(s=>s.trim()).filter(Boolean);
+    if (!ids.length) return;
+    setRegistering(true);
+    setRegResults([]);
+    const results = [];
+    for (const id of ids) {
+      const r = await registerOne(id);
+      results.push(r);
+      setRegResults([...results]);
+    }
+    setRegistering(false);
+  };
+
+  // ── Lookup a single citizen by ID or hash ──────────────────────────────
+  const handleLookup = async () => {
+    if (!idLookup.trim()) return;
+    setLookupLoading(true);
+    setLookupResult(null);
+    try {
+      const isHash = idLookup.trim().startsWith("0x") && idLookup.trim().length === 66;
+      const h = isHash ? idLookup.trim() : getSeedHash(idLookup.trim());
+      // Check seed data match
+      const seedMatch = SEED_CITIZENS.find(c => c.id === idLookup.trim() || getSeedHash(c.id) === h);
+      // Check on-chain if connected
+      let onChain = null;
+      if (ndidsContract) {
+        onChain = await ndidsContract.isRegistered(h);
+      }
+      // Find any SBS service records for this hash
+      const serviceRecs = myRecords.filter(r => r.citizenHash?.toLowerCase() === h.toLowerCase());
+      setLookupResult({ input: idLookup.trim(), hash: h, onChain, seedMatch, serviceRecs });
+    } catch(e) {
+      setLookupResult({ error: e.message });
+    } finally { setLookupLoading(false); }
+  };
+
+  // ── Status badge helper ─────────────────────────────────────────────────
+  const statusBadge = (status) => {
+    const map = {
+      registered:       { color:"#34D399", bg:"#34D39918", label:"✅ On-chain" },
+      not_registered:   { color:"#FBBF24", bg:"#FBBF2418", label:"⚠ Not registered" },
+      already_registered: { color:"#34D399", bg:"#34D39918", label:"✅ Already registered" },
+      checking:         { color:"#A78BFA", bg:"#A78BFA18", label:"⏳ Checking…" },
+      offline:          { color:"#94A3B8", bg:"#94A3B818", label:"— Offline" },
+      error:            { color:"#F87171", bg:"#F8717118", label:"❌ Error" },
+    };
+    const s = map[status] || map.error;
+    return <span style={{ fontSize:"10px", fontWeight:700, color:s.color, background:s.bg, padding:"2px 8px", borderRadius:"4px" }}>{s.label}</span>;
+  };
+
+  const notRegisteredCount = Object.values(seedStatus).filter(v=>v==="not_registered").length;
+  const registeredCount    = Object.values(seedStatus).filter(v=>v==="registered"||v==="already_registered").length;
+
+  return (
+    <>
+      <SectionHead
+        title="📋 Identity Registry"
+        sub={`${myRecords.length} SBS service records on-chain · ${SEED_CITIZENS.length} citizens in seed data`}
+      />
+
+      {/* ── SECTION 1: NDIDS SYNC ──────────────────────────────────── */}
+      <div style={{ ...SBS_CARD, marginBottom:"20px", borderTop:`3px solid ${SBS_PURPLE}` }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"14px" }}>
+          <div>
+            <div style={{ fontWeight:800, fontSize:"15px", color:"#E9D5FF", marginBottom:"4px" }}>
+              🔄 Sync Citizens to NDIDSRegistry
+            </div>
+            <div style={{ fontSize:"12px", color:"#A78BFA" }}>
+              {SEED_CITIZENS.length} demo citizens · {registeredCount} on-chain · {notRegisteredCount} pending
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:"8px" }}>
+            <button onClick={checkSeedStatus} disabled={registering}
+              style={{ ...btn("ghost"), fontSize:"11px", borderColor:`${SBS_PURPLE}66` }}>
+              🔍 Check Status
+            </button>
+            {connected && notRegisteredCount > 0 && (
+              <button onClick={handleRegisterSeed} disabled={registering}
+                style={{ ...btn("primary"), fontSize:"11px", background:SBS_PURPLE }}>
+                {registering ? "⏳ Registering…" : `📡 Register All (${notRegisteredCount})`}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Privacy notice */}
+        <div style={{ padding:"10px 12px", background:"#0F082088", border:`1px solid ${SBS_PURPLE}33`, borderRadius:"8px", marginBottom:"14px", fontSize:"11px", color:"#A78BFA", lineHeight:1.7 }}>
+          🔒 <strong style={{ color:"#E9D5FF" }}>Privacy-preserving:</strong> Only the <code style={{ color:"#C4B5FD" }}>keccak256</code> hash of each citizen ID is sent to the chain.
+          The plain WS- ID never leaves this browser. The NDIDSRegistry stores hashes only — zero PII on-chain.
+          This is GDPR-aligned and compatible with the Pacific Data Governance Framework.
+        </div>
+
+        {/* Seed citizens table */}
+        <div style={{ display:"grid", gap:"6px" }}>
+          {SEED_CITIZENS.map(citizen => {
+            const status  = seedStatus[citizen.id] || "unchecked";
+            const h = getSeedHash(citizen.id);
+            return (
+              <div key={citizen.id} style={{ display:"grid", gridTemplateColumns:"1fr 120px 140px 100px", gap:"8px", alignItems:"center",
+                background:"#0F0820", borderRadius:"6px", padding:"8px 12px" }}>
+                <div>
+                  <div style={{ fontSize:"12px", fontWeight:700, color:"#E9D5FF" }}>{citizen.id}</div>
+                  <div style={{ fontSize:"10px", color:"#7C3AED", marginTop:"1px" }}>{citizen.label} · {citizen.sector}</div>
+                </div>
+                <div style={{ fontSize:"9px", color:"#4B3B6B", fontFamily:F.mono }}>{h.slice(0,14)}…</div>
+                <div>{statusBadge(status)}</div>
+                <div>
+                  {connected && (status === "not_registered" || status === "unchecked") && (
+                    <button onClick={async()=>{
+                      setSeedStatus(s=>({...s,[citizen.id]:"checking"}));
+                      const r = await registerOne(citizen.id);
+                      setSeedStatus(s=>({...s,[citizen.id]:r.status}));
+                    }} style={{ ...btn("ghost"), fontSize:"10px", padding:"3px 8px", borderColor:`${SBS_PURPLE}66` }}>
+                      Register
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Registration results */}
+        {regResults.length > 0 && (
+          <div style={{ marginTop:"14px", padding:"12px", background:"#0F0820", borderRadius:"8px" }}>
+            <div style={{ fontSize:"11px", fontWeight:700, color:"#A78BFA", marginBottom:"8px" }}>
+              Registration Results — {regResults.filter(r=>r.status==="registered"||r.status==="already_registered").length}/{regResults.length} complete
+            </div>
+            {regResults.map((r,i)=>(
+              <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+                padding:"5px 8px", borderBottom:`1px solid ${SBS_PURPLE}18` }}>
+                <span style={{ fontSize:"11px", color:"#C4B5FD" }}>{r.id}</span>
+                <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
+                  {r.txHash && <span style={{ fontSize:"9px", color:"#4B3B6B", fontFamily:F.mono }}>{r.txHash.slice(0,14)}…</span>}
+                  {statusBadge(r.status)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── SECTION 2: MANUAL / CSV REGISTER ──────────────────────── */}
+      <div style={{ ...SBS_CARD, marginBottom:"20px" }}>
+        <div style={{ fontWeight:700, fontSize:"14px", color:"#E9D5FF", marginBottom:"10px" }}>
+          ✏️ Register Additional Citizens
+        </div>
+        <div style={{ display:"flex", gap:"8px", marginBottom:"12px" }}>
+          {[["seed","Seed List"],["manual","Enter IDs"],["csv","CSV Upload"]].map(([m,l])=>(
+            <button key={m} onClick={()=>setBulkMode(m)}
+              style={{ ...btn(bulkMode===m?"primary":"ghost"), fontSize:"11px",
+                ...(bulkMode===m?{background:SBS_PURPLE}:{borderColor:`${SBS_PURPLE}66`}) }}>
+              {l}
+            </button>
+          ))}
+        </div>
+
+        {bulkMode === "manual" && (
+          <>
+            <div style={{ fontSize:"11px", color:"#A78BFA", marginBottom:"8px" }}>
+              Enter one Citizen ID per line (WS- National ID, Business No., or SOE-EPC-… format).
+              Plain IDs are hashed in-browser — never sent to chain.
+            </div>
+            <textarea
+              value={bulkInput}
+              onChange={e=>setBulkInput(e.target.value)}
+              placeholder={"WS-123456\nWS-234567\nSOE-EPC-2025-003\nBUSINESS-12345"}
+              rows={6}
+              style={{ ...SBS_INPUT, resize:"vertical", marginBottom:"10px" }}
+            />
+            <div style={{ display:"flex", gap:"10px", alignItems:"center" }}>
+              <button onClick={handleRegisterManual} disabled={!connected||registering||!bulkInput.trim()}
+                style={{ ...btn("primary"), background:SBS_PURPLE, fontSize:"12px" }}>
+                {registering ? "⏳ Registering…" : "📡 Register IDs"}
+              </button>
+              {!connected && <span style={{ fontSize:"11px", color:"#FBBF24" }}>⚠ Connect wallet to register on-chain</span>}
+            </div>
+          </>
+        )}
+
+        {bulkMode === "csv" && (
+          <div style={{ padding:"24px", textAlign:"center", border:`2px dashed ${SBS_PURPLE}44`, borderRadius:"8px" }}>
+            <div style={{ fontSize:"28px", marginBottom:"8px" }}>📄</div>
+            <div style={{ fontSize:"13px", color:"#A78BFA", marginBottom:"6px" }}>CSV upload — production feature</div>
+            <div style={{ fontSize:"11px", color:"#7C3AED" }}>
+              Upload a .csv with a "citizenId" column. All IDs are hashed client-side before registration.
+              Available in the production version with BSP identity API integration.
+            </div>
+          </div>
+        )}
+
+        {bulkMode === "seed" && (
+          <div style={{ fontSize:"12px", color:"#A78BFA", lineHeight:1.8 }}>
+            The <strong style={{ color:"#E9D5FF" }}>Seed List</strong> above contains all {SEED_CITIZENS.length} demo citizens
+            pre-loaded for the MVP. Use the "Register All" button to push them to the NDIDSRegistry contract,
+            or click "Register" next to each individual citizen. For real citizen onboarding, switch to "Enter IDs" mode.
+          </div>
+        )}
+      </div>
+
+      {/* ── SECTION 3: CITIZEN LOOKUP ──────────────────────────────── */}
+      <div style={{ ...SBS_CARD, marginBottom:"20px" }}>
+        <div style={{ fontWeight:700, fontSize:"14px", color:"#E9D5FF", marginBottom:"10px" }}>🔍 Citizen Lookup</div>
+        <div style={{ display:"flex", gap:"10px", marginBottom:"10px" }}>
+          <input value={idLookup} onChange={e=>setIdLookup(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&handleLookup()}
+            placeholder="Enter WS- National ID, Business No., or 0x hash…"
+            style={{ ...SBS_INPUT, flex:1 }} />
+          <button onClick={handleLookup} disabled={lookupLoading||!idLookup.trim()}
+            style={{ ...btn("primary"), background:SBS_PURPLE, whiteSpace:"nowrap" }}>
+            {lookupLoading ? "…" : "Search"}
+          </button>
+        </div>
+        {idLookup.trim() && !idLookup.trim().startsWith("0x") && (
+          <div style={{ fontSize:"10px", color:"#7C3AED", fontFamily:F.mono, marginBottom:"8px" }}>
+            Will check hash: {getSeedHash(idLookup.trim()).slice(0,28)}…
+          </div>
+        )}
+        {lookupResult && !lookupResult.error && (
+          <div style={{ background:"#0F0820", borderRadius:"8px", padding:"14px" }}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"10px" }}>
+              {[
+                ["Input",       lookupResult.input],
+                ["Hash",        lookupResult.hash?.slice(0,20)+"…"],
+                ["On-chain",    lookupResult.onChain === null ? "—" : lookupResult.onChain ? "✅ Registered" : "❌ Not registered"],
+                ["In seed list", lookupResult.seedMatch ? `✅ ${lookupResult.seedMatch.label}` : "—"],
+              ].map(([l,v])=>(
+                <div key={l}>
+                  <div style={{ fontSize:"9px", color:"#7C3AED", textTransform:"uppercase", marginBottom:"2px" }}>{l}</div>
+                  <div style={{ fontSize:"12px", color:"#E9D5FF", fontWeight:700 }}>{v}</div>
+                </div>
+              ))}
+            </div>
+            {lookupResult.serviceRecs?.length > 0 && (
+              <div style={{ borderTop:`1px solid ${SBS_PURPLE}22`, paddingTop:"10px" }}>
+                <div style={{ fontSize:"11px", color:"#A78BFA", marginBottom:"6px" }}>
+                  SBS Service Records ({lookupResult.serviceRecs.length}):
+                </div>
+                {lookupResult.serviceRecs.map((r,i)=>(
+                  <div key={i} style={{ fontSize:"11px", color:"#C4B5FD", padding:"4px 0" }}>
+                    {serviceLabel(r.serviceType)} · Block {r.blockNumber || "—"}
+                  </div>
+                ))}
+              </div>
+            )}
+            {connected && lookupResult.onChain === false && (
+              <button onClick={async()=>{
+                const r = await registerOne(lookupResult.input);
+                setLookupResult(prev=>({...prev, onChain: r.status==="registered"||r.status==="already_registered", regResult:r}));
+              }} style={{ ...btn("primary"), background:SBS_PURPLE, fontSize:"12px", marginTop:"10px" }}>
+                📡 Register this citizen
+              </button>
+            )}
+          </div>
+        )}
+        {lookupResult?.error && (
+          <div style={{ color:"#F87171", fontSize:"12px", padding:"10px" }}>{lookupResult.error}</div>
+        )}
+      </div>
+
+      {/* ── SECTION 4: SBS SERVICE RECORDS ON-CHAIN ────────────────── */}
+      <SectionHead title="📄 SBS Service Records On-Chain" sub={`${myRecords.length} identity documents issued`} />
+      {lastReceipt && (
+        <div style={{ ...SBS_CARD, marginBottom:"12px", borderLeft:"4px solid #34D399" }}>
+          <div style={{ fontSize:"11px", fontWeight:700, color:"#34D399", marginBottom:"6px" }}>📋 Last Issued Certificate</div>
+          <ReceiptCard {...lastReceipt} ministry={{ code:"SBS", color:SBS_PURPLE, name:"Samoa Bureau of Statistics" }} onAnother={onGoRecord} />
+        </div>
+      )}
+      {myRecords.length === 0 ? (
+        <div style={{ ...SBS_CARD, textAlign:"center", padding:"48px" }}>
+          <div style={{ fontSize:"32px", marginBottom:"10px" }}>📭</div>
+          <div style={{ color:"#A78BFA", fontSize:"14px" }}>No SBS service records on chain yet</div>
+          <div style={{ color:"#7C3AED", fontSize:"12px", marginTop:"6px" }}>Issue an identity document via the Record Service tab</div>
+        </div>
+      ) : myRecords.map((r, i) => {
+        const fi = SERVICE_FEES[r.serviceType] || {};
+        // Check if this citizen is in the seed list
+        const seedEntry = SEED_CITIZENS.find(c => getSeedHash(c.id) === r.citizenHash);
+        return (
+          <div key={i} style={{ ...SBS_CARD, marginBottom:"10px", borderLeft:`4px solid ${SBS_PURPLE}` }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"8px" }}>
+              <div>
+                <div style={{ fontWeight:700, fontSize:"13px", color:"#E9D5FF" }}>{serviceLabel(r.serviceType)}</div>
+                <div style={{ fontSize:"11px", color:"#A78BFA", marginTop:"2px" }}>
+                  Hash: <Mono>{short(r.citizenHash)}</Mono>
+                  {seedEntry && <span style={{ color:"#34D399", marginLeft:"8px" }}>· {seedEntry.id}</span>}
+                </div>
+              </div>
+              <span style={{ ...badge(SBS_PURPLE), fontSize:"9px" }}>On-chain ✓</span>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"6px" }}>
+              {[
+                ["Block",    r.blockNumber || "—"],
+                ["Fee",      fi.hasFee ? `WST ${fi.govFee}` : "Free"],
+                ["Date",     r.timestamp ? new Date(r.timestamp*1000).toLocaleDateString() : "—"],
+              ].map(([l,v])=>(
+                <div key={l} style={{ background:"#0F0820", borderRadius:"4px", padding:"5px 8px" }}>
+                  <div style={{ fontSize:"8px", color:"#7C3AED", textTransform:"uppercase", marginBottom:"1px" }}>{l}</div>
+                  <div style={{ fontSize:"11px", color:"#C4B5FD" }}>{v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
 // ---
 // SBS DASHBOARD — Samoa Bureau of Statistics
 // Full ministry dashboard: National Digital ID, Birth Certificates, Passports,
@@ -3718,6 +4281,7 @@ function SBSDashboard({ provider, connected, blockNumber, onBack, onNavigate, al
             provider={provider}
             connected={connected}
             prefill={prefill}
+            allRecords={allRecords}
             onSuccess={(data) => { setLastReceipt(data); setTab("registry"); setPrefill(null); }}
             onNavigate={onNavigate}
           />
@@ -3725,60 +4289,17 @@ function SBSDashboard({ provider, connected, blockNumber, onBack, onNavigate, al
 
         {/* ─── IDENTITY REGISTRY ────────────────────────────────────── */}
         {tab === "registry" && (
-          <>
-            <SectionHead title="📋 Identity Registry" sub={`${myRecords.length} identity records issued by SBS on-chain`} />
-
-            {/* ID lookup */}
-            <div style={{ ...SBS_CARD, marginBottom:"20px" }}>
-              <div style={{ fontSize:"13px", fontWeight:700, color:"#A78BFA", marginBottom:"10px" }}>🔍 Look up an identity record</div>
-              <div style={{ display:"flex", gap:"10px" }}>
-                <input value={idLookup} onChange={e=>setIdLookup(e.target.value)}
-                  placeholder="Enter National ID, hash, or reference…"
-                  style={{ flex:1, background:"#0F0820", border:`1px solid ${SBS_PURPLE}44`, borderRadius:"8px", padding:"10px 14px", color:"#E9D5FF", fontSize:"13px", fontFamily:F.ui }} />
-                <button onClick={()=>{}} style={{ ...btn("primary"), background:SBS_PURPLE }}>Search</button>
-              </div>
-            </div>
-
-            {lastReceipt && (
-              <div style={{ ...SBS_CARD, marginBottom:"16px", borderLeft:`4px solid #34D399` }}>
-                <div style={{ fontSize:"11px", fontWeight:700, color:"#34D399", marginBottom:"6px" }}>📋 Last Issued Certificate</div>
-                <ReceiptCard {...lastReceipt} ministry={{ code:"SBS", color:SBS_PURPLE, name:"Samoa Bureau of Statistics" }} onAnother={()=>setTab("record")} />
-              </div>
-            )}
-
-            {myRecords.length === 0 ? (
-              <div style={{ ...SBS_CARD, textAlign:"center", padding:"48px" }}>
-                <div style={{ fontSize:"32px", marginBottom:"10px" }}>📭</div>
-                <div style={{ color:"#A78BFA", fontSize:"14px" }}>No SBS records on chain yet</div>
-                <div style={{ color:"#7C3AED", fontSize:"12px", marginTop:"6px" }}>Submit the first identity record via Record Service tab</div>
-              </div>
-            ) : myRecords.map((r, i) => {
-              const fi = SERVICE_FEES[r.serviceType] || {};
-              return (
-                <div key={i} style={{ ...SBS_CARD, marginBottom:"10px", borderLeft:`4px solid ${SBS_PURPLE}` }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"8px" }}>
-                    <div>
-                      <div style={{ fontWeight:700, fontSize:"13px", color:"#E9D5FF" }}>{serviceLabel(r.serviceType)}</div>
-                      <div style={{ fontSize:"11px", color:"#A78BFA", marginTop:"2px" }}>Citizen: <Mono>{short(r.citizenHash)}</Mono></div>
-                    </div>
-                    <span style={{ ...badge(SBS_PURPLE), fontSize:"9px" }}>On-chain ✓</span>
-                  </div>
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"6px" }}>
-                    {[
-                      ["Block",    r.blockNumber || "—"],
-                      ["Fee",      fi.hasFee ? `WST ${fi.govFee}` : "Free"],
-                      ["Date",     r.timestamp ? new Date(r.timestamp*1000).toLocaleDateString() : "—"],
-                    ].map(([l,v])=>(
-                      <div key={l} style={{ background:"#0F0820", borderRadius:"4px", padding:"5px 8px" }}>
-                        <div style={{ fontSize:"8px", color:"#7C3AED", textTransform:"uppercase", marginBottom:"1px" }}>{l}</div>
-                        <div style={{ fontSize:"11px", color:"#C4B5FD" }}>{v}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </>
+          <RegistryTab
+            SBS_CARD={SBS_CARD}
+            SBS_PURPLE={SBS_PURPLE}
+            myRecords={myRecords}
+            lastReceipt={lastReceipt}
+            idLookup={idLookup}
+            setIdLookup={setIdLookup}
+            provider={provider}
+            connected={connected}
+            onGoRecord={()=>setTab("record")}
+          />
         )}
       </div>
     </div>
@@ -4774,6 +5295,29 @@ function NDIDSDashboard({ provider, connected, blockNumber, onBack, allRecords }
           </div>
           <div style={{ fontSize:"12px", color:C.silver, lineHeight:1.8 }}>
             <strong style={{ color:C.seafoam }}>How NDIDS works:</strong> No personal information is stored on-chain. Each citizen is identified by a <code style={{ color:C.seafoam }}>keccak256</code> hash of their identity credentials. Ministries are granted sector-specific read access — a ministry can only verify a citizen's hash if they have been provisioned access to that sector's registry. Cross-workflow steps (e.g. CBS processing an education payment) submit with <code style={{ color:C.amber }}>ndidsVerified=false</code>, meaning the identity was already verified by the initiating ministry upstream. This is by design and aligns with Samoa's data sovereignty and emerging GDPR-equivalent frameworks.
+            <div style={{ marginTop:"14px", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px" }}>
+              <div style={{ background:C.abyss, borderRadius:"8px", padding:"12px", border:`1px solid ${C.seafoam}33` }}>
+                <div style={{ fontSize:"11px", fontWeight:700, color:C.seafoam, marginBottom:"6px" }}>🪪 NDIDSRegistry</div>
+                <div style={{ fontSize:"11px", color:C.silver, lineHeight:1.8 }}>
+                  Stores: <strong style={{ color:C.white }}>citizenHash only</strong><br/>
+                  Purpose: Identity gating — "is this person authorised?"<br/>
+                  Populated by: <code style={{ color:C.seafoam }}>registerCitizen()</code><br/>
+                  <span style={{ color:C.gold }}>v17: auto-called on every service record ✓</span>
+                </div>
+              </div>
+              <div style={{ background:C.abyss, borderRadius:"8px", padding:"12px", border:`1px solid ${C.ocean}33` }}>
+                <div style={{ fontSize:"11px", fontWeight:700, color:C.silver, marginBottom:"6px" }}>📋 Ministry Contracts</div>
+                <div style={{ fontSize:"11px", color:C.silver, lineHeight:1.8 }}>
+                  Stores: <strong style={{ color:C.white }}>service records</strong><br/>
+                  Purpose: What services has this citizen received?<br/>
+                  Populated by: <code style={{ color:C.seafoam }}>recordService()</code><br/>
+                  <span style={{ color:C.muted }}>Independent from NDIDSRegistry</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ marginTop:"10px", fontSize:"11px", color:C.muted, borderTop:`1px solid ${C.ocean}22`, paddingTop:"10px" }}>
+              ℹ The count displayed above is the live NDIDSRegistry total. The MOCK fallback (25) shows only when the chain is offline. After an Anvil restart the chain resets to 0 — run <code style={{ color:C.seafoam }}>node register_citizens.js</code> to backfill, or simply record services and auto-registration handles it.
+            </div>
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 import { NDIDSRegistry } from "./NDIDSRegistry.sol";
 
@@ -57,6 +57,7 @@ contract MinistryNode {
     );
     event ReaderAuthorised(address indexed reader);
     event ReaderRevoked(address indexed reader);
+    event HubSet(address indexed previousHub, address indexed newHub);
 
     // ── Errors ───────────────────────────────────────────────────
 
@@ -113,6 +114,7 @@ contract MinistryNode {
     function setHub(address _hub) external {
         if (hub != address(0)) revert Unauthorised();
         if (msg.sender != DEPLOYER && msg.sender != MINISTRY_ADMIN) revert Unauthorised();
+         emit HubSet(hub, _hub);
         hub = _hub;
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import "../src/NDIDSRegistry.sol";
@@ -352,7 +352,7 @@ contract SamoaPacificBlockchainHubTest is Test {
         assertEq(rec.serviceType, "PAYMENT");
     }
 
-    function test_Hub_CrossMinistryEnrolmentWorkflow() public {
+    function test_Hub_CrossMinistryEnrollmentWorkflow() public {
         // Setup: register citizen and grant education access to NDIDS
         vm.startPrank(admin);
         ndids.registerCitizen(CITIZEN_HASH);
@@ -365,7 +365,7 @@ contract SamoaPacificBlockchainHubTest is Test {
 
         // Execute the full workflow through the hub
         vm.prank(admin);
-        bool success = hub.executeEnrolmentWorkflow(
+        bool success = hub.executeEnrollmentWorkflow(
             CITIZEN_HASH,
             address(educationNode),
             address(mofNode),
@@ -387,7 +387,7 @@ contract SamoaPacificBlockchainHubTest is Test {
         InteroperabilityHub.WorkflowEvent[] memory log = hub.getWorkflowLog();
         assertEq(log.length, 1);
         assertTrue(log[0].success);
-        assertEq(log[0].workflowType, "ENROLMENT_AND_BENEFIT");
+        assertEq(log[0].workflowType, "ENROLLMENT_AND_BENEFIT");
     }
 
     function test_Hub_GetAllMinistries() public view {

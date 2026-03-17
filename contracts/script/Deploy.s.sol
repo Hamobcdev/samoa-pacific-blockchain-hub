@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 import "forge-std/Script.sol";
 import "../src/NDIDSRegistry.sol";
@@ -51,8 +51,8 @@ contract DeploySamoaHub is Script {
     }
 
     function run() external {
-        address admin = msg.sender;
-        vm.startBroadcast();
+    vm.startBroadcast();
+    address admin = msg.sender;
 
         // ── 1. Deploy core contracts ──────────────────────────────
         NDIDSRegistry         ndids  = new NDIDSRegistry(admin);
@@ -189,9 +189,9 @@ contract DeploySamoaHub is Script {
         }
 
         // ── 8. Hub workflows (creates WorkflowEvent log entries) ──
-        hub.executeEnrolmentWorkflow(eduHashes[0], address(education), address(mof), dummyDataHash);
-        hub.executeEnrolmentWorkflow(eduHashes[1], address(education), address(mof), dummyDataHash);
-        hub.executeEnrolmentWorkflow(eduHashes[2], address(education), address(mof), dummyDataHash);
+        hub.executeEnrollmentWorkflow(eduHashes[0], address(education), address(mof), dummyDataHash);
+        hub.executeEnrollmentWorkflow(eduHashes[1], address(education), address(mof), dummyDataHash);
+        hub.executeEnrollmentWorkflow(eduHashes[2], address(education), address(mof), dummyDataHash);
 
         // ── 9. Create UNICEF grant ────────────────────────────────
         string[] memory milestones = new string[](3);

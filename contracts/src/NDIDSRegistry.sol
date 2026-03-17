@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 /**
  * @title NDIDSRegistry
@@ -71,17 +71,22 @@ contract NDIDSRegistry {
     }
 
     /**
-     * @notice Batch register multiple citizens (gas efficient for bulk import)
-     */
-    function batchRegister(bytes32[] calldata hashes) external onlyAdmin {
-        for (uint256 i = 0; i < hashes.length; i++) {
-            if (!_registered[hashes[i]]) {
-                _registered[hashes[i]] = true;
-                totalRegistered++;
-                emit CitizenRegistered(hashes[i], block.timestamp);
-            }
+ * @notice Batch register multiple citizens (gas efficient for bulk import)
+ * @dev Uses local accumulator to minimise SSTORE ops on totalRegistered
+ */
+function batchRegister(bytes32[] calldata hashes) external onlyAdmin {
+    uint256 newRegistrations = 0;
+    for (uint256 i = 0; i < hashes.length; i++) {
+        // duplicate check — skip already registered hashes silently
+        if (!_registered[hashes[i]]) {
+            _registered[hashes[i]] = true;
+            newRegistrations++;         // ← cheap memory write, not storage
+            emit CitizenRegistered(hashes[i], block.timestamp);
         }
     }
+    // single storage write after loop completes
+    totalRegistered += newRegistrations;
+}
 
     // ── Access Control ───────────────────────────────────────────
 

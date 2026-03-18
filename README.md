@@ -31,6 +31,145 @@ All contracts are deployed, verified, and publicly readable on the Polygon Amoy 
 > All contracts are open source under MIT licence. Source code is verified and publicly readable on Polygonscan. The full deployment receipt is in `contracts/broadcast/Deploy.s.sol/80002/run-latest.json`.
 
 ---
+# Testing on the Live Testnet — No Installation Required
+
+All demo data is already deployed and seeded on Polygon Amoy. A reviewer can interact with the live contracts directly from their browser using the links below — no wallet, no local setup, no Anvil required.
+
+---
+
+## Live Contract State (as of 18 March 2026)
+
+| Contract | On-Chain State |
+|---|---|
+| **NDIDSRegistry** | 25 citizens registered across 5 sectors |
+| **AIDisbursementTracker** | Grant #0 live — UNICEF Samoa Education Access Programme 2025 — 100,000 WST total, 70,000 WST released across 3 tranches |
+| **InteroperabilityHub** | 6 ministries registered and wired |
+| **Education node** | 5 service records |
+| **CBS node** | 3 service records |
+| **MOF node** | 9 service records |
+
+---
+
+## Option 1 — Live Demo (Recommended for Reviewers)
+
+Open the live dashboard — no installation needed:
+
+🌐 **[hamobcdev.github.io/samoa-pacific-blockchain-hub](https://hamobcdev.github.io/samoa-pacific-blockchain-hub/)**
+
+The dashboard reads directly from the Polygon Amoy testnet contracts. All 25 seeded citizens, the UNICEF grant, and all service records are visible and interactive.
+
+---
+
+## Option 2 — Read Contracts Directly on Polygonscan
+
+Every contract is verified and readable on Polygonscan. No wallet needed for read operations.
+
+**Check citizen registration count:**
+- Go to [NDIDSRegistry on Polygonscan](https://amoy.polygonscan.com/address/0x0e832d0c324cd70ca58dd1b0965151167853ce42)
+- Click **Contract → Read Contract**
+- Call `totalRegistered` — returns `25`
+
+**Read the UNICEF grant:**
+- Go to [AIDisbursementTracker on Polygonscan](https://amoy.polygonscan.com/address/0x3fd12fe1400bd9b8cd7ebe59c47ea27ab6bf5edb)
+- Click **Contract → Read Contract**
+- Call `getGrant` with input `0`
+- Returns: title `UNICEF Samoa Education Access Programme 2025`, total `100000`, released `70000`, 3 tranches
+
+**Check ministry registrations:**
+- Go to [InteroperabilityHub on Polygonscan](https://amoy.polygonscan.com/address/0x6c213b53b41c325317df0443442b0eae9c7618cc)
+- Click **Contract → Read Contract**
+- Call `getMinistryCount` — returns `6`
+- Call `getAllMinistries` — returns CBS, MCIT, MOF, MCIL, EDUCATION, CUSTOMS with contract addresses
+
+---
+
+## Option 3 — Test with Pre-Seeded Citizen IDs
+
+The following citizen IDs are already registered in NDIDSRegistry on Amoy. Use these in the live dashboard to test cross-ministry workflows without registering new citizens.
+
+**Education sector (UNICEF beneficiaries):**
+```
+SAMOA-EDU-001    SAMOA-EDU-002    SAMOA-EDU-003
+SAMOA-EDU-004    SAMOA-EDU-005    SAMOA-EDU-006    SAMOA-EDU-007
+```
+
+**Banking / CBS sector:**
+```
+SAMOA-CBS-001    SAMOA-CBS-002    SAMOA-CBS-003
+```
+
+**Trade / Customs sector:**
+```
+SAMOA-TRADE-001    SAMOA-TRADE-002    SAMOA-TRADE-003
+```
+
+**Social welfare / MOF sector:**
+```
+SAMOA-WELFARE-001    SAMOA-WELFARE-002    SAMOA-WELFARE-003
+SAMOA-WELFARE-004    SAMOA-WELFARE-005
+```
+
+**Business / MCIL sector:**
+```
+SAMOA-CUSTOMS-001    SAMOA-CUSTOMS-002
+SAMOA-MCIL-001       SAMOA-MCIL-002       SAMOA-MCIL-003
+SAMOA-BIZ-001        SAMOA-BIZ-002        SAMOA-BIZ-003
+```
+
+---
+
+## Suggested Reviewer Walkthrough (5 minutes)
+
+**1. Open the live demo** at `hamobcdev.github.io/samoa-pacific-blockchain-hub`
+
+**2. Open the UNICEF Donor Dashboard**
+- See Grant #0 — UNICEF Samoa Education Access Programme 2025
+- Verify 100,000 WST total, 70,000 WST released across tranches
+- Check the audit trail — all tranche events permanently recorded
+
+**3. Open the Education Ministry dashboard**
+- Go to Pending Actions — see cross-ministry steps waiting
+- Record a new service for citizen `SAMOA-EDU-001` with service type `SCHOOL_ENROLMENT_2025`
+- Watch the pending action appear in the MOF dashboard automatically
+
+**4. Open the Interoperability Hub**
+- See all 6 registered ministries with their Amoy contract addresses
+- Check the workflow log — cross-ministry enrollment workflows recorded on-chain
+
+**5. Verify independently on Polygonscan**
+- Copy any contract address from the dashboard
+- Paste into [amoy.polygonscan.com](https://amoy.polygonscan.com)
+- Confirm verified source code matches what is running in the dashboard
+
+---
+
+## Running Locally Against Amoy (Optional — for technical reviewers)
+
+If you prefer to run the frontend locally while reading from the live Amoy contracts:
+
+```bash
+git clone https://github.com/Hamobcdev/samoa-pacific-blockchain-hub
+cd samoa-pacific-blockchain-hub/frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` — the app reads from Polygon Amoy automatically.
+
+No Anvil required. No local deployment needed. All 25 citizens and the UNICEF grant are already live on the public testnet.
+
+---
+
+## Running the Full Test Suite
+
+```bash
+cd contracts
+forge test -vv
+```
+
+Expected: `29 passed; 0 failed; 0 skipped`
+
+Includes unit tests, integration scenarios, and fuzz tests (256 runs each).
 
 ## What This Is — For Non-Technical Readers
 

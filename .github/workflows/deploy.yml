@@ -1,0 +1,84 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Samoa Pacific Blockchain Hub — GitHub Pages Deploy Workflow
+# Fixed for: actions/upload-pages-artifact@v3 + actions/deploy-pages@v4
+#
+# WHAT WAS WRONG IN v7 (run #9):
+#   Error 1: "No artifacts named 'dist' were found"
+#            → The build job used actions/upload-artifact@v4 (generic uploader)
+#              which does NOT create the special GitHub Pages artifact that
+#              actions/deploy-pages expects. Must use upload-pages-artifact instead.
+#   Error 2: "Unexpected input 'path'" on actions/deploy-pages@v4
+#            → Since v3+, deploy-pages reads the artifact automatically.
+#              The 'path:' key must go on upload-pages-artifact, NOT deploy-pages.
+#   Error 3: Cascade failure — deploy job couldn't find artifact → whole run failed.
+#
+# FIXES APPLIED:
+#   1. Split into two jobs: build → deploy (with needs: build)
+#   2. Replace actions/upload-artifact@v4 with actions/upload-pages-artifact@v3
+#      and move 'path: frontend/dist' there
+#   3. Remove 'path:' from actions/deploy-pages@v4 (it auto-reads the pages artifact)
+#   4. Add correct permissions block (pages: write, id-token: write)
+#   5. Add concurrency to prevent overlapping deploys
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Deploy Dashboard to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:       # allow manual trigger from GitHub UI
+
+# Required for GitHub Pages OIDC deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only allow one deployment at a time; cancel any in-progress run
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  # ── Job 1: Build ───────────────────────────────────────────────────────────
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json   # adjust if your lockfile is elsewhere
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Vite app
+        working-directory: frontend
+        run: npm run build
+        # Vite outputs to frontend/dist by default
+
+      # ── THIS IS THE KEY FIX ──
+      # Use upload-pages-artifact (NOT upload-artifact) so deploy-pages can find it
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist    # ← 'path' goes HERE, not on deploy-pages
+
+  # ── Job 2: Deploy ──────────────────────────────────────────────────────────
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build             # only runs if build succeeds
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        # NO 'path:' here — deploy-pages@v4 reads the pages artifact automatically

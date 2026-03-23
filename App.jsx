@@ -40,7 +40,7 @@ const CONFIG = {
 
 const DEPLOYER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
-function getSigner(provider) {
+function await getSigner(provider) {
   if (!provider) return null;
   return new ethers.Wallet(DEPLOYER_KEY, provider);
 }
@@ -982,7 +982,7 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
     setSubmitting(true);
     setTxMsg({ type:"info", text:"Broadcasting to "+CONFIG.NETWORK+"…" });
     try {
-      const signer   = getSigner(provider);
+      const signer   = await getSigner(provider);
       const contract = new ethers.Contract(addr, ABI.MINISTRY, signer);
       const rawId    = form.citizenId.trim();
       // If citizenId is already a bytes32 hex (from pending action prefill), use directly
@@ -1370,7 +1370,7 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
     if (!connected) { setTxMsg({ type:"error", text:"Not connected to chain." }); return; }
     setSubmitting(true); setTxMsg({ type:"info", text:"Calling verifyUsage() on AID contract…" });
     try {
-      const signer = getSigner(provider);
+      const signer = await getSigner(provider);
       const aidW   = new ethers.Contract(ADDR.AID, ABI.AID, signer);
       const evHash = ethers.keccak256(ethers.toUtf8Bytes(verForm.evidence || `UNICEF-VERIFY-${Date.now()}`));
       const bens   = parseInt(verForm.beneficiaries) || enrolmentCount || 1;
@@ -1385,7 +1385,7 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
     if (!connected) { setTxMsg({ type:"error", text:"Not connected to chain." }); return; }
     setSubmitting(true); setTxMsg({ type:"info", text:"Calling releaseTranche() on AID contract…" });
     try {
-      const signer = getSigner(provider);
+      const signer = await getSigner(provider);
       const aidW   = new ethers.Contract(ADDR.AID, ABI.AID, signer);
       const tx     = await aidW.releaseTranche(parseInt(relForm.grantId), parseInt(relForm.trancheId));
       await tx.wait();

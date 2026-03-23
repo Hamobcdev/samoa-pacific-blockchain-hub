@@ -177,7 +177,7 @@
  */
 
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { ethers } from "ethers";
 
 // ---
@@ -187,7 +187,7 @@ import { ethers } from "ethers";
 const CONFIG = {
   RPC_URL:     "https://polygon-amoy.g.alchemy.com/v2/BFqRyw7KgnGNql0DYQbZf",
   NETWORK:     "Polygon Amoy Testnet",
-  POLL_MS:     6000,
+  POLL_MS:     10000,
   ETH_NETWORK: { chainId: 80002, name: "amoy" },
 };
 
@@ -195,10 +195,14 @@ const DEPLOYER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7b
 
 // Read-only provider for public testnet — no private key needed for reads
 // Transactions require MetaMask or a connected wallet
-function getSigner(provider) {
-  if (!provider) return null;
-  // Return provider as read-only — write functions will prompt MetaMask
-  return provider;
+async function getSigner() {
+  if (window.ethereum) {
+    await window.ethereum.request({ method: "eth_requestAccounts" });
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    return await provider.getSigner();
+  }
+  alert("Please install MetaMask");
+  return null;
 }
 
 // ---
@@ -1826,7 +1830,10 @@ function useProvider() {
 }
 
 function useContract(address, abi, provider) {
-  return provider && address ? new ethers.Contract(address, abi, provider) : null;
+  return useMemo(() => {
+    if (!provider || !address) return null;
+    return new ethers.Contract(address, abi, provider);
+  }, [provider, address, abi]);
 }
 
 function usePoll(fetchFn, deps, interval = CONFIG.POLL_MS) {
@@ -1852,6 +1859,7 @@ function usePoll(fetchFn, deps, interval = CONFIG.POLL_MS) {
 // Fetch all records for a ministry
 async function fetchMinistryRecords(provider, addr) {
   if (!provider || !addr) return [];
+  if (typeof window !== "undefined" && !window.ethereum) return [];
   const c = new ethers.Contract(addr, ABI.MINISTRY, provider);
   const total = Number(await c.totalRecords());
   const recs = [];
@@ -1866,6 +1874,9 @@ async function fetchMinistryRecords(provider, addr) {
 
 // Fetch all records from all ministries (for cross-ministry workflow engine)
 async function fetchAllRecords(provider) {
+  if (!provider) return [];
+  if (typeof window !== "undefined" && !window.ethereum) return [];
+  console.log("Fetching blockchain data...");
   const all = [];
   for (const [code, addr] of Object.entries(MINISTRY_ADDRS)) {
     try {
@@ -2048,7 +2059,8 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
     setSubmitting(true);
     setTxMsg({ type:"info", text:"Broadcasting to "+CONFIG.NETWORK+"…" });
     try {
-      const signer   = getSigner(provider);
+      const signer = await getSigner();
+      if (!signer) throw new Error("No wallet connected");
       const contract = new ethers.Contract(addr, ABI.MINISTRY, signer);
       const rawId    = form.citizenId.trim();
       const cHash    = (rawId.startsWith("0x") && rawId.length === 66)
@@ -2088,7 +2100,16 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
         ? `${form.evidenceNote} | PMT:${payRef} | RAIL:${form.paymentMethod} | FEE:${form.fee}WST | AMT:${form.amount}WST`
         : `${form.serviceType}|${form.officerId}|PMT:${payRef}|RAIL:${form.paymentMethod}|FEE:${form.fee}WST|AMT:${form.amount}WST|${Date.now()}`;
       const dHash    = ethers.keccak256(ethers.toUtf8Bytes(evidence));
-      const tx       = await contract.recordService(cHash, form.serviceType, dHash, form.ndidsVerified);
+      const tx       = await contract.recordService(
+        cHash,
+        form.serviceType,
+        dHash,
+        form.ndidsVerified,
+        {
+          maxPriorityFeePerGas: ethers.parseUnits("30", "gwei"),
+          maxFeePerGas: ethers.parseUnits("35", "gwei"),
+        }
+      );
       setTxMsg({ type:"info", text:"Awaiting confirmation…" });
       const receipt  = await tx.wait();
 
@@ -3212,7 +3233,7 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
     if (!connected) { setTxMsg({ type:"error", text:"Not connected to chain." }); return; }
     setSubmitting(true); setTxMsg({ type:"info", text:"Calling verifyUsage() on AID contract…" });
     try {
-      const signer = getSigner(provider);
+      const signer = await getSigner();
       const aidW   = new ethers.Contract(ADDR.AID, ABI.AID, signer);
       const evHash = ethers.keccak256(ethers.toUtf8Bytes(verForm.evidence || `UNICEF-VERIFY-${Date.now()}`));
       const bens   = parseInt(verForm.beneficiaries) || enrolmentCount || 1;
@@ -3227,7 +3248,7 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
     if (!connected) { setTxMsg({ type:"error", text:"Not connected to chain." }); return; }
     setSubmitting(true); setTxMsg({ type:"info", text:"Calling releaseTranche() on AID contract…" });
     try {
-      const signer = getSigner(provider);
+      const signer = await getSigner();
       const aidW   = new ethers.Contract(ADDR.AID, ABI.AID, signer);
       const tx     = await aidW.releaseTranche(parseInt(relForm.grantId), parseInt(relForm.trancheId));
       await tx.wait();
@@ -3719,10 +3740,6 @@ function RegistryTab({ SBS_CARD, SBS_PURPLE, myRecords, lastReceipt, idLookup, s
   const ndidsContract = provider
     ? new ethers.Contract(ADDR.NDIDS, ABI.NDIDS, provider)
     : null;
-  const ndidsSigner = provider
-    ? new ethers.Contract(ADDR.NDIDS, ABI.NDIDS, provider.getSigner ? provider.getSigner() : provider)
-    : null;
-
   // ── Check all seed citizens against NDIDSRegistry ───────────────────────
   const checkSeedStatus = async () => {
     if (!ndidsContract) {
@@ -3753,7 +3770,9 @@ function RegistryTab({ SBS_CARD, SBS_PURPLE, myRecords, lastReceipt, idLookup, s
   const registerOne = async (citizenId) => {
     const h = getSeedHash(citizenId.trim());
     try {
-      if (!ndidsSigner) throw new Error("No signer — connect wallet");
+      const signer = await getSigner();
+      if (!signer) throw new Error("No wallet connected");
+      const ndidsSigner = new ethers.Contract(ADDR.NDIDS, ABI.NDIDS, signer);
       const tx = await ndidsSigner.registerCitizen(h);
       await tx.wait();
       return { id:citizenId, hash:h, status:"registered", txHash:tx.hash };
@@ -4317,17 +4336,12 @@ function RegistryTab({ SBS_CARD, SBS_PURPLE, myRecords, lastReceipt, idLookup, s
 // DIGITAL_ID_ISSUED in Record Service tab. PII never leaves the browser.
 // =============================================================================
 function RegisterCitizenTab({ SBS_CARD, SBS_PURPLE, provider, connected, onGoRecord }) {
-  const [citizenId,  setCitizenId]  = useState("");
-  const [computing,  setComputing]  = useState(false);
-  const [result,     setResult]     = useState(null);
+  const [citizenId, setCitizenId] = useState("");
+  const [computing, setComputing] = useState(false);
+  const [result, setResult] = useState(null);
 
-  const ndidsSigner = provider
-    ? new ethers.Contract(ADDR.NDIDS, ABI.NDIDS,
-        provider.getSigner ? provider.getSigner() : provider)
-    : null;
-  const ndidsReader = provider
-    ? new ethers.Contract(ADDR.NDIDS, ABI.NDIDS, provider)
-    : null;
+  // This is for reading data (doesn't need await here)
+  const ndidsReader = provider ? new ethers.Contract(ADDR.NDIDS, ABI.NDIDS, provider) : null;
 
   const inputStyle = {
     width:"100%", background:"#0F0820", border:`1px solid ${SBS_PURPLE}55`,
@@ -4342,13 +4356,16 @@ function RegisterCitizenTab({ SBS_CARD, SBS_PURPLE, provider, connected, onGoRec
   const handleRegister = async () => {
     const id = citizenId.trim();
     if (!id) return;
-    if (!connected || !ndidsSigner) {
+    if (!connected) {
       setResult({ error: "Chain offline — start Anvil (anvil &) then reload." });
       return;
     }
     setComputing(true);
     setResult(null);
     try {
+      const signer = await getSigner();
+      if (!signer) throw new Error("No wallet connected");
+      const ndidsSigner = new ethers.Contract(ADDR.NDIDS, ABI.NDIDS, signer);
       const hash = ethers.keccak256(ethers.toUtf8Bytes(id));
       // Check first to give a nicer message
       const already = await ndidsReader.isRegistered(hash);
@@ -6662,7 +6679,9 @@ export default function App() {
 
   // Global all-ministry records -- feeds cross-ministry workflow engine
   const { data:allRecords, loading:allLoading } = usePoll(
-    () => provider ? fetchAllRecords(provider) : Promise.resolve([]),
+    () => (provider && typeof window !== "undefined" && window.ethereum)
+      ? fetchAllRecords(provider)
+      : Promise.resolve([]),
     [provider],
   );
 

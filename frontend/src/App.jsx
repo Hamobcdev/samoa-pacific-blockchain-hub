@@ -15,7 +15,7 @@
  * -------------------------------------------------------------------
  * TEST 1 -- HOME SCREEN
  * -------------------------------------------------------------------
- * ( ) LIVE banner shows "reading from Anvil Local ? Polling every 3s"
+ * ( ) LIVE banner shows "reading from Polygon Amoy Testnet ? Polling every 3s"
  * ( ) Block # increments every 3s
  * ( ) Stats: 6 Government Ministries ? Records On Chain ? Active Workflows ? Citizens Registered
  * ( ) Ministry cards visible: CBS (9 pending), MCIT, MOF (1 pending), EDUCATION, MCIL, CUSTOMS
@@ -185,7 +185,7 @@ import { ethers } from "ethers";
 // ---
 // LIVE — Polygon Amoy Testnet (Chain ID 80002) — deployed March 2026
 const CONFIG = {
-  RPC_URL:     "https://polygon-amoy.g.alchemy.com/v2/BFqRyw7KgnGNql0DYQbZf",
+  RPC_URL:     import.meta.env.VITE_AMOY_RPC_URL,
   NETWORK:     "Polygon Amoy Testnet",
   POLL_MS:     10000,
   ETH_NETWORK: { chainId: 80002, name: "amoy" },
@@ -3365,8 +3365,8 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
             </div>
 
             <div style={{ ...card(), borderLeft:`3px solid ${C.seafoam}` }}>
-              <SectionHead title="Live Contract Addresses" sub={CONFIG.NETWORK === "Anvil Local" ? "Local chain — copy address to verify in Foundry/Cast. Explorer links activate on testnet/mainnet deployment." : "Verify independently on any block explorer"} />
-              {CONFIG.NETWORK === "Anvil Local" && (
+              <SectionHead title="Live Contract Addresses" sub={CONFIG.NETWORK === "Polygon Amoy Testnet" ? "Local chain — copy address to verify in Foundry/Cast. Explorer links activate on testnet/mainnet deployment." : "Verify independently on any block explorer"} />
+              {CONFIG.NETWORK === "Polygon Amoy Testnet" && (
                 <div style={{ padding:"10px 12px", background:C.amber+"14", border:`1px solid ${C.amber}33`, borderRadius:"8px", marginBottom:"12px", fontSize:"11px", color:C.amber }}>
                   ℹ <strong>Local Anvil network detected.</strong> Block explorers (Polygonscan, Etherscan) only index public networks. To inspect these contracts locally, use:<br/>
                   <span style={{ fontFamily:F.mono, color:C.silver, marginTop:"4px", display:"block" }}>cast call {"<ADDRESS>"} "totalRecords()(uint256)" --rpc-url http://127.0.0.1:8545</span>
@@ -3379,7 +3379,7 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
                     <span style={{ fontSize:"12px", fontWeight:700 }}>{label}</span>
                     <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
                       <Mono>{addr.slice(0,8)}...{addr.slice(-6)}</Mono>
-                      {CONFIG.NETWORK === "Anvil Local" ? (
+                      {CONFIG.NETWORK === "Polygon Amoy Testnet" ? (
                         <button onClick={()=>navigator.clipboard?.writeText(addr)} style={{ fontSize:"10px", color:C.seafoam, background:"transparent", border:`1px solid ${C.seafoam}44`, borderRadius:"4px", padding:"2px 7px", cursor:"pointer", fontWeight:700 }}>Copy</button>
                       ) : (
                         <a href={`https://polygonscan.com/address/${addr}`} target="_blank" rel="noreferrer" style={{ fontSize:"10px", color:C.seafoam, textDecoration:"none", fontWeight:700 }}>View ↗</a>
@@ -5913,7 +5913,7 @@ function NDIDSDashboard({ provider, connected, blockNumber, onBack, allRecords }
 
         {/* Contract reference */}
         <div style={{ ...card({ borderLeft:`4px solid ${C.seafoam}` }) }}>
-          <SectionHead title="Contract Reference" sub="NDIDSRegistry deployed on Anvil Local" />
+          <SectionHead title="Contract Reference" sub="NDIDSRegistry deployed on Polygon Amoy Testnet" />
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 12px", background:C.ocean, borderRadius:"8px", marginBottom:"8px" }}>
             <span style={{ fontSize:"12px", fontWeight:700 }}>NDIDSRegistry</span>
             <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
@@ -6187,7 +6187,7 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack, onOpenUN
   return (
     <div style={{ minHeight:"100vh", background:C.deep, fontFamily:F.ui, color:C.white }}>
       <TopBar title={`${roleMeta.icon} ${roleMeta.label} — ${project.name}`} sub={`${project.community} · ${project.donor} · ${project.totalBudget.toLocaleString()} WST`} accent={roleMeta.color} blockNumber={blockNumber} onBack={()=>setRole(null)} />
-      <ConnectionBanner connected={connected} error={null} network="Anvil Local" />
+      <ConnectionBanner connected={connected} error={null} network="Polygon Amoy Testnet" />
       <div style={{ maxWidth:"1080px", margin:"0 auto", padding:"10px 28px 0", display:"flex", gap:"10px", alignItems:"center", flexWrap:"wrap" }}>
         <select value={selectedProject} onChange={e=>{setSelectedProject(e.target.value);setTab("overview");}}
           style={{ background:C.ocean, color:C.white, border:`1px solid ${roleMeta.color}44`, borderRadius:"6px", padding:"5px 10px", fontSize:"12px", fontWeight:700, cursor:"pointer" }}>

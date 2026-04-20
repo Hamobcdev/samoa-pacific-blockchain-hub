@@ -11,7 +11,7 @@ export default defineConfig({
   //   https://hamobcdev.github.io/samoa-pacific-blockchain-hub/
   // not at the root /
   // Set base to your repo name (with leading and trailing slashes):
-  base: '/samoa-pacific-blockchain-hub/',
+  base: '/',
 
   build: {
     outDir: 'dist',        // Vite default — must match 'path:' in deploy.yml

@@ -4,6 +4,8 @@ contracts/cache/
 contracts/lib/
 
 # Frontend
+frontend/.env
+frontend/.env.local
 frontend/node_modules/
 frontend/dist/
 

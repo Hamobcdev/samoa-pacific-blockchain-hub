@@ -191,18 +191,40 @@ const CONFIG = {
   ETH_NETWORK: { chainId: 80002, name: "amoy" },
 };
 
+// ── Gas settings — update for mainnet before go-live ──────────────────────
+// Testnet: generous limits to ensure transactions confirm quickly
+// Mainnet: tighten gasLimit and reduce gwei to minimise real costs
+const GAS = {
+  gasLimit: 500000,
+  maxPriorityFeePerGas: ethers.parseUnits("50", "gwei"),
+  maxFeePerGas:         ethers.parseUnits("100", "gwei"),
+};
+
 const DEPLOYER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
 // Read-only provider for public testnet — no private key needed for reads
 // Transactions require MetaMask or a connected wallet
+// Module-level demo state — set by useWallet hook
+let _demoMode = false;
+let _demoWalletKey = null;
+
 async function getSigner() {
+  // Demo mode — sign with test wallet private key
+  if (_demoMode && _demoWalletKey) {
+    const provider = new ethers.JsonRpcProvider(
+      import.meta.env.VITE_AMOY_RPC_URL,
+      CONFIG.ETH_NETWORK,
+      { staticNetwork: true }
+    );
+    return new ethers.Wallet(_demoWalletKey, provider);
+  }
+  // Real MetaMask
   if (window.ethereum) {
     await window.ethereum.request({ method: "eth_requestAccounts" });
     const provider = new ethers.BrowserProvider(window.ethereum);
     return await provider.getSigner();
   }
-  alert("Please install MetaMask");
-  return null;
+  throw new Error("No wallet available. Use Demo Login or install MetaMask.");
 }
 
 // ---
@@ -1368,22 +1390,46 @@ function StatusBadge({ status }) {
   const color = { Verified:C.seafoam, Released:"#4A9EE0", Pending:C.amber }[label] || C.muted;
   return <span style={{ ...badge(color) }}><span style={{ fontSize:"7px" }}>●</span>{label}</span>;
 }
-function ConnectionBanner({ connected, error, network }) {
-  if (connected) return (
-    <div style={{ background:C.seafoam+"18", borderBottom:`1px solid ${C.seafoam}33`, padding:"6px 28px", display:"flex", gap:"12px", alignItems:"center", fontSize:"11px", flexWrap:"wrap" }}>
-      <span style={{ color:C.seafoam, fontWeight:700 }}>● LIVE — reading from {network}</span>
-      <span style={{ color:C.muted }}>Polling every {CONFIG.POLL_MS/1000}s · transactions appear automatically</span>
-      <span style={{ color:C.muted, borderLeft:`1px solid ${C.ocean}`, paddingLeft:"12px" }}>
-        ℹ Block # advances on each transaction (Anvil mines on demand). On testnet/mainnet blocks advance automatically every ~2–12s depending on chain configuration.
-      </span>
-    </div>
-  );
+function ConnectionBanner({ connected, error, network, walletAddress, connectWallet, disconnect }) {
   return (
-    <div style={{ background:C.amber+"18", borderBottom:`1px solid ${C.amber}33`, padding:"6px 28px", fontSize:"11px", color:C.amber, fontWeight:700 }}>
-      ⚠ {error || "Connecting to chain…"} — showing cached data. Start Anvil and redeploy to go live.
+    <div style={{ 
+      background: connected ? C.seafoam+"18" : C.amber+"18", 
+      borderBottom:`1px solid ${connected ? C.seafoam : C.amber}33`, 
+      padding:"6px 28px", 
+      display:"flex", 
+      gap:"12px", 
+      alignItems:"center", 
+      fontSize:"11px", 
+      flexWrap:"wrap", 
+      justifyContent:"space-between" 
+    }}>
+      <div style={{ display:"flex", gap:"12px", alignItems:"center", flexWrap:"wrap" }}>
+        {connected
+          ? <span style={{ color:C.seafoam, fontWeight:700 }}>● LIVE — reading from {network}</span>
+          : <span style={{ color:C.amber, fontWeight:700 }}>⚠ {error || "Connecting to chain…"} — check your network connection.</span>
+        }
+        {connected && <span style={{ color:C.muted }}>Polling every {CONFIG.POLL_MS/1000}s · transactions appear automatically</span>}
+      </div>
+      <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
+        {walletAddress ? (
+          <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
+            <span style={{ color:C.seafoam, fontSize:"11px" }}>
+              🦊 {walletAddress.slice(0,6)}...{walletAddress.slice(-4)}
+            </span>
+            <button onClick={disconnect} style={{ background:"transparent", border:`1px solid ${C.ocean}`, color:C.muted, borderRadius:"4px", padding:"2px 8px", fontSize:"10px", cursor:"pointer" }}>
+              Disconnect
+            </button>
+          </div>
+        ) : (
+          <button onClick={connectWallet} style={{ background:C.seafoam, color:"#000", border:"none", borderRadius:"4px", padding:"4px 12px", fontSize:"11px", fontWeight:700, cursor:"pointer" }}>
+            🦊 Connect Wallet
+          </button>
+        )}
+      </div>
     </div>
   );
 }
+      
 function TopBar({ title, sub, accent, blockNumber, onBack }) {
   return (
     <div style={{ background:C.abyss, borderBottom:`1px solid ${C.ocean}` }}>
@@ -1828,6 +1874,61 @@ function useProvider() {
   }, []);
   return { provider, connected, error };
 }
+function useWallet() {
+  const [walletAddress, setWalletAddress] = useState(null);
+
+  const connectWallet = async () => {
+    if (!window.ethereum) {
+      alert("Please install MetaMask or Trust Wallet to use this application.");
+      return;
+    }
+    try {
+      const accounts = await window.ethereum.request({ 
+        method: "eth_requestAccounts" 
+      });
+      // Force switch to Polygon Amoy
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: "0x13882" }],
+        });
+      } catch(switchError) {
+        if (switchError.code === 4902) {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [{
+              chainId: "0x13882",
+              chainName: "Polygon Amoy Testnet",
+              nativeCurrency: { name: "POL", symbol: "POL", decimals: 18 },
+              rpcUrls: ["https://rpc-amoy.polygon.technology"],
+              blockExplorerUrls: ["https://amoy.polygonscan.com"]
+            }]
+          });
+        }
+      }
+      setWalletAddress(accounts[0]);
+      _demoMode = false;
+      _demoWalletKey = null;
+    } catch(e) {
+      console.error("Wallet connection failed:", e.message);
+    }
+  };
+
+  const disconnect = () => {
+    setWalletAddress(null);
+    _demoMode = false;
+    _demoWalletKey = null;
+  };
+
+  useEffect(() => {
+    if (!window.ethereum) return;
+    const handler = (accounts) => setWalletAddress(accounts[0] || null);
+    window.ethereum.on('accountsChanged', handler);
+    return () => window.ethereum.removeListener('accountsChanged', handler);
+  }, []);
+
+  return { walletAddress, connectWallet, disconnect };
+}
 
 function useContract(address, abi, provider) {
   return useMemo(() => {
@@ -2105,11 +2206,9 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
         form.serviceType,
         dHash,
         form.ndidsVerified,
-        {
-          maxPriorityFeePerGas: ethers.parseUnits("30", "gwei"),
-          maxFeePerGas: ethers.parseUnits("35", "gwei"),
-        }
+        GAS
       );
+      
       setTxMsg({ type:"info", text:"Awaiting confirmation…" });
       const receipt  = await tx.wait();
 
@@ -2122,7 +2221,7 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
         const ndidsSigner   = new ethers.Contract(ADDR.NDIDS, ABI.NDIDS, signer);
         const alreadyInNDIDS = await ndidsSigner.isRegistered(cHash).catch(()=>false);
         if (!alreadyInNDIDS) {
-          const ndidsTx = await ndidsSigner.registerCitizen(cHash);
+          const ndidsTx = await ndidsSigner.registerCitizen(cHash, GAS);
           await ndidsTx.wait();
           // Silent success — no user-facing message needed
         }
@@ -2487,7 +2586,7 @@ function RecordServiceTab({ ministryCode, provider, connected, onSuccess, prefil
 // ---
 // MINISTRY DASHBOARD -- v8: 4 tabs per ministry
 // ---
-function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onBack, onNavigate, allRecords, allLoading, citizenPayments, onPaymentProcessed }) {
+function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onBack, onNavigate, allRecords, allLoading, citizenPayments, onPaymentProcessed, walletAddress, connectWallet, disconnect }) {
   const meta    = MINISTRY_META[ministryCode];
   const addr    = MINISTRY_ADDRS[ministryCode];
 
@@ -2557,7 +2656,14 @@ function MinistryDashboard({ ministryCode, provider, connected, blockNumber, onB
         blockNumber={blockNumber}
         onBack={onBack}
       />
-      <ConnectionBanner connected={connected} error={!connected?"Chain offline — showing demo data":null} network={CONFIG.NETWORK} />
+      <ConnectionBanner 
+        connected={connected} 
+        error={!connected ? "Chain offline — check your network connection." : null} 
+        network={CONFIG.NETWORK}
+        walletAddress={walletAddress}
+        connectWallet={connectWallet}
+        disconnect={disconnect}
+      />
       <TabNav tabs={tabs} active={tab} onChange={setTab} accent={meta.color} />
 
       <div style={{ maxWidth:"1080px", margin:"0 auto", padding:"28px" }}>
@@ -3237,7 +3343,7 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
       const aidW   = new ethers.Contract(ADDR.AID, ABI.AID, signer);
       const evHash = ethers.keccak256(ethers.toUtf8Bytes(verForm.evidence || `UNICEF-VERIFY-${Date.now()}`));
       const bens   = parseInt(verForm.beneficiaries) || enrolmentCount || 1;
-      const tx     = await aidW.verifyUsage(parseInt(verForm.grantId), parseInt(verForm.trancheId), evHash, bens);
+      const tx     = await aidW.verifyUsage(parseInt(verForm.grantId), parseInt(verForm.trancheId), evHash, bens, GAS);
       await tx.wait();
       setTxMsg({ type:"success", text:`✓ verifyUsage() confirmed on chain! Grant ${verForm.grantId} Tranche ${verForm.trancheId} verified. Beneficiaries: ${bens}. Tx: ${short(tx.hash)}` });
     } catch(e) { setTxMsg({ type:"error", text:e.reason || e.message || "verifyUsage() failed." }); }
@@ -3250,7 +3356,7 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
     try {
       const signer = await getSigner();
       const aidW   = new ethers.Contract(ADDR.AID, ABI.AID, signer);
-      const tx     = await aidW.releaseTranche(parseInt(relForm.grantId), parseInt(relForm.trancheId));
+      const tx     = await aidW.releaseTranche(parseInt(relForm.grantId), parseInt(relForm.trancheId), GAS);
       await tx.wait();
       setTxMsg({ type:"success", text:`✓ releaseTranche() confirmed! Tranche ${relForm.trancheId} released. Tx: ${short(tx.hash)}` });
     } catch(e) { setTxMsg({ type:"error", text:e.reason || e.message || "releaseTranche() failed." }); }
@@ -3773,7 +3879,7 @@ function RegistryTab({ SBS_CARD, SBS_PURPLE, myRecords, lastReceipt, idLookup, s
       const signer = await getSigner();
       if (!signer) throw new Error("No wallet connected");
       const ndidsSigner = new ethers.Contract(ADDR.NDIDS, ABI.NDIDS, signer);
-      const tx = await ndidsSigner.registerCitizen(h);
+      const tx = await ndidsSigner.registerCitizen(h, GAS);
       await tx.wait();
       return { id:citizenId, hash:h, status:"registered", txHash:tx.hash };
     } catch(e) {
@@ -4374,7 +4480,7 @@ function RegisterCitizenTab({ SBS_CARD, SBS_PURPLE, provider, connected, onGoRec
         setComputing(false);
         return;
       }
-      const tx = await ndidsSigner.registerCitizen(hash);
+      const tx = await ndidsSigner.registerCitizen(hash, GAS);
       await tx.wait();
       setResult({ hash, status:"registered", txHash: tx.hash });
     } catch(e) {
@@ -6654,6 +6760,7 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack, onOpenUN
 // ---
 export default function App() {
   const { provider, connected, error } = useProvider();
+  const { walletAddress, connectWallet, disconnect } = useWallet();
   const [view,        setView]        = useState("home");
   const [blockNumber, setBlockNumber] = useState(null);
 
@@ -6691,7 +6798,14 @@ export default function App() {
 
   return (
     <div style={{ fontFamily:F.ui }}>
-      <ConnectionBanner connected={connected} error={error} network={CONFIG.NETWORK} />
+      <ConnectionBanner 
+        connected={connected} 
+        error={error} 
+        network={CONFIG.NETWORK}
+        walletAddress={walletAddress}
+        connectWallet={connectWallet}
+        disconnect={disconnect}
+      />
 
       {view === "home" && (
         <Home {...sharedProps} onSelect={v => setView(v)} />
@@ -6719,6 +6833,9 @@ export default function App() {
           onPaymentProcessed={(payRef) =>
             setCitizenPayments(p => p.map(cp => cp.payRef===payRef ? {...cp, status:"complete"} : cp))
           }
+          walletAddress={walletAddress}
+          connectWallet={connectWallet}
+          disconnect={disconnect}
         />
       )}
 

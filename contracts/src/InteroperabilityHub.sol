@@ -6,6 +6,7 @@ import { MinistryNode } from "./MinistryNode.sol";
 import { AIDisbursementTracker } from "./AIDisbursementTracker.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import { ReentrancyGuardUpgradeable } from "./utils/ReentrancyGuardUpgradeable.sol";
 
 /**
@@ -24,7 +25,7 @@ import { ReentrancyGuardUpgradeable } from "./utils/ReentrancyGuardUpgradeable.s
 /// @notice Central registry and cross-ministry workflow hub.
 /// Operates under MCIT Digital Economy Policy 2022.
 /// BIS PFMI P11 compliance: legal basis documented.
-contract InteroperabilityHub is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
+contract InteroperabilityHub is Initializable, UUPSUpgradeable, Pausable, ReentrancyGuardUpgradeable {
 
     // ── Structs ──────────────────────────────────────────────────
 
@@ -39,6 +40,7 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, ReentrancyGuardU
     // ── State ────────────────────────────────────────────────────
 
     address public ADMIN;
+    address public pauseAuthority;
     NDIDSRegistry         public ndids;
     AIDisbursementTracker public aidTracker;
 
@@ -68,6 +70,7 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, ReentrancyGuardU
 
     // ── Events ───────────────────────────────────────────────────
 
+    event PauseAuthoritySet(address indexed authority);
     event MinistryRegistered(string code, string name, address contractAddr);
     event PermissionGranted(string fromCode, string toCode);
     event PermissionRevoked(string fromCode, string toCode);
@@ -97,6 +100,7 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, ReentrancyGuardU
         if (admin_ == address(0)) revert ZeroAddress();
         __ReentrancyGuard_init();
         ADMIN = admin_;
+        pauseAuthority = admin_;
     }
 
     modifier onlyAdmin() {
@@ -106,7 +110,11 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, ReentrancyGuardU
 
     function _onlyAdmin() view internal {
         if (msg.sender != ADMIN) revert Unauthorised();
+    }
 
+    modifier onlyPauseAuthority() {
+        if (msg.sender != pauseAuthority) revert Unauthorised();
+        _;
     }
 
     // ── Setup ────────────────────────────────────────────────────
@@ -132,7 +140,7 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, ReentrancyGuardU
         string calldata name,
         string calldata code,
         address contractAddr
-    ) external onlyAdmin {
+    ) external onlyAdmin whenNotPaused {
         if (ministryExists[code]) revert AlreadyExists();
         ministryIndex[code] = ministries.length;
         ministryExists[code] = true;
@@ -153,7 +161,7 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, ReentrancyGuardU
      * @notice Grant ministry B read access to ministry A's records
      */
     function grantPermission(string calldata fromCode, string calldata toCode)
-        external onlyAdmin
+        external onlyAdmin whenNotPaused
     {
         if (!ministryExists[fromCode] || !ministryExists[toCode])
             revert MinistryNotFound();
@@ -178,7 +186,7 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, ReentrancyGuardU
      *         Calls revokeReader() on the from-node passing the to-node address.
      */
     function revokePermission(string calldata fromCode, string calldata toCode)
-        external onlyAdmin
+        external onlyAdmin whenNotPaused
     {
         if (!ministryExists[fromCode] || !ministryExists[toCode])
             revert MinistryNotFound();
@@ -210,7 +218,7 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, ReentrancyGuardU
         address educationNode,
         address mofNode,
         bytes32 dataHash
-    ) external onlyAdmin nonReentrant returns (bool success) {
+    ) external onlyAdmin whenNotPaused nonReentrant returns (bool success) {
 
         // Validate both node addresses against the hub's own registry (FIX 3)
         if (!isRegisteredNode[educationNode]) revert UnregisteredMinistryNode(educationNode);
@@ -304,6 +312,26 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, ReentrancyGuardU
     /// @notice Returns all registered ministry structs.
     function getAllMinistries() external view returns (Ministry[] memory) {
         return ministries;
+    }
+
+    // ── Circuit Breaker ──────────────────────────────────────────
+
+    // CBS-BLOCKED: pause/unpause requires multi-sig governance approval.
+    // Single-key pause authority is acceptable for PoC; replace with
+    // a Gnosis Safe or Governor contract before mainnet.
+
+    function pause() external onlyPauseAuthority {
+        _pause();
+    }
+
+    function unpause() external onlyPauseAuthority {
+        _unpause();
+    }
+
+    function setPauseAuthority(address newAuthority) external onlyAdmin {
+        if (newAuthority == address(0)) revert ZeroAddress();
+        pauseAuthority = newAuthority;
+        emit PauseAuthoritySet(newAuthority);
     }
 
     // ── UUPS ─────────────────────────────────────────────────────

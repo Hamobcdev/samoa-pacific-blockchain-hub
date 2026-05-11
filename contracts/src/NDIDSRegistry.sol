@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
  * @title NDIDSRegistry
@@ -13,15 +14,41 @@ import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
  *
  *      Part of the Samoa Pacific Blockchain Hub - UNICEF Venture Fund PoC
  *      https://github.com/Hamobcdev/samoa-pacific-blockchain-hub
+ *
+ * GOV-1-DID (Phase 2): W3C Decentralised Identifier interoperability scaffold.
+ *
+ * When Samoa adopts W3C DID as the national identity layer, this registry
+ * can serve as the on-chain DID Document resolver for the "did:samoa:" method.
+ *
+ * Planned interface (blocked pending SBS/MCIT standards adoption):
+ *
+ *   interface IDIDResolver {
+ *       /// @notice Resolve a W3C DID to its on-chain verification material.
+ *       /// @param did  The DID string, e.g. "did:samoa:abc123"
+ *       /// @return document  ABI-encoded DID Document (or IPFS CID pointer)
+ *       function resolve(string calldata did) external view returns (bytes memory document);
+ *
+ *       /// @notice Register a new DID Document for a citizen (replaces citizenHash model).
+ *       function registerDID(string calldata did, bytes calldata document) external;
+ *
+ *       /// @notice Update a DID Document (increments version, keeps audit trail).
+ *       function updateDID(string calldata did, bytes calldata newDocument) external;
+ *   }
+ *
+ * The citizenHash model implemented here is compatible: the hash of the DID string
+ * can serve as the citizenHash, preserving zero-knowledge properties while enabling
+ * W3C-compliant resolution by any external verifier. No code change needed to the
+ * existing registry — only the resolver layer needs to be added above it.
  */
 /// @notice Samoa National Digital Identity Registry.
 /// Operates under authority of the CBS Act 2015.
 /// BIS PFMI P11 compliance: legal basis documented.
-contract NDIDSRegistry is Initializable, UUPSUpgradeable {
+contract NDIDSRegistry is Initializable, UUPSUpgradeable, Pausable {
 
     // ── State ────────────────────────────────────────────────────
 
     address public ADMIN;                       // NDIDS authority (SBS/MCIT)
+    address public pauseAuthority;
     uint256 public totalRegistered;
 
     // citizenHash => registered
@@ -39,6 +66,7 @@ contract NDIDSRegistry is Initializable, UUPSUpgradeable {
 
     // ── Events ───────────────────────────────────────────────────
 
+    event PauseAuthoritySet(address indexed authority);
     event CitizenRegistered(bytes32 indexed citizenHash, uint256 timestamp);
     event ReadAccessGranted(bytes32 indexed citizenHash, address indexed ministry);
     event ReadAccessRevoked(bytes32 indexed citizenHash, address indexed ministry);
@@ -63,12 +91,18 @@ contract NDIDSRegistry is Initializable, UUPSUpgradeable {
     function initialize(address admin_) public initializer {
         if (admin_ == address(0)) revert ZeroAddress();
         ADMIN = admin_;
+        pauseAuthority = admin_;
     }
 
     // ── Modifiers ────────────────────────────────────────────────
 
     modifier onlyAdmin() {
         if (msg.sender != ADMIN) revert Unauthorised();
+        _;
+    }
+
+    modifier onlyPauseAuthority() {
+        if (msg.sender != pauseAuthority) revert Unauthorised();
         _;
     }
 
@@ -79,7 +113,7 @@ contract NDIDSRegistry is Initializable, UUPSUpgradeable {
      * @param citizenHash keccak256(abi.encodePacked(citizenId, salt))
      *        Salt is kept off-chain by the citizen — preserves privacy.
      */
-    function registerCitizen(bytes32 citizenHash) external onlyAdmin {
+    function registerCitizen(bytes32 citizenHash) external onlyAdmin whenNotPaused {
         if (_registered[citizenHash]) revert AlreadyRegistered();
         _registered[citizenHash] = true;
         totalRegistered++;
@@ -91,7 +125,7 @@ contract NDIDSRegistry is Initializable, UUPSUpgradeable {
      * @notice Batch register multiple citizens (gas efficient for bulk import)
      * @dev Uses local accumulator to minimise SSTORE ops on totalRegistered
      */
-    function batchRegister(bytes32[] calldata hashes) external onlyAdmin {
+    function batchRegister(bytes32[] calldata hashes) external onlyAdmin whenNotPaused {
         uint256 newRegistrations = 0;
         for (uint256 i = 0; i < hashes.length; i++) {
             // duplicate check — skip already registered hashes silently
@@ -112,14 +146,14 @@ contract NDIDSRegistry is Initializable, UUPSUpgradeable {
      * @notice Grant a ministry contract permission to verify this citizen
      * @dev Called by ADMIN — citizen consent recorded off-chain per GDPR/privacy law
      */
-    function grantReadAccess(bytes32 citizenHash, address ministry) external onlyAdmin {
+    function grantReadAccess(bytes32 citizenHash, address ministry) external onlyAdmin whenNotPaused {
         if (!_registered[citizenHash]) revert NotRegistered(citizenHash);
         _readAccess[citizenHash][ministry] = true;
         emit ReadAccessGranted(citizenHash, ministry);
     }
 
     /// @notice Revoke a ministry contract's permission to verify this citizen.
-    function revokeReadAccess(bytes32 citizenHash, address ministry) external onlyAdmin {
+    function revokeReadAccess(bytes32 citizenHash, address ministry) external onlyAdmin whenNotPaused {
         if (!_registered[citizenHash]) revert NotRegistered(citizenHash);
         _readAccess[citizenHash][ministry] = false;
         emit ReadAccessRevoked(citizenHash, ministry);
@@ -159,9 +193,29 @@ contract NDIDSRegistry is Initializable, UUPSUpgradeable {
     }
 
     /// @notice Renew the verification timestamp for a citizen, resetting their 365-day window.
-    function renewVerification(bytes32 citizenHash) external onlyAdmin {
+    function renewVerification(bytes32 citizenHash) external onlyAdmin whenNotPaused {
         verifiedAt[citizenHash] = block.timestamp;
         emit VerificationRenewed(citizenHash);
+    }
+
+    // ── Circuit Breaker ──────────────────────────────────────────
+
+    // CBS-BLOCKED: pause/unpause requires multi-sig governance approval.
+    // Single-key pause authority is acceptable for PoC; replace with
+    // a Gnosis Safe or Governor contract before mainnet.
+
+    function pause() external onlyPauseAuthority {
+        _pause();
+    }
+
+    function unpause() external onlyPauseAuthority {
+        _unpause();
+    }
+
+    function setPauseAuthority(address newAuthority) external onlyAdmin {
+        if (newAuthority == address(0)) revert ZeroAddress();
+        pauseAuthority = newAuthority;
+        emit PauseAuthoritySet(newAuthority);
     }
 
     // ── UUPS ─────────────────────────────────────────────────────

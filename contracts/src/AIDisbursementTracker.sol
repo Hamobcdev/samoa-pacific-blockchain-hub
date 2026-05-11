@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
  * @title AIDisbursementTracker
@@ -22,7 +23,7 @@ import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 /// @notice Aid grant lifecycle and tranche release tracker.
 /// Operates under Ministry of Finance Public Finance Management Act.
 /// BIS PFMI P11 compliance documented.
-contract AIDisbursementTracker is Initializable, UUPSUpgradeable {
+contract AIDisbursementTracker is Initializable, UUPSUpgradeable, Pausable {
 
     // ── Enums ────────────────────────────────────────────────────
 
@@ -61,6 +62,7 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable {
     // ── State ────────────────────────────────────────────────────
 
     address public ADMIN;
+    address public pauseAuthority;
     uint256 public totalGrants;
     uint256 public totalDisbursed;
     uint256 public totalVerified;
@@ -80,6 +82,7 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable {
 
     // ── Events ───────────────────────────────────────────────────
 
+    event PauseAuthoritySet(address indexed authority);
     event GrantCreated(
         uint256 indexed grantId,
         address indexed donor,
@@ -133,6 +136,7 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable {
     function initialize(address admin_) public initializer {
         if (admin_ == address(0)) revert ZeroAddress();
         ADMIN = admin_;
+        pauseAuthority = admin_;
     }
 
     modifier onlyAdmin() {
@@ -142,7 +146,11 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable {
 
     function _onlyAdmin() internal view {
         if (msg.sender != ADMIN) revert Unauthorised();
+    }
 
+    modifier onlyPauseAuthority() {
+        if (msg.sender != pauseAuthority) revert Unauthorised();
+        _;
     }
 
     modifier onlyVerifier() {
@@ -169,7 +177,7 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable {
         string calldata sector,
         string[] calldata milestones,
         uint256[] calldata trancheAmounts
-    ) external onlyAdmin returns (uint256 grantId) {
+    ) external onlyAdmin whenNotPaused returns (uint256 grantId) {
         require(milestones.length == trancheAmounts.length, "Mismatch");
         require(milestones.length > 0, "No tranches");
 
@@ -213,7 +221,7 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable {
      * @notice Release a funding tranche when milestone is achieved
      *         Called by ADMIN (or in production: triggered by ministry node confirmation)
      */
-    function releaseTranche(uint256 grantId, uint256 trancheId) external onlyAdmin {
+    function releaseTranche(uint256 grantId, uint256 trancheId) external onlyAdmin whenNotPaused {
         if (grantId >= totalGrants) revert GrantNotFound();
         Grant storage g = _grants[grantId];
         if (g.status != GrantStatus.Active) revert GrantNotActive();
@@ -247,7 +255,7 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable {
         uint256 trancheId,
         bytes32 evidenceHash,
         uint256 beneficiariesServed
-    ) external onlyVerifier {
+    ) external onlyVerifier whenNotPaused {
         if (grantId >= totalGrants) revert GrantNotFound();
         Grant storage g = _grants[grantId];
         if (trancheId >= g.tranches.length) revert InvalidTranche();
@@ -274,20 +282,20 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable {
     // ── Access Control ───────────────────────────────────────────
 
     /// @notice Authorise an address as a field verifier for grant usage reports.
-    function authoriseVerifier(address verifier) external onlyAdmin {
+    function authoriseVerifier(address verifier) external onlyAdmin whenNotPaused {
         authorisedVerifiers[verifier] = true;
         emit VerifierAuthorised(verifier);
     }
 
     /// @notice Revoke an address's field verifier status.
-    function revokeVerifier(address verifier) external onlyAdmin {
+    function revokeVerifier(address verifier) external onlyAdmin whenNotPaused {
         if (!authorisedVerifiers[verifier]) revert NotAVerifier();
         authorisedVerifiers[verifier] = false;
         emit VerifierRevoked(verifier);
     }
 
     /// @notice Suspend an active grant, halting further tranche releases.
-    function suspendGrant(uint256 grantId) external onlyAdmin {
+    function suspendGrant(uint256 grantId) external onlyAdmin whenNotPaused {
         if (grantId >= totalGrants) revert GrantNotFound();
         Grant storage g = _grants[grantId];
         if (g.status != GrantStatus.Active) revert InvalidStateTransition();
@@ -296,7 +304,7 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable {
     }
 
     /// @notice Cancel a grant permanently — active or suspended grants only.
-    function cancelGrant(uint256 grantId) external onlyAdmin {
+    function cancelGrant(uint256 grantId) external onlyAdmin whenNotPaused {
         if (grantId >= totalGrants) revert GrantNotFound();
         Grant storage g = _grants[grantId];
         if (g.status == GrantStatus.Completed || g.status == GrantStatus.Cancelled)
@@ -369,6 +377,26 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable {
         }
         g.status = GrantStatus.Completed;
         emit GrantCompleted(grantId, block.timestamp); // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
+    }
+
+    // ── Circuit Breaker ──────────────────────────────────────────
+
+    // CBS-BLOCKED: pause/unpause requires multi-sig governance approval.
+    // Single-key pause authority is acceptable for PoC; replace with
+    // a Gnosis Safe or Governor contract before mainnet.
+
+    function pause() external onlyPauseAuthority {
+        _pause();
+    }
+
+    function unpause() external onlyPauseAuthority {
+        _unpause();
+    }
+
+    function setPauseAuthority(address newAuthority) external onlyAdmin {
+        if (newAuthority == address(0)) revert ZeroAddress();
+        pauseAuthority = newAuthority;
+        emit PauseAuthoritySet(newAuthority);
     }
 
     // ── UUPS ─────────────────────────────────────────────────────

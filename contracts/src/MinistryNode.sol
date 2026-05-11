@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import { NDIDSRegistry } from "./NDIDSRegistry.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import { ReentrancyGuardUpgradeable } from "./utils/ReentrancyGuardUpgradeable.sol";
 
 /**
@@ -23,7 +24,7 @@ import { ReentrancyGuardUpgradeable } from "./utils/ReentrancyGuardUpgradeable.s
 /// @notice Per-ministry service record ledger.
 /// Authorised under relevant ministry enabling legislation.
 /// BIS PFMI P11 compliance: legal basis documented.
-contract MinistryNode is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
+contract MinistryNode is Initializable, UUPSUpgradeable, Pausable, ReentrancyGuardUpgradeable {
 
     // ── Identity ─────────────────────────────────────────────────
 
@@ -32,6 +33,7 @@ contract MinistryNode is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradea
     address public MINISTRY_ADMIN;
     address public NDIDS_ADDRESS;
     address public hub;
+    address public pauseAuthority;
 
     // ── Service Type Allowlist ────────────────────────────────────
     // Canonical service type identifiers — keccak256 of the string label.
@@ -80,6 +82,7 @@ contract MinistryNode is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradea
 
     // ── Events ───────────────────────────────────────────────────
 
+    event PauseAuthoritySet(address indexed authority);
     event ServiceDelivered(
         uint256 indexed recordId,
         bytes32 indexed citizenHash,
@@ -125,6 +128,7 @@ contract MinistryNode is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradea
         ministryCode   = _code;
         MINISTRY_ADMIN = _admin;
         NDIDS_ADDRESS  = _ndids;
+        pauseAuthority = _admin;
         validServiceTypes[EDUCATION_ENROLMENT] = true;
         validServiceTypes[HEALTH_VISIT]        = true;
         validServiceTypes[MOF_PAYMENT]         = true;
@@ -144,6 +148,11 @@ contract MinistryNode is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradea
     }
     function _onlyAdmin() internal view {
         if (msg.sender != MINISTRY_ADMIN) revert UnauthorisedCaller();
+    }
+
+    modifier onlyPauseAuthority() {
+        if (msg.sender != pauseAuthority) revert UnauthorisedCaller();
+        _;
     }
 
     // Permits only the wired hub contract.
@@ -191,7 +200,7 @@ contract MinistryNode is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradea
     // ── Hub Migration (48-hour timelock) ─────────────────────────
 
     /// @notice Propose a hub migration — starts the 48-hour timelock.
-    function proposeHubMigration(address _newHub) external onlyAdmin {
+    function proposeHubMigration(address _newHub) external onlyAdmin whenNotPaused {
         if (_newHub == address(0)) revert ZeroAddress();
         pendingHub = _newHub;
         // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
@@ -200,7 +209,7 @@ contract MinistryNode is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradea
     }
 
     /// @notice Confirm a pending hub migration after the 48-hour timelock has elapsed.
-    function confirmHubMigration() external onlyAdmin {
+    function confirmHubMigration() external onlyAdmin whenNotPaused {
         if (pendingHub == address(0)) revert MigrationNotPending();
         // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
         if (block.timestamp < migrationProposedAt + HUB_MIGRATION_DELAY) revert TimelockNotExpired();
@@ -228,7 +237,7 @@ contract MinistryNode is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradea
         string calldata serviceType,
         bytes32 dataHash,
         bool verifyViaNDIDS
-    ) external onlyAdminOrHub nonReentrant returns (uint256 recordId) {
+    ) external onlyAdminOrHub whenNotPaused nonReentrant returns (uint256 recordId) {
         // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
         require(block.timestamp >= lastRecordedAt + MIN_RECORD_DELAY || lastRecordedAt == 0, "TimestampTooSoon");
         if (!validServiceTypes[keccak256(bytes(serviceType))]) revert InvalidServiceType();
@@ -257,13 +266,13 @@ contract MinistryNode is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradea
     // ── Cross-Ministry Read Access ───────────────────────────────
 
     /// @notice Grant another ministry contract read access to this node's service records.
-    function authoriseReader(address reader) external onlyAdminOrHub {
+    function authoriseReader(address reader) external onlyAdminOrHub whenNotPaused {
         authorisedReaders[reader] = true;
         emit ReaderAuthorised(reader);
     }
 
     /// @notice Revoke a ministry contract's read access to this node's service records.
-    function revokeReader(address reader) external onlyAdminOrHub {
+    function revokeReader(address reader) external onlyAdminOrHub whenNotPaused {
         authorisedReaders[reader] = false;
         emit ReaderRevoked(reader);
     }
@@ -293,6 +302,26 @@ contract MinistryNode is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradea
     /// @notice Returns the total number of service records stored in this ministry node.
     function totalRecords() external view returns (uint256) {
         return _records.length;
+    }
+
+    // ── Circuit Breaker ──────────────────────────────────────────
+
+    // CBS-BLOCKED: pause/unpause requires multi-sig governance approval.
+    // Single-key pause authority is acceptable for PoC; replace with
+    // a Gnosis Safe or Governor contract before mainnet.
+
+    function pause() external onlyPauseAuthority {
+        _pause();
+    }
+
+    function unpause() external onlyPauseAuthority {
+        _unpause();
+    }
+
+    function setPauseAuthority(address newAuthority) external onlyAdmin {
+        if (newAuthority == address(0)) revert ZeroAddress();
+        pauseAuthority = newAuthority;
+        emit PauseAuthoritySet(newAuthority);
     }
 
     // ── UUPS ─────────────────────────────────────────────────────

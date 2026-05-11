@@ -37,6 +37,7 @@ contract Step3_WireAndSeed is Script {
         address mcilAddr       = vm.envAddress("MCIL_ADDRESS");
         address educationAddr  = vm.envAddress("EDUCATION_ADDRESS");
         address customsAddr    = vm.envAddress("CUSTOMS_ADDRESS");
+        address sbsAddr        = vm.envAddress("SBS_ADDRESS");
 
         NDIDSRegistry         ndids      = NDIDSRegistry(ndidsAddr);
         AIDisbursementTracker aidTracker = AIDisbursementTracker(aidAddr);
@@ -63,6 +64,9 @@ contract Step3_WireAndSeed is Script {
         MinistryNode(customsAddr).setHub(hubAddr);
         require(MinistryNode(customsAddr).hub() == hubAddr, "CUSTOMS: hub not set");
 
+        MinistryNode(sbsAddr).setHub(hubAddr);
+        require(MinistryNode(sbsAddr).hub() == hubAddr, "SBS: hub not set");
+
         // Tx 7: Wire NDIDS into hub
         hub.setNDIDS(ndidsAddr);
         require(address(hub.ndids()) == ndidsAddr, "Hub: NDIDS not wired");
@@ -78,6 +82,7 @@ contract Step3_WireAndSeed is Script {
         hub.registerMinistry("Ministry of Commerce Industry and Labour", "MCIL",      mcilAddr);
         hub.registerMinistry("Ministry of Education Sports and Culture", "EDUCATION", educationAddr);
         hub.registerMinistry("Ministry of Customs and Revenue",          "CUSTOMS",   customsAddr);
+        hub.registerMinistry("Samoa Bureau of Statistics",               "SBS",       sbsAddr);
 
         // Tx 4-8: Seed 5 demo citizens with Education node access
         for (uint256 i = 0; i < 5; i++) {
@@ -124,11 +129,13 @@ contract Step3_WireAndSeed is Script {
         console.log("MOF:       ", mofAddr);
         console.log("EDUCATION: ", educationAddr);
         console.log("CUSTOMS:   ", customsAddr);
+        console.log("SBS:       ", sbsAddr);
         console.log("");
         console.log("Verify on Polygonscan:");
         console.log("https://amoy.polygonscan.com/address/", hubAddr);
 
-        // Suppress unused variable warning
+        // Suppress unused variable warnings
         adminAddr;
+        mcilAddr;
     }
 }

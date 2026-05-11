@@ -49,6 +49,7 @@ contract Step2_MinistryNodes is Script {
         address adminMcil      = vm.envOr("ADMIN_MCIL",      address(0));
         address adminEducation = vm.envOr("ADMIN_EDUCATION", address(0));
         address adminCustoms   = vm.envOr("ADMIN_CUSTOMS",   address(0));
+        address adminSbs       = vm.envOr("ADMIN_SBS",       address(0));
 
         require(adminCbs       != address(0), "Missing env var: ADMIN_CBS");
         require(adminMcit      != address(0), "Missing env var: ADMIN_MCIT");
@@ -56,6 +57,7 @@ contract Step2_MinistryNodes is Script {
         require(adminMcil      != address(0), "Missing env var: ADMIN_MCIL");
         require(adminEducation != address(0), "Missing env var: ADMIN_EDUCATION");
         require(adminCustoms   != address(0), "Missing env var: ADMIN_CUSTOMS");
+        require(adminSbs       != address(0), "Missing env var: ADMIN_SBS");
 
         vm.startBroadcast();
 
@@ -77,6 +79,9 @@ contract Step2_MinistryNodes is Script {
         MinistryNode customsNode = new MinistryNode(
             "Ministry of Customs and Revenue", "CUSTOMS", adminCustoms, ndidsAddr
         );
+        MinistryNode sbsNode = new MinistryNode(
+            "Samoa Bureau of Statistics", "SBS", adminSbs, ndidsAddr
+        );
 
         vm.stopBroadcast();
 
@@ -87,6 +92,7 @@ contract Step2_MinistryNodes is Script {
         console.log("MCIL:      ", address(mcilNode));
         console.log("EDUCATION: ", address(educationNode));
         console.log("CUSTOMS:   ", address(customsNode));
+        console.log("SBS:       ", address(sbsNode));
         console.log("");
         console.log("Ministry admins:");
         console.log("  CBS admin:       ", adminCbs);
@@ -95,6 +101,7 @@ contract Step2_MinistryNodes is Script {
         console.log("  MCIL admin:      ", adminMcil);
         console.log("  EDUCATION admin: ", adminEducation);
         console.log("  CUSTOMS admin:   ", adminCustoms);
+        console.log("  SBS admin:       ", adminSbs);
         console.log("");
         console.log("Now add these to your .env before running Step 3:");
         console.log("CBS_ADDRESS=",       address(cbsNode));
@@ -103,5 +110,6 @@ contract Step2_MinistryNodes is Script {
         console.log("MCIL_ADDRESS=",      address(mcilNode));
         console.log("EDUCATION_ADDRESS=", address(educationNode));
         console.log("CUSTOMS_ADDRESS=",   address(customsNode));
+        console.log("SBS_ADDRESS=",       address(sbsNode));
     }
 }

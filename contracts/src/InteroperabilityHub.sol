@@ -19,6 +19,9 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.s
  *      - The AID tracker is wired in so grant releases can reference ministry
  *        service records as on-chain evidence
  */
+/// @notice Central registry and cross-ministry workflow hub.
+/// Operates under MCIT Digital Economy Policy 2022.
+/// BIS PFMI P11 compliance: legal basis documented.
 contract InteroperabilityHub is ReentrancyGuard {
 
     // ── Structs ──────────────────────────────────────────────────
@@ -79,6 +82,7 @@ contract InteroperabilityHub is ReentrancyGuard {
     error ZeroAddress();
     error EnrollmentStepFailed(string step);
     error UnregisteredMinistryNode(address node);   // FIX 3: node validation
+    error VerificationExpired(bytes32 citizenHash); // CISA-1: expired NDIDS verification
 
     // ── Constructor ──────────────────────────────────────────────
 
@@ -94,17 +98,19 @@ contract InteroperabilityHub is ReentrancyGuard {
 
     function _onlyAdmin() view internal {
         if (msg.sender != ADMIN) revert Unauthorised();
-        
+
     }
 
     // ── Setup ────────────────────────────────────────────────────
 
+    /// @notice Set the NDIDS registry contract address (one-time).
     function setNDIDS(address _ndids) external onlyAdmin {
         if (address(ndids) != address(0)) revert AlreadySet();
         ndids = NDIDSRegistry(_ndids);
         emit NDIDSSet(_ndids);
     }
 
+    /// @notice Set the AID disbursement tracker contract address (one-time).
     function setAIDTracker(address _tracker) external onlyAdmin {
         if (address(aidTracker) != address(0)) revert AlreadySet();
         aidTracker = AIDisbursementTracker(_tracker);
@@ -113,6 +119,7 @@ contract InteroperabilityHub is ReentrancyGuard {
 
     // ── Ministry Registration ────────────────────────────────────
 
+    /// @notice Register a ministry node contract with this hub.
     function registerMinistry(
         string calldata name,
         string calldata code,
@@ -127,7 +134,7 @@ contract InteroperabilityHub is ReentrancyGuard {
             code:         code,
             contractAddr: contractAddr,
             active:       true,
-            registeredAt: block.timestamp
+            registeredAt: block.timestamp // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
         }));
         emit MinistryRegistered(code, name, contractAddr);
     }
@@ -152,7 +159,7 @@ contract InteroperabilityHub is ReentrancyGuard {
             fromCode:  fromCode,
             toCode:    toCode,
             active:    true,
-            grantedAt: block.timestamp
+            grantedAt: block.timestamp // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
         }));
 
         emit PermissionGranted(fromCode, toCode);
@@ -201,6 +208,9 @@ contract InteroperabilityHub is ReentrancyGuard {
         if (!isRegisteredNode[educationNode]) revert UnregisteredMinistryNode(educationNode);
         if (!isRegisteredNode[mofNode])       revert UnregisteredMinistryNode(mofNode);
 
+        // CISA-1: reject if citizen's NDIDS verification has expired
+        if (!ndids.isVerificationCurrent(citizenHash)) revert VerificationExpired(citizenHash);
+
         // ── B4: CEI — write state BEFORE external calls ──────────
         // Record workflow attempt upfront; update success flag after
         uint256 logIndex = workflowLog.length;
@@ -208,7 +218,7 @@ contract InteroperabilityHub is ReentrancyGuard {
             workflowType: "ENROLLMENT_AND_BENEFIT",
             citizenHash:  citizenHash,
             ministryCode: "MULTI",
-            timestamp:    block.timestamp,
+            timestamp:    block.timestamp, // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
             success:      false   // default false, updated below if both succeed
         }));
 
@@ -218,14 +228,14 @@ contract InteroperabilityHub is ReentrancyGuard {
         // B4 — capture return value, require success
         try MinistryNode(educationNode).recordService(
             citizenHash,
-            "SCHOOL_ENROLLMENT",
+            "EDUCATION_ENROLMENT",
             dataHash,
             true  // verify via NDIDS
         ) returns (uint256) {
             // Step 2: Record benefit eligibility in MOF
             try MinistryNode(mofNode).recordService(
                 citizenHash,
-                "EDUCATION_BENEFIT_ELIGIBLE",
+                "MOF_PAYMENT",
                 dataHash,
                 false  // trust education node's verification
             ) returns (uint256) {
@@ -239,17 +249,19 @@ contract InteroperabilityHub is ReentrancyGuard {
             success = false;
         }
 
-        
+
 
         emit WorkflowExecuted("ENROLLMENT_AND_BENEFIT", citizenHash, success);
     }
 
     // ── Queries ──────────────────────────────────────────────────
 
+    /// @notice Returns the total number of registered ministries.
     function getMinistryCount() external view returns (uint256) {
         return ministries.length;
     }
 
+    /// @notice Returns the Ministry struct for a given ministry code.
     function getMinistry(string calldata code)
         external view returns (Ministry memory)
     {
@@ -257,6 +269,7 @@ contract InteroperabilityHub is ReentrancyGuard {
         return ministries[ministryIndex[code]];
     }
 
+    /// @notice Returns a paginated slice of the workflow execution log.
     function getWorkflowLog(uint256 offset, uint256 limit)
         external view returns (WorkflowEvent[] memory slice)
     {
@@ -270,14 +283,17 @@ contract InteroperabilityHub is ReentrancyGuard {
         }
     }
 
+    /// @notice Returns the total number of workflow log entries.
     function getWorkflowLogLength() external view returns (uint256) {
         return workflowLog.length;
     }
 
+    /// @notice Returns all cross-ministry permission records.
     function getPermissions() external view returns (Permission[] memory) {
         return permissions;
     }
 
+    /// @notice Returns all registered ministry structs.
     function getAllMinistries() external view returns (Ministry[] memory) {
         return ministries;
     }

@@ -15,7 +15,7 @@ import "../src/InteroperabilityHub.sol";
  *   - NDIDSRegistry
  *   - AIDisbursementTracker
  *   - InteroperabilityHub
- *   - 6 MinistryNodes (CBS, MCIT, MOF, MCIL, EDUCATION, CUSTOMS)
+ *   - 7 MinistryNodes (CBS, MCIT, MOF, MCIL, EDUCATION, CUSTOMS, SBS)
  *
  * Seeds:
  *   - 25 realistic citizens across 5 sectors
@@ -66,6 +66,7 @@ contract DeploySamoaHub is Script {
         MinistryNode mcil      = new MinistryNode("Ministry of Commerce Industry & Labour",   "MCIL",      admin, address(ndids));
         MinistryNode education = new MinistryNode("Ministry of Education Sports & Culture",   "EDUCATION", admin, address(ndids));
         MinistryNode customs   = new MinistryNode("Ministry of Customs & Revenue",            "CUSTOMS",   admin, address(ndids));
+        MinistryNode sbs       = new MinistryNode("Samoa Bureau of Statistics",               "SBS",       admin, address(ndids));
 
         // ── 3. Wire hub ───────────────────────────────────────────
         hub.setNDIDS(address(ndids));
@@ -76,6 +77,16 @@ contract DeploySamoaHub is Script {
         hub.registerMinistry("Ministry of Commerce Industry & Labour",   "MCIL",      address(mcil));
         hub.registerMinistry("Ministry of Education Sports & Culture",   "EDUCATION", address(education));
         hub.registerMinistry("Ministry of Customs & Revenue",            "CUSTOMS",   address(customs));
+        hub.registerMinistry("Samoa Bureau of Statistics",               "SBS",       address(sbs));
+
+        // Wire hub into each ministry node so hub workflows can call recordService
+        cbs.setHub(address(hub));
+        mcit.setHub(address(hub));
+        mof.setHub(address(hub));
+        mcil.setHub(address(hub));
+        education.setHub(address(hub));
+        customs.setHub(address(hub));
+        sbs.setHub(address(hub));
 
         // ── 4. Register 25 citizens across 5 sectors ─────────────
         //
@@ -167,25 +178,25 @@ contract DeploySamoaHub is Script {
 
         // Education: enrol 5 children (with NDIDS verification)
         for (uint i = 0; i < 5; i++) {
-            education.recordService(eduHashes[i], "SCHOOL_ENROLMENT_2025", dummyDataHash, true);
+            education.recordService(eduHashes[i], "EDUCATION_ENROLMENT", dummyDataHash, true);
         }
         // MOF: record benefit eligibility for 4 children (reads Education data)
         for (uint i = 0; i < 4; i++) {
-            mof.recordService(eduHashes[i], "EDUCATION_BENEFIT_ELIGIBLE_2025", dummyDataHash, false);
+            mof.recordService(eduHashes[i], "MOF_PAYMENT", dummyDataHash, false);
         }
         // CBS: record remittance for 3 citizens
         for (uint i = 0; i < 3; i++) {
-            cbs.recordService(cbsHashes[i], "REMITTANCE_RECEIVED", dummyDataHash, true);
+            cbs.recordService(cbsHashes[i], "CBS_REGISTRATION", dummyDataHash, true);
         }
         // Customs + MCIL: trade clearance workflow for 2 traders
         for (uint i = 0; i < 2; i++) {
-            customs.recordService(tradeHashes[i], "SHIPMENT_CLEARED_2025", dummyDataHash, true);
-            mcil.recordService(tradeHashes[i], "TRADE_LICENCE_UPDATED", dummyDataHash, false);
-            mof.recordService(tradeHashes[i], "DUTY_PROCESSED", dummyDataHash, false);
+            customs.recordService(tradeHashes[i], "CUSTOMS_CLEARANCE", dummyDataHash, true);
+            mcil.recordService(tradeHashes[i], "MCIL_LABOUR", dummyDataHash, false);
+            mof.recordService(tradeHashes[i], "MOF_PAYMENT", dummyDataHash, false);
         }
         // Welfare: social welfare payments
         for (uint i = 0; i < 3; i++) {
-            mof.recordService(welfareHashes[i], "SOCIAL_WELFARE_PAYMENT_2025", dummyDataHash, true);
+            mof.recordService(welfareHashes[i], "MOF_PAYMENT", dummyDataHash, true);
         }
 
         // ── 8. Hub workflows (creates WorkflowEvent log entries) ──
@@ -244,6 +255,7 @@ contract DeploySamoaHub is Script {
         console.log("MCIL:                 ", address(mcil));
         console.log("EDUCATION:            ", address(education));
         console.log("CUSTOMS:              ", address(customs));
+        console.log("SBS:                  ", address(sbs));
         console.log("");
         console.log("Citizens registered:  25");
         console.log("Permissions granted:  5");

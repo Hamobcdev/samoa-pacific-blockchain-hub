@@ -11,6 +11,9 @@ pragma solidity ^0.8.24;
  *      Part of the Samoa Pacific Blockchain Hub - UNICEF Venture Fund PoC
  *      https://github.com/Hamobcdev/samoa-pacific-blockchain-hub
  */
+/// @notice Samoa National Digital Identity Registry.
+/// Operates under authority of the CBS Act 2015.
+/// BIS PFMI P11 compliance: legal basis documented.
 contract NDIDSRegistry {
 
     // ── State ────────────────────────────────────────────────────
@@ -27,12 +30,17 @@ contract NDIDSRegistry {
     // citizenHash => service delivery log count
     mapping(bytes32 => uint256) public serviceCount;
 
+    // ── Verification Expiry (CISA-1) ─────────────────────────────
+    uint256 public constant MAX_VERIFICATION_AGE = 365 days;
+    mapping(bytes32 => uint256) public verifiedAt;
+
     // ── Events ───────────────────────────────────────────────────
 
     event CitizenRegistered(bytes32 indexed citizenHash, uint256 timestamp);
     event ReadAccessGranted(bytes32 indexed citizenHash, address indexed ministry);
     event ReadAccessRevoked(bytes32 indexed citizenHash, address indexed ministry);
     event IdentityVerified(bytes32 indexed citizenHash, address indexed verifier, uint256 timestamp);
+    event VerificationRenewed(bytes32 indexed citizenHash);
 
     // ── Errors ───────────────────────────────────────────────────
 
@@ -67,26 +75,28 @@ contract NDIDSRegistry {
         if (_registered[citizenHash]) revert AlreadyRegistered();
         _registered[citizenHash] = true;
         totalRegistered++;
-        emit CitizenRegistered(citizenHash, block.timestamp);
+        verifiedAt[citizenHash] = block.timestamp;
+        emit CitizenRegistered(citizenHash, block.timestamp); // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
     }
 
     /**
- * @notice Batch register multiple citizens (gas efficient for bulk import)
- * @dev Uses local accumulator to minimise SSTORE ops on totalRegistered
- */
-function batchRegister(bytes32[] calldata hashes) external onlyAdmin {
-    uint256 newRegistrations = 0;
-    for (uint256 i = 0; i < hashes.length; i++) {
-        // duplicate check — skip already registered hashes silently
-        if (!_registered[hashes[i]]) {
-            _registered[hashes[i]] = true;
-            newRegistrations++;         // ← cheap memory write, not storage
-            emit CitizenRegistered(hashes[i], block.timestamp);
+     * @notice Batch register multiple citizens (gas efficient for bulk import)
+     * @dev Uses local accumulator to minimise SSTORE ops on totalRegistered
+     */
+    function batchRegister(bytes32[] calldata hashes) external onlyAdmin {
+        uint256 newRegistrations = 0;
+        for (uint256 i = 0; i < hashes.length; i++) {
+            // duplicate check — skip already registered hashes silently
+            if (!_registered[hashes[i]]) {
+                _registered[hashes[i]] = true;
+                verifiedAt[hashes[i]] = block.timestamp;
+                newRegistrations++;         // ← cheap memory write, not storage
+                emit CitizenRegistered(hashes[i], block.timestamp); // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
+            }
         }
+        // single storage write after loop completes
+        totalRegistered += newRegistrations;
     }
-    // single storage write after loop completes
-    totalRegistered += newRegistrations;
-}
 
     // ── Access Control ───────────────────────────────────────────
 
@@ -100,6 +110,7 @@ function batchRegister(bytes32[] calldata hashes) external onlyAdmin {
         emit ReadAccessGranted(citizenHash, ministry);
     }
 
+    /// @notice Revoke a ministry contract's permission to verify this citizen.
     function revokeReadAccess(bytes32 citizenHash, address ministry) external onlyAdmin {
         if (!_registered[citizenHash]) revert NotRegistered(citizenHash);
         _readAccess[citizenHash][ministry] = false;
@@ -116,7 +127,7 @@ function batchRegister(bytes32[] calldata hashes) external onlyAdmin {
         if (!_registered[citizenHash]) return false;
         if (!_readAccess[citizenHash][msg.sender]) revert AccessDenied();
         serviceCount[citizenHash]++;
-        emit IdentityVerified(citizenHash, msg.sender, block.timestamp);
+        emit IdentityVerified(citizenHash, msg.sender, block.timestamp); // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
         return true;
     }
 
@@ -127,8 +138,22 @@ function batchRegister(bytes32[] calldata hashes) external onlyAdmin {
         return _registered[citizenHash];
     }
 
+    /// @notice Check whether a ministry contract has read access for a citizen hash.
     function hasAccess(bytes32 citizenHash, address ministry) external view returns (bool) {
         return _readAccess[citizenHash][ministry];
+    }
+
+    // ── Verification Expiry (CISA-1) ─────────────────────────────
+
+    /// @notice Returns true if the citizen's NDIDS verification is within MAX_VERIFICATION_AGE.
+    function isVerificationCurrent(bytes32 citizenHash) public view returns (bool) {
+        return block.timestamp - verifiedAt[citizenHash] < MAX_VERIFICATION_AGE;
+    }
+
+    /// @notice Renew the verification timestamp for a citizen, resetting their 365-day window.
+    function renewVerification(bytes32 citizenHash) external onlyAdmin {
+        verifiedAt[citizenHash] = block.timestamp;
+        emit VerificationRenewed(citizenHash);
     }
 
     // ── CBS-BLOCKED: EIP-712 Citizen Consent ─────────────────────

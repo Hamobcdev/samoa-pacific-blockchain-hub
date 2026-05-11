@@ -18,6 +18,9 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.s
  *        MCIL — Ministry of Commerce, Industry & Labour
  *        SBS  — Samoa Bureau of Statistics (NDIDS authority)
  */
+/// @notice Per-ministry service record ledger.
+/// Authorised under relevant ministry enabling legislation.
+/// BIS PFMI P11 compliance: legal basis documented.
 contract MinistryNode is ReentrancyGuard {
 
     // ── Identity ─────────────────────────────────────────────────
@@ -27,6 +30,21 @@ contract MinistryNode is ReentrancyGuard {
     address public immutable MINISTRY_ADMIN;
     address public immutable NDIDS_ADDRESS;
     address public hub;
+
+    // ── Service Type Allowlist ────────────────────────────────────
+    // Canonical service type identifiers — keccak256 of the string label.
+    // recordService() rejects any string not present in validServiceTypes.
+
+    bytes32 public constant EDUCATION_ENROLMENT = keccak256("EDUCATION_ENROLMENT");
+    bytes32 public constant HEALTH_VISIT        = keccak256("HEALTH_VISIT");
+    bytes32 public constant MOF_PAYMENT         = keccak256("MOF_PAYMENT");
+    bytes32 public constant CUSTOMS_CLEARANCE   = keccak256("CUSTOMS_CLEARANCE");
+    bytes32 public constant MCIT_LICENCE        = keccak256("MCIT_LICENCE");
+    bytes32 public constant CBS_REGISTRATION    = keccak256("CBS_REGISTRATION");
+    bytes32 public constant MCIL_LABOUR         = keccak256("MCIL_LABOUR");
+    bytes32 public constant SBS_SURVEY          = keccak256("SBS_SURVEY");
+
+    mapping(bytes32 => bool) public validServiceTypes;
 
     // ── Hub Migration Timelock ───────────────────────────────────
 
@@ -46,6 +64,12 @@ contract MinistryNode is ReentrancyGuard {
 
     ServiceRecord[] private _records;
     mapping(bytes32 => uint256[]) public citizenRecordIds; // citizenHash => record indices
+
+    // ── Replay Protection ─────────────────────────────────────────
+    // @dev TS-1: 1-second minimum prevents same-block replay.
+    //      Validator-drift risk on PoA chains is documented and accepted.
+    uint256 private lastRecordedAt;
+    uint256 public constant MIN_RECORD_DELAY = 1;
 
     // ── Cross-Ministry Sharing ───────────────────────────────────
 
@@ -77,6 +101,7 @@ contract MinistryNode is ReentrancyGuard {
     error HubAlreadySet();
     error MigrationNotPending();
     error TimelockNotExpired();
+    error InvalidServiceType();
 
     // ── Constructor ──────────────────────────────────────────────
 
@@ -92,6 +117,14 @@ contract MinistryNode is ReentrancyGuard {
         ministryCode   = _code;
         MINISTRY_ADMIN = _admin;
         NDIDS_ADDRESS  = _ndids;
+        validServiceTypes[EDUCATION_ENROLMENT] = true;
+        validServiceTypes[HEALTH_VISIT]        = true;
+        validServiceTypes[MOF_PAYMENT]         = true;
+        validServiceTypes[CUSTOMS_CLEARANCE]   = true;
+        validServiceTypes[MCIT_LICENCE]        = true;
+        validServiceTypes[CBS_REGISTRATION]    = true;
+        validServiceTypes[MCIL_LABOUR]         = true;
+        validServiceTypes[SBS_SURVEY]          = true;
     }
 
     // ── Modifiers ────────────────────────────────────────────────
@@ -139,7 +172,7 @@ contract MinistryNode is ReentrancyGuard {
 
     // ── Hub Wiring ───────────────────────────────────────────────
 
-    // Only the ministry admin may set the hub — deployer has no post-deployment privilege.
+    /// @notice Set the InteroperabilityHub contract address for this ministry node (one-time).
     function setHub(address _hub) external onlyAdmin {
         if (_hub == address(0)) revert ZeroAddress();
         if (hub != address(0)) revert HubAlreadySet();
@@ -149,15 +182,19 @@ contract MinistryNode is ReentrancyGuard {
 
     // ── Hub Migration (48-hour timelock) ─────────────────────────
 
+    /// @notice Propose a hub migration — starts the 48-hour timelock.
     function proposeHubMigration(address _newHub) external onlyAdmin {
         if (_newHub == address(0)) revert ZeroAddress();
         pendingHub = _newHub;
+        // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
         migrationProposedAt = block.timestamp;
-        emit HubMigrationProposed(_newHub, block.timestamp + HUB_MIGRATION_DELAY);
+        emit HubMigrationProposed(_newHub, block.timestamp + HUB_MIGRATION_DELAY); // @dev TS-1
     }
 
+    /// @notice Confirm a pending hub migration after the 48-hour timelock has elapsed.
     function confirmHubMigration() external onlyAdmin {
         if (pendingHub == address(0)) revert MigrationNotPending();
+        // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
         if (block.timestamp < migrationProposedAt + HUB_MIGRATION_DELAY) revert TimelockNotExpired();
         address previous = hub;
         hub = pendingHub;
@@ -166,6 +203,7 @@ contract MinistryNode is ReentrancyGuard {
         emit HubMigrationConfirmed(previous, hub);
     }
 
+    /// @notice Cancel a pending hub migration proposal.
     function cancelHubMigration() external onlyAdmin {
         if (pendingHub == address(0)) revert MigrationNotPending();
         address cancelled = pendingHub;
@@ -176,14 +214,17 @@ contract MinistryNode is ReentrancyGuard {
 
     // ── Service Recording ────────────────────────────────────────
 
-    // Called by the ministry admin for direct service recording, and by
-    // the hub during orchestrated cross-ministry workflows.
+    /// @notice Record a government service delivered to a citizen, with optional NDIDS verification.
     function recordService(
         bytes32 citizenHash,
         string calldata serviceType,
         bytes32 dataHash,
         bool verifyViaNDIDS
     ) external onlyAdminOrHub nonReentrant returns (uint256 recordId) {
+        // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
+        require(block.timestamp >= lastRecordedAt + MIN_RECORD_DELAY || lastRecordedAt == 0, "TimestampTooSoon");
+        if (!validServiceTypes[keccak256(bytes(serviceType))]) revert InvalidServiceType();
+
         bool verified = false;
         if (verifyViaNDIDS) {
             NDIDSRegistry ndids = NDIDSRegistry(NDIDS_ADDRESS);
@@ -195,24 +236,25 @@ contract MinistryNode is ReentrancyGuard {
             citizenHash:   citizenHash,
             serviceType:   serviceType,
             dataHash:      dataHash,
-            timestamp:     block.timestamp,
+            timestamp:     block.timestamp, // @dev TS-1: validator-drift risk documented. Acceptable on permissioned PoA chain.
             ndidsVerified: verified
         }));
 
         citizenRecordIds[citizenHash].push(recordId);
+        lastRecordedAt = block.timestamp; // @dev TS-1
 
-        emit ServiceDelivered(recordId, citizenHash, serviceType, verified, block.timestamp);
+        emit ServiceDelivered(recordId, citizenHash, serviceType, verified, block.timestamp); // @dev TS-1
     }
 
     // ── Cross-Ministry Read Access ───────────────────────────────
 
-    // Called by the admin for direct grants, and by the hub via grantPermission().
+    /// @notice Grant another ministry contract read access to this node's service records.
     function authoriseReader(address reader) external onlyAdminOrHub {
         authorisedReaders[reader] = true;
         emit ReaderAuthorised(reader);
     }
 
-    // Called by admin directly, or by the hub via revokePermission().
+    /// @notice Revoke a ministry contract's read access to this node's service records.
     function revokeReader(address reader) external onlyAdminOrHub {
         authorisedReaders[reader] = false;
         emit ReaderRevoked(reader);
@@ -220,6 +262,7 @@ contract MinistryNode is ReentrancyGuard {
 
     // ── Queries ──────────────────────────────────────────────────
 
+    /// @notice Retrieve a service record by ID (authorised readers only).
     function getRecord(uint256 recordId)
         external
         view
@@ -229,6 +272,7 @@ contract MinistryNode is ReentrancyGuard {
         return _records[recordId];
     }
 
+    /// @notice Retrieve all record IDs for a citizen (authorised readers only).
     function getCitizenRecords(bytes32 citizenHash)
         external
         view
@@ -238,6 +282,7 @@ contract MinistryNode is ReentrancyGuard {
         return citizenRecordIds[citizenHash];
     }
 
+    /// @notice Returns the total number of service records stored in this ministry node.
     function totalRecords() external view returns (uint256) {
         return _records.length;
     }

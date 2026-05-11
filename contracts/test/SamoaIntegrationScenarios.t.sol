@@ -119,7 +119,7 @@ contract SamoaIntegrationScenarios is Test {
         vm.prank(cbsAdmin);
         uint256 recId = cbsNode.recordService(
             CHILD_AFIA,
-            "REMITTANCE_RECEIVED",
+            "CBS_REGISTRATION",
             keccak256("REMITTANCE_USD_450_FROM_NZ"),
             false
         );
@@ -140,7 +140,7 @@ contract SamoaIntegrationScenarios is Test {
         // Step 4: MOF reads CBS record successfully
         vm.prank(address(mofNode));
         MinistryNode.ServiceRecord memory rec = cbsNode.getRecord(0);
-        assertEq(rec.serviceType, "REMITTANCE_RECEIVED");
+        assertEq(rec.serviceType, "CBS_REGISTRATION");
         assertEq(rec.citizenHash, CHILD_AFIA);
         assertFalse(rec.ndidsVerified); // not verified via NDIDS for this record
         console.log("MOF: Successfully read CBS remittance record");
@@ -181,7 +181,7 @@ contract SamoaIntegrationScenarios is Test {
         vm.prank(eduAdmin);
         educationNode.recordService(
             CHILD_AFIA,
-            "SCHOOL_ENROLMENT_2025",
+            "EDUCATION_ENROLMENT",
             ENROLMENT_DATA,
             true  // verify via NDIDS
         );
@@ -198,7 +198,7 @@ contract SamoaIntegrationScenarios is Test {
         // Step 4: MOF reads Education record to confirm enrolment
         vm.prank(address(mofNode));
         MinistryNode.ServiceRecord memory eduRec = educationNode.getRecord(0);
-        assertEq(eduRec.serviceType, "SCHOOL_ENROLMENT_2025");
+        assertEq(eduRec.serviceType, "EDUCATION_ENROLMENT");
         assertTrue(eduRec.ndidsVerified);
         console.log("MOF: Confirmed enrolment record - NDIDS verified:", eduRec.ndidsVerified);
 
@@ -206,7 +206,7 @@ contract SamoaIntegrationScenarios is Test {
         vm.prank(mofAdmin);
         mofNode.recordService(
             CHILD_AFIA,
-            "EDUCATION_BENEFIT_ELIGIBLE_2025",
+            "MOF_PAYMENT",
             BENEFIT_DATA,
             true  // re-verify via NDIDS
         );
@@ -333,7 +333,7 @@ contract SamoaIntegrationScenarios is Test {
         ndids.grantReadAccess(CHILD_AFIA, address(educationNode));
 
         vm.prank(eduAdmin);
-        educationNode.recordService(CHILD_AFIA, "SCHOOL_ENROLMENT", ENROLMENT_DATA, true);
+        educationNode.recordService(CHILD_AFIA, "EDUCATION_ENROLMENT", ENROLMENT_DATA, true);
 
         // DEMONSTRATION 1: What the citizen hash reveals
         console.log("--- PRIVACY LAYER 1: On-chain citizen identity ---");
@@ -402,7 +402,7 @@ contract SamoaIntegrationScenarios is Test {
 
         // Step 1: CBS records data
         vm.prank(cbsAdmin);
-        cbsNode.recordService(CHILD_AFIA, "ACCOUNT_OPENED", keccak256("ACCOUNT_DATA"), false);
+        cbsNode.recordService(CHILD_AFIA, "CBS_REGISTRATION", keccak256("ACCOUNT_DATA"), false);
         console.log("CBS: Service record created");
 
         // Step 2: Grant MOF access
@@ -413,7 +413,7 @@ contract SamoaIntegrationScenarios is Test {
         // Step 3: MOF reads successfully
         vm.prank(address(mofNode));
         MinistryNode.ServiceRecord memory rec = cbsNode.getRecord(0);
-        assertEq(rec.serviceType, "ACCOUNT_OPENED");
+        assertEq(rec.serviceType, "CBS_REGISTRATION");
         console.log("MOF: Successfully reading CBS data");
 
         // Step 4: REVOKE access
@@ -478,7 +478,7 @@ contract SamoaIntegrationScenarios is Test {
         vm.prank(custAdmin);
         customsNode.recordService(
             TRADER_FALE,
-            "SHIPMENT_CLEARED_2025_0334",
+            "CUSTOMS_CLEARANCE",
             SHIPMENT_DATA,
             true  // verify trader identity via NDIDS
         );
@@ -492,14 +492,14 @@ contract SamoaIntegrationScenarios is Test {
         // Step 3: MCIL reads Customs clearance and updates trade licence
         vm.prank(address(mcilNode));
         MinistryNode.ServiceRecord memory clearanceRec = customsNode.getRecord(0);
-        assertEq(clearanceRec.serviceType, "SHIPMENT_CLEARED_2025_0334");
+        assertEq(clearanceRec.serviceType, "CUSTOMS_CLEARANCE");
         assertTrue(clearanceRec.ndidsVerified);
         console.log("MCIL: Read Customs clearance - trader identity verified");
 
         vm.prank(mcilAdmin);
         mcilNode.recordService(
             TRADER_FALE,
-            "TRADE_LICENCE_UPDATED_2025",
+            "MCIL_LABOUR",
             TRADE_RECORD_DATA,
             true
         );
@@ -514,13 +514,13 @@ contract SamoaIntegrationScenarios is Test {
         // Step 5: MOF reads both records and processes duty payment
         vm.prank(address(mofNode));
         MinistryNode.ServiceRecord memory licenceRec = mcilNode.getRecord(0);
-        assertEq(licenceRec.serviceType, "TRADE_LICENCE_UPDATED_2025");
+        assertEq(licenceRec.serviceType, "MCIL_LABOUR");
         console.log("MOF: Confirmed trade licence updated");
 
         vm.prank(mofAdmin);
         mofNode.recordService(
             TRADER_FALE,
-            "IMPORT_DUTY_PROCESSED_2025",
+            "MOF_PAYMENT",
             DUTY_PAYMENT_DATA,
             false
         );
@@ -585,26 +585,30 @@ contract SamoaIntegrationScenarios is Test {
 
         // Concurrent activity across all ministries
         vm.prank(cbsAdmin);
-        cbsNode.recordService(CHILD_AFIA, "REMITTANCE_RECEIVED", keccak256("R1"), false);
+        cbsNode.recordService(CHILD_AFIA, "CBS_REGISTRATION", keccak256("R1"), false);
 
         vm.prank(eduAdmin);
-        educationNode.recordService(CHILD_AFIA,    "SCHOOL_ENROLMENT", ENROLMENT_DATA, true);
+        educationNode.recordService(CHILD_AFIA,    "EDUCATION_ENROLMENT", ENROLMENT_DATA, true);
+        vm.warp(block.timestamp + 1); // MIN_RECORD_DELAY: advance 1 s before next same-node call
         vm.prank(eduAdmin);
-        educationNode.recordService(CHILD_SIONE,   "SCHOOL_ENROLMENT", ENROLMENT_DATA, true);
+        educationNode.recordService(CHILD_SIONE,   "EDUCATION_ENROLMENT", ENROLMENT_DATA, true);
+        vm.warp(block.timestamp + 1);
         vm.prank(eduAdmin);
-        educationNode.recordService(CHILD_LEILANI, "SCHOOL_ENROLMENT", ENROLMENT_DATA, true);
+        educationNode.recordService(CHILD_LEILANI, "EDUCATION_ENROLMENT", ENROLMENT_DATA, true);
 
         vm.prank(mofAdmin);
-        mofNode.recordService(CHILD_AFIA,  "BENEFIT_APPROVED", BENEFIT_DATA, true);
+        mofNode.recordService(CHILD_AFIA,  "MOF_PAYMENT", BENEFIT_DATA, true);
+        vm.warp(block.timestamp + 1);
         vm.prank(mofAdmin);
-        mofNode.recordService(CHILD_SIONE, "BENEFIT_APPROVED", BENEFIT_DATA, true);
+        mofNode.recordService(CHILD_SIONE, "MOF_PAYMENT", BENEFIT_DATA, true);
 
         vm.prank(custAdmin);
-        customsNode.recordService(TRADER_FALE, "SHIPMENT_CLEARED", SHIPMENT_DATA, true);
+        customsNode.recordService(TRADER_FALE, "CUSTOMS_CLEARANCE", SHIPMENT_DATA, true);
         vm.prank(mcilAdmin);
-        mcilNode.recordService(TRADER_FALE, "LICENCE_UPDATED", TRADE_RECORD_DATA, true);
+        mcilNode.recordService(TRADER_FALE, "MCIL_LABOUR", TRADE_RECORD_DATA, true);
+        vm.warp(block.timestamp + 1);
         vm.prank(mofAdmin);
-        mofNode.recordService(TRADER_FALE, "DUTY_PROCESSED", DUTY_PAYMENT_DATA, false);
+        mofNode.recordService(TRADER_FALE, "MOF_PAYMENT", DUTY_PAYMENT_DATA, false);
 
         // Create and run AID grant
         string[] memory ms = new string[](2);

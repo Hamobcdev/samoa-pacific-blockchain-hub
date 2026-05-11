@@ -158,7 +158,7 @@ contract SamoaPacificBlockchainHubTest is Test {
         vm.prank(cbs);
         uint256 recId = cbsNode.recordService(
             CITIZEN_HASH,
-            "ACCOUNT_OPENED",
+            "CBS_REGISTRATION",
             DATA_HASH,
             false
         );
@@ -177,7 +177,7 @@ contract SamoaPacificBlockchainHubTest is Test {
         vm.prank(education);
         uint256 recId = educationNode.recordService(
             CITIZEN_HASH,
-            "SCHOOL_ENROLMENT",
+            "EDUCATION_ENROLMENT",
             DATA_HASH,
             true  // triggers NDIDS verification
         );
@@ -190,7 +190,7 @@ contract SamoaPacificBlockchainHubTest is Test {
     function test_Ministry_CrossMinistryReadAccess() public {
         // CBS records a service
         vm.prank(cbs);
-        cbsNode.recordService(CITIZEN_HASH, "REMITTANCE_RECEIVED", DATA_HASH, false);
+        cbsNode.recordService(CITIZEN_HASH, "CBS_REGISTRATION", DATA_HASH, false);
 
         // MOF cannot read CBS records without permission
         vm.prank(address(mofNode));
@@ -205,7 +205,7 @@ contract SamoaPacificBlockchainHubTest is Test {
         vm.prank(address(mofNode));
         MinistryNode.ServiceRecord memory rec = cbsNode.getRecord(0);
         assertEq(rec.citizenHash, CITIZEN_HASH);
-        assertEq(rec.serviceType, "REMITTANCE_RECEIVED");
+        assertEq(rec.serviceType, "CBS_REGISTRATION");
     }
 
     function test_Ministry_OnlyAdminCanWrite() public {
@@ -350,11 +350,11 @@ contract SamoaPacificBlockchainHubTest is Test {
 
         // MOF node should now be able to read CBS records
         vm.prank(cbs);
-        cbsNode.recordService(CITIZEN_HASH, "PAYMENT", DATA_HASH, false);
+        cbsNode.recordService(CITIZEN_HASH, "MOF_PAYMENT", DATA_HASH, false);
 
         vm.prank(address(mofNode));
         MinistryNode.ServiceRecord memory rec = cbsNode.getRecord(0);
-        assertEq(rec.serviceType, "PAYMENT");
+        assertEq(rec.serviceType, "MOF_PAYMENT");
     }
 
     function test_Hub_CrossMinistryEnrollmentWorkflow() public {

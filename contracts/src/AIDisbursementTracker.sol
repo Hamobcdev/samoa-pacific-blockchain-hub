@@ -58,6 +58,8 @@ contract AIDisbursementTracker {
     uint256 public totalGrants;
     uint256 public totalDisbursed;
     uint256 public totalVerified;
+    // CBS-BLOCKED: used by the planned proposeTranche/executeTranche timelock (see bottom of file)
+    uint256 public timelockDelay = 48 hours;
 
     mapping(uint256 => Grant) private _grants;
 
@@ -97,6 +99,9 @@ contract AIDisbursementTracker {
     event BeneficiariesUpdated(uint256 indexed grantId, uint256 count);
     event GrantCompleted(uint256 indexed grantId, uint256 timestamp);
     event VerifierAuthorised(address indexed verifier);
+    event VerifierRevoked(address indexed verifier);
+    event GrantSuspended(uint256 indexed grantId, uint256 timestamp);
+    event GrantCancelled(uint256 indexed grantId, uint256 timestamp);
 
     // ── Errors ───────────────────────────────────────────────────
 
@@ -107,6 +112,10 @@ contract AIDisbursementTracker {
     error TrancheNotPending();
     error TrancheNotReleased();
     error ZeroAddress();
+    error GrantNotFound();
+    error TrancheAmountMismatch();
+    error NotAVerifier();
+    error InvalidStateTransition();
 
     // ── Constructor ──────────────────────────────────────────────
 
@@ -165,7 +174,9 @@ contract AIDisbursementTracker {
         g.targetBeneficiaries = targetBeneficiaries;
         g.sector              = sector;
 
+        uint256 trancheSum;
         for (uint256 i = 0; i < milestones.length; i++) {
+            trancheSum += trancheAmounts[i];
             g.tranches.push(Tranche({
                 amount:      trancheAmounts[i],
                 milestone:   milestones[i],
@@ -177,6 +188,7 @@ contract AIDisbursementTracker {
                 verifiedBy:  address(0)
             }));
         }
+        if (trancheSum != totalAmount) revert TrancheAmountMismatch();
 
         donorGrants[donor].push(grantId);
         recipientGrants[recipient].push(grantId);
@@ -191,8 +203,8 @@ contract AIDisbursementTracker {
      *         Called by ADMIN (or in production: triggered by ministry node confirmation)
      */
     function releaseTranche(uint256 grantId, uint256 trancheId) external onlyAdmin {
+        if (grantId >= totalGrants) revert GrantNotFound();
         Grant storage g = _grants[grantId];
-        if (g.createdAt == 0) revert InvalidGrant();
         if (g.status != GrantStatus.Active) revert GrantNotActive();
         if (trancheId >= g.tranches.length) revert InvalidTranche();
 
@@ -223,8 +235,8 @@ contract AIDisbursementTracker {
         bytes32 evidenceHash,
         uint256 beneficiariesServed
     ) external onlyVerifier {
+        if (grantId >= totalGrants) revert GrantNotFound();
         Grant storage g = _grants[grantId];
-        if (g.createdAt == 0) revert InvalidGrant();
         if (trancheId >= g.tranches.length) revert InvalidTranche();
 
         Tranche storage t = g.tranches[trancheId];
@@ -251,6 +263,29 @@ contract AIDisbursementTracker {
     function authoriseVerifier(address verifier) external onlyAdmin {
         authorisedVerifiers[verifier] = true;
         emit VerifierAuthorised(verifier);
+    }
+
+    function revokeVerifier(address verifier) external onlyAdmin {
+        if (!authorisedVerifiers[verifier]) revert NotAVerifier();
+        authorisedVerifiers[verifier] = false;
+        emit VerifierRevoked(verifier);
+    }
+
+    function suspendGrant(uint256 grantId) external onlyAdmin {
+        if (grantId >= totalGrants) revert GrantNotFound();
+        Grant storage g = _grants[grantId];
+        if (g.status != GrantStatus.Active) revert InvalidStateTransition();
+        g.status = GrantStatus.Suspended;
+        emit GrantSuspended(grantId, block.timestamp);
+    }
+
+    function cancelGrant(uint256 grantId) external onlyAdmin {
+        if (grantId >= totalGrants) revert GrantNotFound();
+        Grant storage g = _grants[grantId];
+        if (g.status == GrantStatus.Completed || g.status == GrantStatus.Cancelled)
+            revert InvalidStateTransition();
+        g.status = GrantStatus.Cancelled;
+        emit GrantCancelled(grantId, block.timestamp);
     }
 
     // ── Queries ──────────────────────────────────────────────────
@@ -312,4 +347,49 @@ contract AIDisbursementTracker {
         g.status = GrantStatus.Completed;
         emit GrantCompleted(grantId, block.timestamp);
     }
+
+    // ── CBS-BLOCKED: Two-step Tranche Timelock ───────────────────
+    //
+    // The following is a DRAFT for a two-step tranche release with a timelock,
+    // providing a cancellation window before funds are disbursed.
+    // Blocked pending UNICEF donor approval workflow specification.
+    //
+    // Uses `timelockDelay` (default 48 hours) defined above in state.
+    //
+    // Planned interface:
+    //
+    //   struct PendingTranche {
+    //       uint256 grantId;
+    //       uint256 trancheId;
+    //       uint256 proposedAt;
+    //   }
+    //   mapping(bytes32 => PendingTranche) public pendingTranches;
+    //
+    //   event TrancheMigrationProposed(uint256 indexed grantId, uint256 indexed trancheId, uint256 executeAfter);
+    //   event TrancheMigrationConfirmed(uint256 indexed grantId, uint256 indexed trancheId);
+    //   event TrancheMigrationCancelled(uint256 indexed grantId, uint256 indexed trancheId);
+    //
+    //   function proposeTranche(uint256 grantId, uint256 trancheId) external onlyAdmin {
+    //       if (grantId >= totalGrants) revert GrantNotFound();
+    //       bytes32 key = keccak256(abi.encodePacked(grantId, trancheId));
+    //       pendingTranches[key] = PendingTranche(grantId, trancheId, block.timestamp);
+    //       emit TrancheMigrationProposed(grantId, trancheId, block.timestamp + timelockDelay);
+    //   }
+    //
+    //   function executeTranche(uint256 grantId, uint256 trancheId) external onlyAdmin {
+    //       bytes32 key = keccak256(abi.encodePacked(grantId, trancheId));
+    //       PendingTranche memory p = pendingTranches[key];
+    //       require(p.proposedAt != 0, "Not proposed");
+    //       require(block.timestamp >= p.proposedAt + timelockDelay, "Timelock not expired");
+    //       delete pendingTranches[key];
+    //       // ... perform releaseTranche logic ...
+    //       emit TrancheMigrationConfirmed(grantId, trancheId);
+    //   }
+    //
+    //   function cancelTranche(uint256 grantId, uint256 trancheId) external onlyAdmin {
+    //       bytes32 key = keccak256(abi.encodePacked(grantId, trancheId));
+    //       require(pendingTranches[key].proposedAt != 0, "Not proposed");
+    //       delete pendingTranches[key];
+    //       emit TrancheMigrationCancelled(grantId, trancheId);
+    //   }
 }

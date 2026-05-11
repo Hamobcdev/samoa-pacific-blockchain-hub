@@ -389,7 +389,7 @@ contract SamoaPacificBlockchainHubTest is Test {
         assertEq(ndids.serviceCount(CITIZEN_HASH), 1);
 
         // Workflow logged in hub
-        InteroperabilityHub.WorkflowEvent[] memory log = hub.getWorkflowLog();
+        InteroperabilityHub.WorkflowEvent[] memory log = hub.getWorkflowLog(0, 100);
         assertEq(log.length, 1);
         assertTrue(log[0].success);
         assertEq(log[0].workflowType, "ENROLLMENT_AND_BENEFIT");

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import { NDIDSRegistry } from "./NDIDSRegistry.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title MinistryNode
@@ -17,7 +18,7 @@ import { NDIDSRegistry } from "./NDIDSRegistry.sol";
  *        MCIL — Ministry of Commerce, Industry & Labour
  *        SBS  — Samoa Bureau of Statistics (NDIDS authority)
  */
-contract MinistryNode {
+contract MinistryNode is ReentrancyGuard {
 
     // ── Identity ─────────────────────────────────────────────────
 
@@ -182,7 +183,7 @@ contract MinistryNode {
         string calldata serviceType,
         bytes32 dataHash,
         bool verifyViaNDIDS
-    ) external onlyAdminOrHub returns (uint256 recordId) {
+    ) external onlyAdminOrHub nonReentrant returns (uint256 recordId) {
         bool verified = false;
         if (verifyViaNDIDS) {
             NDIDSRegistry ndids = NDIDSRegistry(NDIDS_ADDRESS);

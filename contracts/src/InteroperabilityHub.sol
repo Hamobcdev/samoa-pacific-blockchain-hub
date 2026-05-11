@@ -257,8 +257,21 @@ contract InteroperabilityHub is ReentrancyGuard {
         return ministries[ministryIndex[code]];
     }
 
-    function getWorkflowLog() external view returns (WorkflowEvent[] memory) {
-        return workflowLog;
+    function getWorkflowLog(uint256 offset, uint256 limit)
+        external view returns (WorkflowEvent[] memory slice)
+    {
+        uint256 total = workflowLog.length;
+        uint256 end = offset + limit;
+        if (end > total) end = total;
+        if (offset >= total) return new WorkflowEvent[](0);
+        slice = new WorkflowEvent[](end - offset);
+        for (uint256 i = 0; i < slice.length; i++) {
+            slice[i] = workflowLog[offset + i];
+        }
+    }
+
+    function getWorkflowLogLength() external view returns (uint256) {
+        return workflowLog.length;
     }
 
     function getPermissions() external view returns (Permission[] memory) {

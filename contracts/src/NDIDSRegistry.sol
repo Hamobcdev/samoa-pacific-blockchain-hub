@@ -38,7 +38,7 @@ contract NDIDSRegistry {
 
     error Unauthorised();
     error AlreadyRegistered();
-    error NotRegistered();
+    error NotRegistered(bytes32 citizenHash);
     error AccessDenied();
     error ZeroAddress();
 
@@ -95,12 +95,13 @@ function batchRegister(bytes32[] calldata hashes) external onlyAdmin {
      * @dev Called by ADMIN — citizen consent recorded off-chain per GDPR/privacy law
      */
     function grantReadAccess(bytes32 citizenHash, address ministry) external onlyAdmin {
-        if (!_registered[citizenHash]) revert NotRegistered();
+        if (!_registered[citizenHash]) revert NotRegistered(citizenHash);
         _readAccess[citizenHash][ministry] = true;
         emit ReadAccessGranted(citizenHash, ministry);
     }
 
     function revokeReadAccess(bytes32 citizenHash, address ministry) external onlyAdmin {
+        if (!_registered[citizenHash]) revert NotRegistered(citizenHash);
         _readAccess[citizenHash][ministry] = false;
         emit ReadAccessRevoked(citizenHash, ministry);
     }
@@ -129,4 +130,42 @@ function batchRegister(bytes32[] calldata hashes) external onlyAdmin {
     function hasAccess(bytes32 citizenHash, address ministry) external view returns (bool) {
         return _readAccess[citizenHash][ministry];
     }
+
+    // ── CBS-BLOCKED: EIP-712 Citizen Consent ─────────────────────
+    //
+    // The following is a DRAFT for on-chain citizen consent using EIP-712
+    // typed-data signatures. Blocked pending legal review from SBS/MCIT.
+    //
+    // When unblocked, citizens would sign a ConsentMessage off-chain and
+    // submit the signature here, removing the need for ADMIN to grant access
+    // on their behalf. This strengthens the self-sovereign identity model.
+    //
+    // Planned interface:
+    //
+    //   bytes32 private constant CONSENT_TYPEHASH = keccak256(
+    //       "CitizenConsent(bytes32 citizenHash,address ministry,uint256 nonce,uint256 expiry)"
+    //   );
+    //   mapping(bytes32 => uint256) public consentNonces;
+    //
+    //   function citizenConsent(
+    //       bytes32 citizenHash,
+    //       address ministry,
+    //       uint256 expiry,
+    //       bytes calldata signature
+    //   ) external {
+    //       require(block.timestamp <= expiry, "Consent expired");
+    //       uint256 nonce = consentNonces[citizenHash]++;
+    //       bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(
+    //           CONSENT_TYPEHASH, citizenHash, ministry, nonce, expiry
+    //       )));
+    //       address signer = ECDSA.recover(digest, signature);
+    //       // signer must match the citizen's registered wallet (stored off-chain or
+    //       // as an additional on-chain mapping citizenHash => walletAddress)
+    //       require(signer == _citizenWallet[citizenHash], "Invalid consent signature");
+    //       _readAccess[citizenHash][ministry] = true;
+    //       emit ReadAccessGranted(citizenHash, ministry);
+    //   }
+    //
+    // Requires: OpenZeppelin EIP712 + ECDSA, a citizenHash => wallet mapping,
+    // and a citizen wallet registration flow (separate SBS process).
 }

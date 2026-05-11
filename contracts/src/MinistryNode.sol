@@ -28,6 +28,12 @@ contract MinistryNode {
     address public immutable NDIDS_ADDRESS;
     address public hub;
 
+    // ── Hub Migration Timelock ───────────────────────────────────
+
+    address public pendingHub;
+    uint256 public migrationProposedAt;
+    uint256 public constant HUB_MIGRATION_DELAY = 48 hours;
+
     // ── Service Records ──────────────────────────────────────────
 
     struct ServiceRecord {
@@ -38,7 +44,7 @@ contract MinistryNode {
         bool    ndidsVerified;    // was identity confirmed via NDIDS?
     }
 
-    ServiceRecord[] public records;
+    ServiceRecord[] private _records;
     mapping(bytes32 => uint256[]) public citizenRecordIds; // citizenHash => record indices
 
     // ── Cross-Ministry Sharing ───────────────────────────────────
@@ -58,12 +64,18 @@ contract MinistryNode {
     event ReaderAuthorised(address indexed reader);
     event ReaderRevoked(address indexed reader);
     event HubSet(address indexed previousHub, address indexed newHub);
+    event HubMigrationProposed(address indexed proposedHub, uint256 executeAfter);
+    event HubMigrationConfirmed(address indexed previousHub, address indexed newHub);
+    event HubMigrationCancelled(address indexed cancelledHub);
 
     // ── Errors ───────────────────────────────────────────────────
 
     error Unauthorised();
     error ReadAccessDenied();
     error ZeroAddress();
+    error HubAlreadySet();
+    error MigrationNotPending();
+    error TimelockNotExpired();
 
     // ── Constructor ──────────────────────────────────────────────
 
@@ -112,10 +124,38 @@ contract MinistryNode {
     
 
     function setHub(address _hub) external {
-        if (hub != address(0)) revert Unauthorised();
         if (msg.sender != DEPLOYER && msg.sender != MINISTRY_ADMIN) revert Unauthorised();
-         emit HubSet(hub, _hub);
+        if (_hub == address(0)) revert ZeroAddress();
+        if (hub != address(0)) revert HubAlreadySet();
+        emit HubSet(address(0), _hub);
         hub = _hub;
+    }
+
+    // ── Hub Migration (48-hour timelock) ─────────────────────────
+
+    function proposeHubMigration(address _newHub) external onlyAdmin {
+        if (_newHub == address(0)) revert ZeroAddress();
+        pendingHub = _newHub;
+        migrationProposedAt = block.timestamp;
+        emit HubMigrationProposed(_newHub, block.timestamp + HUB_MIGRATION_DELAY);
+    }
+
+    function confirmHubMigration() external onlyAdmin {
+        if (pendingHub == address(0)) revert MigrationNotPending();
+        if (block.timestamp < migrationProposedAt + HUB_MIGRATION_DELAY) revert TimelockNotExpired();
+        address previous = hub;
+        hub = pendingHub;
+        pendingHub = address(0);
+        migrationProposedAt = 0;
+        emit HubMigrationConfirmed(previous, hub);
+    }
+
+    function cancelHubMigration() external onlyAdmin {
+        if (pendingHub == address(0)) revert MigrationNotPending();
+        address cancelled = pendingHub;
+        pendingHub = address(0);
+        migrationProposedAt = 0;
+        emit HubMigrationCancelled(cancelled);
     }
 
     // ── Service Recording ────────────────────────────────────────
@@ -136,8 +176,8 @@ contract MinistryNode {
             verified = ndids.verifyCitizen(citizenHash);
         }
 
-        recordId = records.length;
-        records.push(ServiceRecord({
+        recordId = _records.length;
+        _records.push(ServiceRecord({
             citizenHash:   citizenHash,
             serviceType:   serviceType,
             dataHash:      dataHash,
@@ -170,7 +210,7 @@ contract MinistryNode {
         onlyAuthorised
         returns (ServiceRecord memory)
     {
-        return records[recordId];
+        return _records[recordId];
     }
 
     function getCitizenRecords(bytes32 citizenHash)
@@ -183,6 +223,6 @@ contract MinistryNode {
     }
 
     function totalRecords() external view returns (uint256) {
-        return records.length;
+        return _records.length;
     }
 }

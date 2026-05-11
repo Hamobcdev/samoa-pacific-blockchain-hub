@@ -41,17 +41,37 @@ contract Step3_WireAndSeed is Script {
         NDIDSRegistry         ndids      = NDIDSRegistry(ndidsAddr);
         AIDisbursementTracker aidTracker = AIDisbursementTracker(aidAddr);
         InteroperabilityHub   hub        = InteroperabilityHub(hubAddr);
-        MinistryNode          eduNode    = MinistryNode(educationAddr);
 
         vm.startBroadcast();
 
-        // Tx 1: Wire NDIDS into hub
+        // Tx 1-6: Wire hub address into each ministry node
+        MinistryNode(cbsAddr).setHub(hubAddr);
+        require(MinistryNode(cbsAddr).hub() == hubAddr, "CBS: hub not set");
+
+        MinistryNode(mcitAddr).setHub(hubAddr);
+        require(MinistryNode(mcitAddr).hub() == hubAddr, "MCIT: hub not set");
+
+        MinistryNode(mofAddr).setHub(hubAddr);
+        require(MinistryNode(mofAddr).hub() == hubAddr, "MOF: hub not set");
+
+        MinistryNode(mcilAddr).setHub(hubAddr);
+        require(MinistryNode(mcilAddr).hub() == hubAddr, "MCIL: hub not set");
+
+        MinistryNode(educationAddr).setHub(hubAddr);
+        require(MinistryNode(educationAddr).hub() == hubAddr, "EDUCATION: hub not set");
+
+        MinistryNode(customsAddr).setHub(hubAddr);
+        require(MinistryNode(customsAddr).hub() == hubAddr, "CUSTOMS: hub not set");
+
+        // Tx 7: Wire NDIDS into hub
         hub.setNDIDS(ndidsAddr);
+        require(address(hub.ndids()) == ndidsAddr, "Hub: NDIDS not wired");
 
-        // Tx 2: Wire AID tracker into hub
+        // Tx 8: Wire AID tracker into hub
         hub.setAIDTracker(aidAddr);
+        require(address(hub.aidTracker()) == aidAddr, "Hub: AIDTracker not wired");
 
-        // Tx 3: Register all 6 ministries (single tx — internal loop)
+        // Tx 9: Register all 6 ministries (single tx — internal loop)
         hub.registerMinistry("Central Bank of Samoa",                    "CBS",       cbsAddr);
         hub.registerMinistry("Ministry of Comms and IT",                 "MCIT",      mcitAddr);
         hub.registerMinistry("Ministry of Finance",                      "MOF",       mofAddr);
@@ -110,6 +130,5 @@ contract Step3_WireAndSeed is Script {
 
         // Suppress unused variable warning
         adminAddr;
-        eduNode;
     }
 }

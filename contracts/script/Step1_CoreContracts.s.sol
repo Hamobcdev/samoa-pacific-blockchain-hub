@@ -26,7 +26,11 @@ contract Step1_CoreContracts is Script {
     function run() external {
         address adminAddr = vm.envAddress("ADMIN_ADDRESS");
         vm.startBroadcast();
-        vm.setNonce(adminAddr, 154);
+        // DEPLOY-2: Address determinism via CREATE2 is the
+        // correct fix. vm.setNonce removed — it is fragile
+        // and environment-dependent.
+        // TODO: Implement CREATE2 factory deployment for
+        // production. See aud
 
         NDIDSRegistry ndids = new NDIDSRegistry(adminAddr);
         AIDisbursementTracker aidTracker = new AIDisbursementTracker(adminAddr);

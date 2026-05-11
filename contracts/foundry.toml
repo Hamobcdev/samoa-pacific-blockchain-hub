@@ -29,3 +29,11 @@ amoy    = { key = "${POLYGONSCAN_API_KEY}", url = "https://api-amoy.polygonscan.
 line_length   = 100
 tab_width     = 4
 bracket_spacing = true
+
+# SOV-2: Sovereign PoA chain migration config
+# Uncomment and configure when sovereign chain is live:
+# [rpc_endpoints]
+# sovereign = "${SOVEREIGN_RPC_URL}"
+# [etherscan]
+# sovereign = { key = "blockscout", url =
+#   "${BLOCKSCOUT_URL}/api" }

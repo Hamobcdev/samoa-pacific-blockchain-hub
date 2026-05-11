@@ -188,8 +188,25 @@ const CONFIG = {
   RPC_URL:     import.meta.env.VITE_RPC_URL,
   NETWORK:     "Polygon Amoy Testnet",
   POLL_MS:     10000,
-  ETH_NETWORK: { chainId: 80002, name: "amoy", rpcUrl: import.meta.env.VITE_RPC_URL || "http://127.0.0.1:8545" },
+  // SOV-2: When migrating to sovereign PoA chain:
+  // 1. Set VITE_SOVEREIGN_CHAIN_ID to the new chain ID
+  // 2. Set VITE_USE_EIP1559=false (PoA uses gasPrice not
+  //    maxFeePerGas)
+  // 3. Update VITE_RPC_URL to sovereign node endpoint
+  // Chain migration requires no code change — env vars only
+  ETH_NETWORK: {
+    chainId: 80002,
+    name: "amoy",
+    rpcUrl: import.meta.env.VITE_RPC_URL || "http://127.0.0.1:8545",
+    sovereignChainId: parseInt(import.meta.env.VITE_SOVEREIGN_CHAIN_ID || "0"),
+    useEIP1559: import.meta.env.VITE_USE_EIP1559 !== "false",
+  },
 };
+
+function getActiveChainId() {
+  return CONFIG.ETH_NETWORK.sovereignChainId ||
+         CONFIG.ETH_NETWORK.chainId;
+}
 
 // ── Gas settings — update for mainnet before go-live ──────────────────────
 // Testnet: generous limits to ensure transactions confirm quickly

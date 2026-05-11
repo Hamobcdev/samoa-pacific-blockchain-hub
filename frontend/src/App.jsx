@@ -8,7 +8,7 @@
  *   cd ~/mvp/samoa-pacific-blockchain-hub/contracts
  *   forge script script/Deploy.s.sol:DeploySamoaHub \
  *     --rpc-url http://127.0.0.1:8545 \
- *     --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
+ *     --private-key <ANVIL_TEST_KEY> \
  *     --broadcast -vvvv
  *   npm run dev  -> http://localhost:5173
  *
@@ -188,7 +188,7 @@ const CONFIG = {
   RPC_URL:     import.meta.env.VITE_AMOY_RPC_URL,
   NETWORK:     "Polygon Amoy Testnet",
   POLL_MS:     10000,
-  ETH_NETWORK: { chainId: 80002, name: "amoy" },
+  ETH_NETWORK: { chainId: 80002, name: "amoy", rpcUrl: import.meta.env.VITE_RPC_URL || "http://127.0.0.1:8545" },
 };
 
 // ── Gas settings — update for mainnet before go-live ──────────────────────
@@ -200,7 +200,6 @@ const GAS = {
   maxFeePerGas:         ethers.parseUnits("100", "gwei"),
 };
 
-const DEPLOYER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
 // Read-only provider for public testnet — no private key needed for reads
 // Transactions require MetaMask or a connected wallet
@@ -1003,10 +1002,11 @@ function generateCredentialHash(txHash, citizenId, serviceType, ministryCode, am
     `CREDENTIAL:${txHash}:${cHash}:${serviceType}:${ministryCode}:${amount||0}:${timestamp}`
   ));
 }
-function generateMinistrySignature(credentialHash, ministryCode) {
-  return ethers.keccak256(ethers.toUtf8Bytes(
-    `MINISTRY_SIG:${ministryCode}:${credentialHash}:${DEPLOYER_KEY.slice(2,18)}`
-  ));
+function generateMinistrySignature(_credentialHash, _ministryCode) {
+  // CBS-PENDING: replace with EIP-712 eth_signTypedData_v4
+  // when ministry signing keys are issued
+  console.warn("generateMinistrySignature: stub only");
+  return ethers.ZeroHash;
 }
 function buildIPFSMetadata({ credHash, sigHash, txHash, citizenId, serviceType, ministryCode, amount, fee, paymentMethod, paymentRailLabel, wf, timestamp, ref }) {
   const cHash = (citizenId?.startsWith("0x") && citizenId?.length === 66)
@@ -1026,7 +1026,7 @@ function buildIPFSMetadata({ credHash, sigHash, txHash, citizenId, serviceType, 
     blockchain: { network: CONFIG.NETWORK, txHash, contractAddress: MINISTRY_ADDRS[ministryCode]||"—" },
     verification: {
       instructions: "Recompute: keccak256('CREDENTIAL:'+txHash+':'+citizenHash+':'+serviceType+':'+ministryCode+':'+amount+':'+timestamp). Must match credentialHash.",
-      ministryPublicKey: `keccak256('MINISTRY_SIG:${ministryCode}:'+credentialHash+':${DEPLOYER_KEY.slice(2,18)}) must match ministrySignature.`,
+      ministryPublicKey: `ministrySignature is a demo stub (ethers.ZeroHash). Replace with EIP-712 eth_signTypedData_v4 when ministry signing keys are issued.`,
       ipfsNote: "IPFS pinning via Pinata/web3.storage enabled post-funding. Present credentialHash to any Samoa government portal for instant verification.",
     },
   };
@@ -1302,8 +1302,9 @@ function fmtEvidence(h) {
   if (!h || h === ethers.ZeroHash || h === "0x"+"0".repeat(64)) return null;
   return h.toString().slice(0,20)+"...";
 }
-function officerHashFor(officerId) {
-  return ethers.keccak256(ethers.toUtf8Bytes(`OFFICER:${officerId}:${DEPLOYER_KEY.slice(2,10)}`));
+function officerHashFor(_officerId) {
+  // demo-only: returns zero hash until officer signing keys are provisioned
+  return ethers.ZeroHash;
 }
 
 // ---
@@ -1900,11 +1901,16 @@ function useWallet() {
               chainId: "0x13882",
               chainName: "Polygon Amoy Testnet",
               nativeCurrency: { name: "POL", symbol: "POL", decimals: 18 },
-              rpcUrls: ["https://rpc-amoy.polygon.technology"],
+              rpcUrls: [CONFIG.ETH_NETWORK.rpcUrl],
               blockExplorerUrls: ["https://amoy.polygonscan.com"]
             }]
           });
         }
+      }
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const network = await provider.getNetwork();
+      if (Number(network.chainId) !== CONFIG.ETH_NETWORK.chainId) {
+        throw new Error("Chain switch failed: wrong network");
       }
       setWalletAddress(accounts[0]);
       _demoMode = false;
@@ -1968,7 +1974,9 @@ async function fetchMinistryRecords(provider, addr) {
     try {
       const [citizenHash, serviceType, dataHash, timestamp, ndidsVerified] = await c.getRecord(i);
       recs.push({ id:i, citizenHash, serviceType, dataHash, timestamp:Number(timestamp), ndidsVerified });
-    } catch {}
+    } catch(err) {
+      console.error("[fetchMinistryRecords]", err);
+    }
   }
   return recs;
 }
@@ -1983,7 +1991,9 @@ async function fetchAllRecords(provider) {
     try {
       const recs = await fetchMinistryRecords(provider, addr);
       recs.forEach(r => all.push({ ...r, ministryCode:code }));
-    } catch {}
+    } catch(err) {
+      console.error("[fetchAllRecords]", err);
+    }
   }
   return all;
 }
@@ -6778,7 +6788,7 @@ export default function App() {
   // Block number polling
   useEffect(() => {
     if (!provider) return;
-    const poll = async () => { try { setBlockNumber(await provider.getBlockNumber()); } catch {} };
+    const poll = async () => { try { setBlockNumber(await provider.getBlockNumber()); } catch(err) { console.error("[blockPoller]", err); } };
     poll();
     const id = setInterval(poll, CONFIG.POLL_MS);
     return () => clearInterval(id);

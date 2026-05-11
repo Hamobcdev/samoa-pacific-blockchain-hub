@@ -24,7 +24,6 @@ contract MinistryNode {
     string  public ministryName;
     string  public ministryCode;
     address public immutable MINISTRY_ADMIN;
-    address public immutable DEPLOYER;
     address public immutable NDIDS_ADDRESS;
     address public hub;
 
@@ -70,7 +69,8 @@ contract MinistryNode {
 
     // ── Errors ───────────────────────────────────────────────────
 
-    error Unauthorised();
+    error UnauthorisedCaller();   // generic access denied
+    error HubNotSet();            // onlyHub called before hub is wired
     error ReadAccessDenied();
     error ZeroAddress();
     error HubAlreadySet();
@@ -87,44 +87,59 @@ contract MinistryNode {
     ) {
         if (_admin == address(0)) revert ZeroAddress();
         if (_ndids == address(0)) revert ZeroAddress();
-        ministryName  = _name;
-        ministryCode  = _code;
+        ministryName   = _name;
+        ministryCode   = _code;
         MINISTRY_ADMIN = _admin;
-        NDIDS_ADDRESS = _ndids;
-        DEPLOYER = msg.sender;
+        NDIDS_ADDRESS  = _ndids;
     }
 
+    // ── Modifiers ────────────────────────────────────────────────
+
+    // Permits only the ministry's own admin key.
     modifier onlyAdmin() {
         _onlyAdmin();
         _;
     }
     function _onlyAdmin() internal view {
-        if (msg.sender != MINISTRY_ADMIN) revert Unauthorised();
-        
+        if (msg.sender != MINISTRY_ADMIN) revert UnauthorisedCaller();
     }
 
+    // Permits only the wired hub contract.
+    // Reverts with HubNotSet() if hub has not been assigned yet.
+    modifier onlyHub() {
+        _onlyHub();
+        _;
+    }
+    function _onlyHub() internal view {
+        if (hub == address(0)) revert HubNotSet();
+        if (msg.sender != hub) revert UnauthorisedCaller();
+    }
+
+    // Permits admin OR hub — used for functions that serve both direct
+    // ministry operations and hub-orchestrated cross-ministry workflows.
+    // (recordService, authoriseReader are legitimately called by both.)
     modifier onlyAdminOrHub() {
         _onlyAdminOrHub();
         _;
     }
-     
     function _onlyAdminOrHub() internal view {
-        if (msg.sender != MINISTRY_ADMIN && msg.sender != hub) revert Unauthorised();
-        
+        if (msg.sender != MINISTRY_ADMIN && msg.sender != hub) revert UnauthorisedCaller();
     }
 
+    // Permits admin or any address explicitly granted read access.
     modifier onlyAuthorised() {
-         _onlyAuthorized();
-         _;
+        _onlyAuthorised();
+        _;
     }
-    function _onlyAuthorized() internal view {
+    function _onlyAuthorised() internal view {
         if (msg.sender != MINISTRY_ADMIN && !authorisedReaders[msg.sender])
             revert ReadAccessDenied();
-    }    
-    
+    }
 
-    function setHub(address _hub) external {
-        if (msg.sender != DEPLOYER && msg.sender != MINISTRY_ADMIN) revert Unauthorised();
+    // ── Hub Wiring ───────────────────────────────────────────────
+
+    // Only the ministry admin may set the hub — deployer has no post-deployment privilege.
+    function setHub(address _hub) external onlyAdmin {
         if (_hub == address(0)) revert ZeroAddress();
         if (hub != address(0)) revert HubAlreadySet();
         emit HubSet(address(0), _hub);
@@ -160,10 +175,8 @@ contract MinistryNode {
 
     // ── Service Recording ────────────────────────────────────────
 
-    /**
-     * @notice Record a service delivery event for a citizen.
-     *         Optionally verifies identity through NDIDS first.
-     */
+    // Called by the ministry admin for direct service recording, and by
+    // the hub during orchestrated cross-ministry workflows.
     function recordService(
         bytes32 citizenHash,
         string calldata serviceType,
@@ -192,12 +205,14 @@ contract MinistryNode {
 
     // ── Cross-Ministry Read Access ───────────────────────────────
 
+    // Called by the admin for direct grants, and by the hub via grantPermission().
     function authoriseReader(address reader) external onlyAdminOrHub {
         authorisedReaders[reader] = true;
         emit ReaderAuthorised(reader);
     }
 
-    function revokeReader(address reader) external onlyAdminOrHub {
+    // Hub has no revokePermission equivalent — revocation is an admin-only action.
+    function revokeReader(address reader) external onlyAdmin {
         authorisedReaders[reader] = false;
         emit ReaderRevoked(reader);
     }

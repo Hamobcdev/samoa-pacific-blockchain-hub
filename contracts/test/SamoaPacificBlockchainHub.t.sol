@@ -69,12 +69,6 @@ contract SamoaPacificBlockchainHubTest is Test {
         hub.setNDIDS(address(ndids));
         hub.setAIDTracker(address(aidTracker));
 
-        // Wire hub into ministry nodes (so the hub can coordinate workflows)
-        cbsNode.setHub(address(hub));
-        mcitNode.setHub(address(hub));
-        mofNode.setHub(address(hub));
-        educationNode.setHub(address(hub));
-
         // Register ministries in hub
         hub.registerMinistry("Central Bank of Samoa",    "CBS",       address(cbsNode));
         hub.registerMinistry("Ministry of Comms & IT",   "MCIT",      address(mcitNode));
@@ -82,6 +76,17 @@ contract SamoaPacificBlockchainHubTest is Test {
         hub.registerMinistry("Ministry of Education",    "EDUCATION", address(educationNode));
 
         vm.stopPrank();
+
+        // Wire hub into each ministry node — must be called by each node's own
+        // MINISTRY_ADMIN; the deployer no longer holds post-deployment privilege.
+        vm.prank(cbs);
+        cbsNode.setHub(address(hub));
+        vm.prank(mcit);
+        mcitNode.setHub(address(hub));
+        vm.prank(mof);
+        mofNode.setHub(address(hub));
+        vm.prank(education);
+        educationNode.setHub(address(hub));
     }
 
     // ════════════════════════════════════════════════════════════
@@ -205,7 +210,7 @@ contract SamoaPacificBlockchainHubTest is Test {
 
     function test_Ministry_OnlyAdminCanWrite() public {
         vm.prank(stranger);
-        vm.expectRevert(MinistryNode.Unauthorised.selector);
+        vm.expectRevert(MinistryNode.UnauthorisedCaller.selector);
         cbsNode.recordService(CITIZEN_HASH, "HACK_ATTEMPT", DATA_HASH, false);
     }
 

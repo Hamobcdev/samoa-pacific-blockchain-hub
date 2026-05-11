@@ -255,7 +255,7 @@ const ABI = {
     "function hasAccess(bytes32, address) view returns (bool)",
     "function serviceCount(bytes32) view returns (uint256)",
     "function registerCitizen(bytes32 citizenHash) external",
-    "function batchRegisterCitizens(bytes32[] citizenHashes) external",
+    "function batchRegister(bytes32[] hashes) external",
     "event CitizenRegistered(bytes32 indexed citizenHash, uint256 timestamp)",
   ],
   AID: [
@@ -282,7 +282,7 @@ const ABI = {
     "function ministryName() view returns (string)",
     "function ministryCode() view returns (string)",
     "function authorisedReaders(address) view returns (bool)",
-    "function records(uint256) view returns (bytes32,string,bytes32,uint256,bool)",
+
     "function recordService(bytes32 citizenHash, string serviceType, bytes32 dataHash, bool ndidsVerified) external",
     "function authoriseReader(address reader) external",
     "function revokeReader(address reader) external",
@@ -1966,7 +1966,7 @@ async function fetchMinistryRecords(provider, addr) {
   const recs = [];
   for (let i = 0; i < total; i++) {
     try {
-      const [citizenHash, serviceType, dataHash, timestamp, ndidsVerified] = await c.records(i);
+      const [citizenHash, serviceType, dataHash, timestamp, ndidsVerified] = await c.getRecord(i);
       recs.push({ id:i, citizenHash, serviceType, dataHash, timestamp:Number(timestamp), ndidsVerified });
     } catch {}
   }

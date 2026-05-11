@@ -185,7 +185,7 @@ import { ethers } from "ethers";
 // ---
 // LIVE — Polygon Amoy Testnet (Chain ID 80002) — deployed March 2026
 const CONFIG = {
-  RPC_URL:     import.meta.env.VITE_AMOY_RPC_URL,
+  RPC_URL:     import.meta.env.VITE_RPC_URL,
   NETWORK:     "Polygon Amoy Testnet",
   POLL_MS:     10000,
   ETH_NETWORK: { chainId: 80002, name: "amoy", rpcUrl: import.meta.env.VITE_RPC_URL || "http://127.0.0.1:8545" },
@@ -211,7 +211,7 @@ async function getSigner() {
   // Demo mode — sign with test wallet private key
   if (_demoMode && _demoWalletKey) {
     const provider = new ethers.JsonRpcProvider(
-      import.meta.env.VITE_AMOY_RPC_URL,
+      import.meta.env.VITE_RPC_URL,
       CONFIG.ETH_NETWORK,
       { staticNetwork: true }
     );

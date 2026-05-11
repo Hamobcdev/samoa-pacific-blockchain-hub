@@ -211,8 +211,8 @@ contract MinistryNode {
         emit ReaderAuthorised(reader);
     }
 
-    // Hub has no revokePermission equivalent — revocation is an admin-only action.
-    function revokeReader(address reader) external onlyAdmin {
+    // Called by admin directly, or by the hub via revokePermission().
+    function revokeReader(address reader) external onlyAdminOrHub {
         authorisedReaders[reader] = false;
         emit ReaderRevoked(reader);
     }

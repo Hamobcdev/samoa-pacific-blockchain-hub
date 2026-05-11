@@ -34,12 +34,13 @@ contract InteroperabilityHub is ReentrancyGuard {
     // ── State ────────────────────────────────────────────────────
 
     address public immutable ADMIN;
-    NDIDSRegistry      public ndids;
+    NDIDSRegistry         public ndids;
     AIDisbursementTracker public aidTracker;
 
     Ministry[] public ministries;
-    mapping(string => uint256) public ministryIndex;   // code => index
-    mapping(string => bool)    public ministryExists;
+    mapping(string  => uint256) public ministryIndex;    // code    => index
+    mapping(string  => bool)    public ministryExists;
+    mapping(address => bool)    public isRegisteredNode; // contractAddr => bool (FIX 3)
 
     // cross-ministry permission log
     struct Permission {
@@ -74,8 +75,10 @@ contract InteroperabilityHub is ReentrancyGuard {
     error Unauthorised();
     error MinistryNotFound();
     error AlreadyExists();
+    error AlreadySet();                              // FIX 1: once-set guard
     error ZeroAddress();
     error EnrollmentStepFailed(string step);
+    error UnregisteredMinistryNode(address node);   // FIX 3: node validation
 
     // ── Constructor ──────────────────────────────────────────────
 
@@ -97,11 +100,13 @@ contract InteroperabilityHub is ReentrancyGuard {
     // ── Setup ────────────────────────────────────────────────────
 
     function setNDIDS(address _ndids) external onlyAdmin {
+        if (address(ndids) != address(0)) revert AlreadySet();
         ndids = NDIDSRegistry(_ndids);
         emit NDIDSSet(_ndids);
     }
 
     function setAIDTracker(address _tracker) external onlyAdmin {
+        if (address(aidTracker) != address(0)) revert AlreadySet();
         aidTracker = AIDisbursementTracker(_tracker);
         emit AIDTrackerSet(_tracker);
     }
@@ -116,6 +121,7 @@ contract InteroperabilityHub is ReentrancyGuard {
         if (ministryExists[code]) revert AlreadyExists();
         ministryIndex[code] = ministries.length;
         ministryExists[code] = true;
+        isRegisteredNode[contractAddr] = true;
         ministries.push(Ministry({
             name:         name,
             code:         code,
@@ -152,6 +158,24 @@ contract InteroperabilityHub is ReentrancyGuard {
         emit PermissionGranted(fromCode, toCode);
     }
 
+    /**
+     * @notice Revoke ministry B's read access to ministry A's records.
+     *         Calls revokeReader() on the from-node passing the to-node address.
+     */
+    function revokePermission(string calldata fromCode, string calldata toCode)
+        external onlyAdmin
+    {
+        if (!ministryExists[fromCode] || !ministryExists[toCode])
+            revert MinistryNotFound();
+
+        Ministry storage from = ministries[ministryIndex[fromCode]];
+        Ministry storage to   = ministries[ministryIndex[toCode]];
+
+        MinistryNode(from.contractAddr).revokeReader(to.contractAddr);
+
+        emit PermissionRevoked(fromCode, toCode);
+    }
+
     // ── Cross-Ministry Workflow: School Enrollment + Benefit ──────
 
     /**
@@ -172,6 +196,10 @@ contract InteroperabilityHub is ReentrancyGuard {
         address mofNode,
         bytes32 dataHash
     ) external onlyAdmin nonReentrant returns (bool success) {
+
+        // Validate both node addresses against the hub's own registry (FIX 3)
+        if (!isRegisteredNode[educationNode]) revert UnregisteredMinistryNode(educationNode);
+        if (!isRegisteredNode[mofNode])       revert UnregisteredMinistryNode(mofNode);
 
         // ── B4: CEI — write state BEFORE external calls ──────────
         // Record workflow attempt upfront; update success flag after

@@ -5,10 +5,12 @@ import "forge-std/Script.sol";
 import "../src/NDIDSRegistry.sol";
 import "../src/MinistryNode.sol";
 import "../src/InteroperabilityHub.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /**
  * @title Step2_MinistryNodes
- * @notice Deploys 6 ministry nodes — 6 transactions total.
+ * @notice Deploys 7 ministry nodes via UUPS proxy — 14 transactions total
+ *         (7 implementations + 7 proxies).
  *         Each node receives its own dedicated admin key so that
  *         a single compromised key cannot control all ministries.
  *
@@ -23,6 +25,7 @@ import "../src/InteroperabilityHub.sol";
  *   ADMIN_MCIL=0x...
  *   ADMIN_EDUCATION=0x...
  *   ADMIN_CUSTOMS=0x...
+ *   ADMIN_SBS=0x...
  *
  * Run second:
  *   forge script script/Step2_MinistryNodes.s.sol:Step2_MinistryNodes \
@@ -40,9 +43,6 @@ contract Step2_MinistryNodes is Script {
     function run() external {
         address ndidsAddr = vm.envAddress("NDIDS_ADDRESS");
 
-        // Load per-ministry admin addresses — each ministry gets a dedicated key.
-        // If any variable is missing or zero the script reverts here with a clear message
-        // rather than silently deploying with a bad admin.
         address adminCbs       = vm.envOr("ADMIN_CBS",       address(0));
         address adminMcit      = vm.envOr("ADMIN_MCIT",      address(0));
         address adminMof       = vm.envOr("ADMIN_MOF",       address(0));
@@ -61,27 +61,54 @@ contract Step2_MinistryNodes is Script {
 
         vm.startBroadcast();
 
-        MinistryNode cbsNode = new MinistryNode(
-            "Central Bank of Samoa", "CBS", adminCbs, ndidsAddr
-        );
-        MinistryNode mcitNode = new MinistryNode(
-            "Ministry of Communications and Information Technology", "MCIT", adminMcit, ndidsAddr
-        );
-        MinistryNode mofNode = new MinistryNode(
-            "Ministry of Finance", "MOF", adminMof, ndidsAddr
-        );
-        MinistryNode mcilNode = new MinistryNode(
-            "Ministry of Commerce Industry and Labour", "MCIL", adminMcil, ndidsAddr
-        );
-        MinistryNode educationNode = new MinistryNode(
-            "Ministry of Education Sports and Culture", "EDUCATION", adminEducation, ndidsAddr
-        );
-        MinistryNode customsNode = new MinistryNode(
-            "Ministry of Customs and Revenue", "CUSTOMS", adminCustoms, ndidsAddr
-        );
-        MinistryNode sbsNode = new MinistryNode(
-            "Samoa Bureau of Statistics", "SBS", adminSbs, ndidsAddr
-        );
+        MinistryNode cbsNode;
+        {
+            MinistryNode impl = new MinistryNode();
+            bytes memory d = abi.encodeWithSelector(MinistryNode.initialize.selector, "Central Bank of Samoa", "CBS", adminCbs, ndidsAddr);
+            cbsNode = MinistryNode(address(new ERC1967Proxy(address(impl), d)));
+        }
+
+        MinistryNode mcitNode;
+        {
+            MinistryNode impl = new MinistryNode();
+            bytes memory d = abi.encodeWithSelector(MinistryNode.initialize.selector, "Ministry of Communications and Information Technology", "MCIT", adminMcit, ndidsAddr);
+            mcitNode = MinistryNode(address(new ERC1967Proxy(address(impl), d)));
+        }
+
+        MinistryNode mofNode;
+        {
+            MinistryNode impl = new MinistryNode();
+            bytes memory d = abi.encodeWithSelector(MinistryNode.initialize.selector, "Ministry of Finance", "MOF", adminMof, ndidsAddr);
+            mofNode = MinistryNode(address(new ERC1967Proxy(address(impl), d)));
+        }
+
+        MinistryNode mcilNode;
+        {
+            MinistryNode impl = new MinistryNode();
+            bytes memory d = abi.encodeWithSelector(MinistryNode.initialize.selector, "Ministry of Commerce Industry and Labour", "MCIL", adminMcil, ndidsAddr);
+            mcilNode = MinistryNode(address(new ERC1967Proxy(address(impl), d)));
+        }
+
+        MinistryNode educationNode;
+        {
+            MinistryNode impl = new MinistryNode();
+            bytes memory d = abi.encodeWithSelector(MinistryNode.initialize.selector, "Ministry of Education Sports and Culture", "EDUCATION", adminEducation, ndidsAddr);
+            educationNode = MinistryNode(address(new ERC1967Proxy(address(impl), d)));
+        }
+
+        MinistryNode customsNode;
+        {
+            MinistryNode impl = new MinistryNode();
+            bytes memory d = abi.encodeWithSelector(MinistryNode.initialize.selector, "Ministry of Customs and Revenue", "CUSTOMS", adminCustoms, ndidsAddr);
+            customsNode = MinistryNode(address(new ERC1967Proxy(address(impl), d)));
+        }
+
+        MinistryNode sbsNode;
+        {
+            MinistryNode impl = new MinistryNode();
+            bytes memory d = abi.encodeWithSelector(MinistryNode.initialize.selector, "Samoa Bureau of Statistics", "SBS", adminSbs, ndidsAddr);
+            sbsNode = MinistryNode(address(new ERC1967Proxy(address(impl), d)));
+        }
 
         vm.stopBroadcast();
 

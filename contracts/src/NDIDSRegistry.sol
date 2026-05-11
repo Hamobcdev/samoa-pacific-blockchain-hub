@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+
 /**
  * @title NDIDSRegistry
  * @notice National Digital Identification System (NDIDS) - Samoa
@@ -14,11 +17,11 @@ pragma solidity ^0.8.24;
 /// @notice Samoa National Digital Identity Registry.
 /// Operates under authority of the CBS Act 2015.
 /// BIS PFMI P11 compliance: legal basis documented.
-contract NDIDSRegistry {
+contract NDIDSRegistry is Initializable, UUPSUpgradeable {
 
     // ── State ────────────────────────────────────────────────────
 
-    address public immutable ADMIN;            // NDIDS authority (SBS/MCIT)
+    address public ADMIN;                       // NDIDS authority (SBS/MCIT)
     uint256 public totalRegistered;
 
     // citizenHash => registered
@@ -50,11 +53,16 @@ contract NDIDSRegistry {
     error AccessDenied();
     error ZeroAddress();
 
-    // ── Constructor ──────────────────────────────────────────────
+    // ── Constructor / Initializer ────────────────────────────────
 
-    constructor(address _admin) {
-        if (_admin == address(0)) revert ZeroAddress();
-        ADMIN = _admin;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(address admin_) public initializer {
+        if (admin_ == address(0)) revert ZeroAddress();
+        ADMIN = admin_;
     }
 
     // ── Modifiers ────────────────────────────────────────────────
@@ -155,6 +163,12 @@ contract NDIDSRegistry {
         verifiedAt[citizenHash] = block.timestamp;
         emit VerificationRenewed(citizenHash);
     }
+
+    // ── UUPS ─────────────────────────────────────────────────────
+
+    function _authorizeUpgrade(address newImplementation)
+        internal override onlyAdmin {}
+
 
     // ── CBS-BLOCKED: EIP-712 Citizen Consent ─────────────────────
     //

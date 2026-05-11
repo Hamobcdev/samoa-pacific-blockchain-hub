@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+
 /**
  * @title AIDisbursementTracker
  * @notice Transparent, on-chain tracking of international aid and NGO funding
@@ -19,7 +22,7 @@ pragma solidity ^0.8.24;
 /// @notice Aid grant lifecycle and tranche release tracker.
 /// Operates under Ministry of Finance Public Finance Management Act.
 /// BIS PFMI P11 compliance documented.
-contract AIDisbursementTracker {
+contract AIDisbursementTracker is Initializable, UUPSUpgradeable {
 
     // ── Enums ────────────────────────────────────────────────────
 
@@ -57,7 +60,7 @@ contract AIDisbursementTracker {
 
     // ── State ────────────────────────────────────────────────────
 
-    address public immutable ADMIN;
+    address public ADMIN;
     uint256 public totalGrants;
     uint256 public totalDisbursed;
     uint256 public totalVerified;
@@ -120,11 +123,16 @@ contract AIDisbursementTracker {
     error NotAVerifier();
     error InvalidStateTransition();
 
-    // ── Constructor ──────────────────────────────────────────────
+    // ── Constructor / Initializer ────────────────────────────────
 
-    constructor(address _admin) {
-        if (_admin == address(0)) revert ZeroAddress();
-        ADMIN = _admin;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(address admin_) public initializer {
+        if (admin_ == address(0)) revert ZeroAddress();
+        ADMIN = admin_;
     }
 
     modifier onlyAdmin() {
@@ -362,6 +370,12 @@ contract AIDisbursementTracker {
         g.status = GrantStatus.Completed;
         emit GrantCompleted(grantId, block.timestamp); // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
     }
+
+    // ── UUPS ─────────────────────────────────────────────────────
+
+    function _authorizeUpgrade(address newImplementation)
+        internal override onlyAdmin {}
+
 
     // ── CBS-BLOCKED: Two-step Tranche Timelock ───────────────────
     //

@@ -4,7 +4,9 @@ pragma solidity ^0.8.24;
 import { NDIDSRegistry } from "./NDIDSRegistry.sol";
 import { MinistryNode } from "./MinistryNode.sol";
 import { AIDisbursementTracker } from "./AIDisbursementTracker.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "./utils/ReentrancyGuardUpgradeable.sol";
 
 /**
  * @title InteroperabilityHub
@@ -22,7 +24,7 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.s
 /// @notice Central registry and cross-ministry workflow hub.
 /// Operates under MCIT Digital Economy Policy 2022.
 /// BIS PFMI P11 compliance: legal basis documented.
-contract InteroperabilityHub is ReentrancyGuard {
+contract InteroperabilityHub is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
 
     // ── Structs ──────────────────────────────────────────────────
 
@@ -36,7 +38,7 @@ contract InteroperabilityHub is ReentrancyGuard {
 
     // ── State ────────────────────────────────────────────────────
 
-    address public immutable ADMIN;
+    address public ADMIN;
     NDIDSRegistry         public ndids;
     AIDisbursementTracker public aidTracker;
 
@@ -84,11 +86,17 @@ contract InteroperabilityHub is ReentrancyGuard {
     error UnregisteredMinistryNode(address node);   // FIX 3: node validation
     error VerificationExpired(bytes32 citizenHash); // CISA-1: expired NDIDS verification
 
-    // ── Constructor ──────────────────────────────────────────────
+    // ── Constructor / Initializer ────────────────────────────────
 
-    constructor(address _admin) {
-        if (_admin == address(0)) revert ZeroAddress();
-        ADMIN = _admin;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(address admin_) public initializer {
+        if (admin_ == address(0)) revert ZeroAddress();
+        __ReentrancyGuard_init();
+        ADMIN = admin_;
     }
 
     modifier onlyAdmin() {
@@ -297,4 +305,9 @@ contract InteroperabilityHub is ReentrancyGuard {
     function getAllMinistries() external view returns (Ministry[] memory) {
         return ministries;
     }
+
+    // ── UUPS ─────────────────────────────────────────────────────
+
+    function _authorizeUpgrade(address newImplementation)
+        internal override onlyAdmin {}
 }

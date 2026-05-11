@@ -2,7 +2,9 @@
 pragma solidity ^0.8.24;
 
 import { NDIDSRegistry } from "./NDIDSRegistry.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "./utils/ReentrancyGuardUpgradeable.sol";
 
 /**
  * @title MinistryNode
@@ -21,14 +23,14 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.s
 /// @notice Per-ministry service record ledger.
 /// Authorised under relevant ministry enabling legislation.
 /// BIS PFMI P11 compliance: legal basis documented.
-contract MinistryNode is ReentrancyGuard {
+contract MinistryNode is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
 
     // ── Identity ─────────────────────────────────────────────────
 
     string  public ministryName;
     string  public ministryCode;
-    address public immutable MINISTRY_ADMIN;
-    address public immutable NDIDS_ADDRESS;
+    address public MINISTRY_ADMIN;
+    address public NDIDS_ADDRESS;
     address public hub;
 
     // ── Service Type Allowlist ────────────────────────────────────
@@ -103,16 +105,22 @@ contract MinistryNode is ReentrancyGuard {
     error TimelockNotExpired();
     error InvalidServiceType();
 
-    // ── Constructor ──────────────────────────────────────────────
+    // ── Constructor / Initializer ────────────────────────────────
 
-    constructor(
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         string memory _name,
         string memory _code,
         address _admin,
         address _ndids
-    ) {
+    ) public initializer {
         if (_admin == address(0)) revert ZeroAddress();
         if (_ndids == address(0)) revert ZeroAddress();
+        __ReentrancyGuard_init();
         ministryName   = _name;
         ministryCode   = _code;
         MINISTRY_ADMIN = _admin;
@@ -286,4 +294,9 @@ contract MinistryNode is ReentrancyGuard {
     function totalRecords() external view returns (uint256) {
         return _records.length;
     }
+
+    // ── UUPS ─────────────────────────────────────────────────────
+
+    function _authorizeUpgrade(address newImplementation)
+        internal override onlyAdmin {}
 }

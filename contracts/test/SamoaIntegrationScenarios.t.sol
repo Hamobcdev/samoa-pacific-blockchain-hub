@@ -6,6 +6,7 @@ import "../src/NDIDSRegistry.sol";
 import "../src/MinistryNode.sol";
 import "../src/AIDisbursementTracker.sol";
 import "../src/InteroperabilityHub.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /**
  * @title SamoaIntegrationScenarios
@@ -67,18 +68,54 @@ contract SamoaIntegrationScenarios is Test {
     function setUp() public {
         vm.startPrank(admin);
 
-        // Deploy core contracts
-        ndids      = new NDIDSRegistry(admin);
-        aidTracker = new AIDisbursementTracker(admin);
-        hub        = new InteroperabilityHub(admin);
+        // Deploy core contracts via UUPS proxy
+        {
+            NDIDSRegistry impl = new NDIDSRegistry();
+            bytes memory d = abi.encodeWithSelector(NDIDSRegistry.initialize.selector, admin);
+            ndids = NDIDSRegistry(address(new ERC1967Proxy(address(impl), d)));
+        }
+        {
+            AIDisbursementTracker impl = new AIDisbursementTracker();
+            bytes memory d = abi.encodeWithSelector(AIDisbursementTracker.initialize.selector, admin);
+            aidTracker = AIDisbursementTracker(address(new ERC1967Proxy(address(impl), d)));
+        }
+        {
+            InteroperabilityHub impl = new InteroperabilityHub();
+            bytes memory d = abi.encodeWithSelector(InteroperabilityHub.initialize.selector, admin);
+            hub = InteroperabilityHub(address(new ERC1967Proxy(address(impl), d)));
+        }
 
-        // Deploy ministry nodes with their own admins
-        cbsNode       = new MinistryNode("Central Bank of Samoa",                    "CBS",       cbsAdmin,  address(ndids));
-        mcitNode      = new MinistryNode("Ministry of Comms and IT",                 "MCIT",      mcitAdmin, address(ndids));
-        mofNode       = new MinistryNode("Ministry of Finance",                      "MOF",       mofAdmin,  address(ndids));
-        mcilNode      = new MinistryNode("Ministry of Commerce Industry and Labour", "MCIL",      mcilAdmin, address(ndids));
-        educationNode = new MinistryNode("Ministry of Education Sports and Culture", "EDUCATION", eduAdmin,  address(ndids));
-        customsNode   = new MinistryNode("Ministry of Customs and Revenue",          "CUSTOMS",   custAdmin, address(ndids));
+        // Deploy ministry nodes via UUPS proxy with their own admins
+        {
+            MinistryNode impl = new MinistryNode();
+            bytes memory d = abi.encodeWithSelector(MinistryNode.initialize.selector, "Central Bank of Samoa", "CBS", cbsAdmin, address(ndids));
+            cbsNode = MinistryNode(address(new ERC1967Proxy(address(impl), d)));
+        }
+        {
+            MinistryNode impl = new MinistryNode();
+            bytes memory d = abi.encodeWithSelector(MinistryNode.initialize.selector, "Ministry of Comms and IT", "MCIT", mcitAdmin, address(ndids));
+            mcitNode = MinistryNode(address(new ERC1967Proxy(address(impl), d)));
+        }
+        {
+            MinistryNode impl = new MinistryNode();
+            bytes memory d = abi.encodeWithSelector(MinistryNode.initialize.selector, "Ministry of Finance", "MOF", mofAdmin, address(ndids));
+            mofNode = MinistryNode(address(new ERC1967Proxy(address(impl), d)));
+        }
+        {
+            MinistryNode impl = new MinistryNode();
+            bytes memory d = abi.encodeWithSelector(MinistryNode.initialize.selector, "Ministry of Commerce Industry and Labour", "MCIL", mcilAdmin, address(ndids));
+            mcilNode = MinistryNode(address(new ERC1967Proxy(address(impl), d)));
+        }
+        {
+            MinistryNode impl = new MinistryNode();
+            bytes memory d = abi.encodeWithSelector(MinistryNode.initialize.selector, "Ministry of Education Sports and Culture", "EDUCATION", eduAdmin, address(ndids));
+            educationNode = MinistryNode(address(new ERC1967Proxy(address(impl), d)));
+        }
+        {
+            MinistryNode impl = new MinistryNode();
+            bytes memory d = abi.encodeWithSelector(MinistryNode.initialize.selector, "Ministry of Customs and Revenue", "CUSTOMS", custAdmin, address(ndids));
+            customsNode = MinistryNode(address(new ERC1967Proxy(address(impl), d)));
+        }
 
         // Wire hub
         hub.setNDIDS(address(ndids));

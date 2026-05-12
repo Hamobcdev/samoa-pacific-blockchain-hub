@@ -309,20 +309,42 @@ const ABI = {
 // DESIGN SYSTEM
 // ---
 const C = {
-  abyss: "#070D1A", deep: "#0B1628", navy: "#0F2044", ocean: "#163258",
-  wave: "#1B4A7A", coral: "#E8552A", gold: "#C9920E", seafoam: "#0FB894",
-  teal: "#0A8A72", amber: "#D4860A", white: "#F4F8FF", silver: "#9EB3CC",
-  muted: "#5A7A9A", danger: "#D63B3B",
+  // Samoa Government Primary Palette
+  authority:   "#003087",
+  flag:        "#CE1126",
+  gold:        "#C9A227",
+  sovereign:   "#0A1628",
+  deep:        "#0F1E3A",
+  surface:     "#162040",
+  border:      "#1E2E50",
+  border2:     "#2A3F6B",
+  // Text
+  white:       "#F0F4FF",
+  silver:      "#A8B8D8",
+  muted:       "#5A6A8A",
+  // Status
+  seafoam:     "#00A651",
+  teal:        "#00C4B4",
+  amber:       "#F59E0B",
+  coral:       "#E8445A",
+  gold2:       "#C9A227",
+  // Legacy aliases — keeps all existing C.abyss etc working
+  abyss:       "#0A1628",
+  navy:        "#0F1E3A",
+  ocean:       "#162040",
+  wave:        "#1E2E50",
+  danger:      "#E8445A",
 };
 const F = {
-  display: "'Playfair Display', Georgia, serif",
-  mono:    "'IBM Plex Mono', 'Courier New', monospace",
-  ui:      "'DM Sans', -apple-system, sans-serif",
+  display: "Cormorant Garamond",
+  mono:    "IBM Plex Mono",
+  ui:      "DM Sans",
+  sans:    "DM Sans",
 };
 if (!document.getElementById("sbp-fonts")) {
   const l = document.createElement("link");
   l.id = "sbp-fonts"; l.rel = "stylesheet";
-  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:wght@400;500;700;800&display=swap";
+  l.href = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:wght@400;500;700;800&display=swap";
   document.head.appendChild(l);
 }
 const card  = (x={}) => ({ background:C.navy, border:`1px solid ${C.ocean}`, borderRadius:"12px", padding:"20px", ...x });
@@ -3710,8 +3732,8 @@ function UNICEFDashboard({ provider, connected, blockNumber, onBack, allRecords,
 // ---
 // HUB DASHBOARD -- overview of all ministries + workflows (v7 preserved)
 // ---
-function HubDashboard({ provider, connected, blockNumber, onBack, allRecords, allLoading, onSelectMinistry }) {
-  const [tab, setTab] = useState("ministries");
+function HubDashboard({ provider, connected, blockNumber, onBack, allRecords, allLoading, onSelectMinistry, initialTab }) {
+  const [tab, setTab] = useState(initialTab || "ministries");
   const hubContract = useContract(ADDR.HUB, ABI.HUB, provider);
   const ndidsContract = useContract(ADDR.NDIDS, ABI.NDIDS, provider);
 
@@ -3741,9 +3763,10 @@ function HubDashboard({ provider, connected, blockNumber, onBack, allRecords, al
   const recCount = (allRecords || []).length;
 
   const tabs = [
-    { id:"ministries", icon:"🏛", label:"Ministries" },
-    { id:"workflows",  icon:"🔄", label:"Workflows"  },
-    { id:"perms",      icon:"🔐", label:"Permissions" },
+    { id:"ministries",  icon:"🏛", label:"Ministries"     },
+    { id:"workflows",   icon:"🔄", label:"Workflows"      },
+    { id:"perms",       icon:"🔐", label:"Permissions"    },
+    { id:"governance",  icon:"◈",  label:"CBS Governance" },
   ];
 
   return (
@@ -3843,6 +3866,8 @@ function HubDashboard({ provider, connected, blockNumber, onBack, allRecords, al
             </div>
           </>
         )}
+
+        {tab === "governance" && <GovernanceStatusPanel />}
       </div>
     </div>
   );
@@ -5076,6 +5101,16 @@ function Home({ provider, connected, blockNumber, allRecords, allLoading, onSele
             <div style={{ fontSize:"28px", marginBottom:"8px" }}>📊</div>
             <div style={{ fontWeight:800, fontSize:"14px", fontFamily:F.display, marginBottom:"4px" }}>Analytics Dashboard</div>
             <div style={{ fontSize:"12px", color:C.silver }}>Coming post-funding — cross-ministry analytics, audit exports, tax authority integration</div>
+          </div>
+          <div onClick={() => onSelect("hub:governance")}
+            style={{ ...card({ background:"linear-gradient(135deg, rgba(156,107,218,0.15), rgba(10,22,40,0.9))", border:"1px solid #9C6BDA", borderTop:"none", borderRadius:"12px", cursor:"pointer" }) }}
+            onMouseEnter={e=>e.currentTarget.style.background="rgba(156,107,218,0.25)"}
+            onMouseLeave={e=>e.currentTarget.style.background="linear-gradient(135deg, rgba(156,107,218,0.15), rgba(10,22,40,0.9))"}>
+            <div style={{ fontSize:"28px", marginBottom:"8px", color:"#9C6BDA" }}>◈</div>
+            <div style={{ fontWeight:600, fontSize:"14px", fontFamily:"DM Sans", marginBottom:"4px", color:"#F0F4FF" }}>CBS Governance</div>
+            <div style={{ fontFamily:"IBM Plex Mono", fontSize:"10px", color:"#9C6BDA", marginBottom:"8px" }}>5 decisions pending</div>
+            <div style={{ fontSize:"11px", color:"#A8B8D8", marginBottom:"12px" }}>Architecture complete. Awaiting Central Bank policy confirmation on 5 governance items.</div>
+            <div style={{ fontFamily:"IBM Plex Mono", fontSize:"9px", color:"#9C6BDA" }}>VIEW STATUS →</div>
           </div>
         </div>
 
@@ -6783,12 +6818,214 @@ function CommunityDashboard({ provider, connected, blockNumber, onBack, onOpenUN
 }
 
 // ---
+// GOVERNANCE STATUS PANEL (CBS)
+// ---
+function GovernanceItem({ id, title, description, cbsQuestion, preview }) {
+  return (
+    <div style={{ background:"#0F1E3A", border:"1px solid #2A3F6B", borderLeft:"3px solid #9C6BDA", borderRadius:"8px", padding:"20px", marginBottom:"12px" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:"10px", flexWrap:"wrap" }}>
+        <span style={{ fontFamily:"IBM Plex Mono", fontSize:"10px", color:"#5A6A8A" }}>{id}</span>
+        <span style={{ fontFamily:"DM Sans", fontSize:"14px", fontWeight:500, color:"#F0F4FF", flex:1 }}>{title}</span>
+        <span style={{ background:"rgba(156,107,218,0.15)", border:"1px solid #9C6BDA", borderRadius:"12px", padding:"2px 10px", fontFamily:"IBM Plex Mono", fontSize:"9px", color:"#9C6BDA", whiteSpace:"nowrap" }}>CBS DECISION REQUIRED</span>
+      </div>
+      <div style={{ fontFamily:"DM Sans", fontSize:"12px", color:"#A8B8D8", marginTop:"6px" }}>{description}</div>
+      <div style={{ marginTop:"12px", background:"rgba(201,162,39,0.08)", border:"1px solid rgba(201,162,39,0.3)", borderRadius:"4px", padding:"10px 14px" }}>
+        <div style={{ fontFamily:"IBM Plex Mono", fontSize:"9px", color:"#C9A227", marginBottom:"4px" }}>⊘ Awaiting CBS:</div>
+        <div style={{ fontFamily:"DM Sans", fontSize:"12px", color:"#C9A227" }}>{cbsQuestion}</div>
+      </div>
+      <div style={{ marginTop:"12px", opacity:0.4, pointerEvents:"none" }}>
+        <div style={{ fontFamily:"IBM Plex Mono", fontSize:"9px", color:"#5A6A8A", marginBottom:"8px" }}>Architecture ready — pending activation</div>
+        {preview}
+      </div>
+    </div>
+  );
+}
+
+function GovernanceStatusPanel() {
+  const items = [
+    {
+      id: "AC-2-multisig",
+      title: "2-of-3 Multi-Signature Governance Wallet",
+      description: "All administrative actions require approval from at least 2 of 3 designated CBS keyholders. Contract deployed and ready.",
+      cbsQuestion: "Who are the three designated keyholders? What is the approved quorum threshold?",
+      preview: (
+        <div style={{ display:"flex", gap:"8px" }}>
+          {[1,2,3].map(n => (
+            <div key={n} style={{ flex:1, background:"rgba(42,63,107,0.5)", border:"1px solid #2A3F6B", borderRadius:"6px", padding:"8px 10px", fontFamily:"IBM Plex Mono", fontSize:"9px", color:"#A8B8D8", textAlign:"center" }}>
+              Keyholder {n}<br/>Address: Pending CBS Nomination
+            </div>
+          ))}
+        </div>
+      ),
+    },
+    {
+      id: "PAUSABLE",
+      title: "Emergency Circuit Breaker",
+      description: "A designated authority can immediately halt all system transactions if a security threat is detected.",
+      cbsQuestion: "Who has authority to trigger an emergency pause of the system?",
+      preview: (
+        <button disabled style={{ background:"transparent", border:"2px solid #E8445A", borderRadius:"6px", padding:"10px 24px", fontFamily:"IBM Plex Mono", fontSize:"11px", color:"#E8445A", cursor:"not-allowed", opacity:0.5 }}>
+          🔒 PAUSE ALL TRANSACTIONS
+        </button>
+      ),
+    },
+    {
+      id: "AC-3-timelock",
+      title: "Fund Release Timelock",
+      description: "Aid disbursements and grant releases enforce a mandatory waiting period between approval and execution.",
+      cbsQuestion: "What is the governance-mandated timelock delay window? (e.g. 24h / 48h / 72h)",
+      preview: (
+        <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+          {["Approved","?? hours · Pending CBS","Released"].map((label, i) => (
+            <React.Fragment key={label}>
+              <div style={{ background:"rgba(42,63,107,0.5)", border:"1px solid #2A3F6B", borderRadius:"6px", padding:"8px 12px", fontFamily:"IBM Plex Mono", fontSize:"9px", color:i===1?"#C9A227":"#A8B8D8", textAlign:"center", flex:1 }}>{label}</div>
+              {i < 2 && <div style={{ color:"#5A6A8A", fontSize:"14px" }}>→</div>}
+            </React.Fragment>
+          ))}
+        </div>
+      ),
+    },
+    {
+      id: "SOV-1",
+      title: "Sovereign Network Validator Nodes",
+      description: "The blockchain network requires 3-5 government-operated validator nodes. Genesis configuration is ready.",
+      cbsQuestion: "Which ministries will operate validator nodes? CBS and MOF are candidates.",
+      preview: (
+        <div style={{ display:"flex", gap:"8px" }}>
+          {["CBS","MOF","MCIT","Node 4?","Node 5?"].map((label, i) => (
+            <div key={label} style={{ flex:1, background:i<2?"rgba(0,48,135,0.4)":"transparent", border:`1px solid ${i<2?"#003087":"#2A3F6B"}`, borderRadius:"50%", width:"48px", height:"48px", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"IBM Plex Mono", fontSize:"8px", color:i<2?"#A8B8D8":"#5A6A8A", textAlign:"center" }}>{label}</div>
+          ))}
+        </div>
+      ),
+    },
+    {
+      id: "FATF-1",
+      title: "Suspicious Activity Reporting (FATF R.15)",
+      description: "On-chain flagging mechanism for suspicious transactions with integration to CBS compliance reporting workflow.",
+      cbsQuestion: "Define the SAR reporting chain and integration requirements for CBS compliance.",
+      preview: (
+        <div style={{ position:"relative", background:"rgba(42,63,107,0.3)", border:"1px solid #2A3F6B", borderRadius:"6px", padding:"12px" }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:"6px", opacity:0.5 }}>
+            <input disabled placeholder="Record ID" style={{ background:"#0A1628", border:"1px solid #2A3F6B", borderRadius:"4px", padding:"6px 10px", fontFamily:"IBM Plex Mono", fontSize:"10px", color:"#A8B8D8" }}/>
+            <input disabled placeholder="Reason" style={{ background:"#0A1628", border:"1px solid #2A3F6B", borderRadius:"4px", padding:"6px 10px", fontFamily:"IBM Plex Mono", fontSize:"10px", color:"#A8B8D8" }}/>
+            <button disabled style={{ background:"transparent", border:"1px solid #5A6A8A", borderRadius:"4px", padding:"6px", fontFamily:"IBM Plex Mono", fontSize:"9px", color:"#5A6A8A", cursor:"not-allowed" }}>Flag Transaction</button>
+          </div>
+          <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"IBM Plex Mono", fontSize:"9px", color:"#C9A227" }}>SAR workflow: pending CBS definition</div>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      <div style={{ marginBottom:"24px" }}>
+        <div style={{ fontFamily:"Cormorant Garamond", fontSize:"22px", color:"#F0F4FF" }}>CBS Governance Decisions Required</div>
+        <div style={{ fontFamily:"DM Sans", fontSize:"13px", color:"#A8B8D8", marginTop:"6px" }}>The following 5 items are architecturally complete. Each requires a policy decision from the Central Bank of Samoa before activation.</div>
+        <div style={{ fontFamily:"IBM Plex Mono", fontSize:"11px", color:"#C9A227", marginTop:"8px" }}>45 / 50 Audit Items Resolved · 5 Pending CBS Confirmation</div>
+      </div>
+      {items.map(item => <GovernanceItem key={item.id} {...item} />)}
+    </div>
+  );
+}
+
+// ---
+// GOV AUTHORITY BAR
+// ---
+function GovAuthorityBar() {
+  const coatStars = (
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gridTemplateRows:"1fr 1fr 1fr", gap:"1px", textAlign:"center", fontSize:"8px", color:"#C9A227", lineHeight:1 }}>
+      <span/><span>★</span><span/>
+      <span>★</span><span>★</span><span>★</span>
+      <span/><span>★</span><span/>
+    </div>
+  );
+  return (
+    <div style={{ width:"100%", height:"52px", background:"linear-gradient(135deg, #0A1628 0%, #003087 100%)", borderBottom:"2px solid #C9A227", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px", boxSizing:"border-box" }}>
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"2px" }}>
+        <div style={{ width:"36px", height:"36px", border:"2px solid #C9A227", borderRadius:"50%", background:"transparent", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          {coatStars}
+        </div>
+        <div style={{ fontSize:"7px", color:"#C9A227", fontFamily:"IBM Plex Mono" }}>WS</div>
+      </div>
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
+        <div style={{ fontFamily:"Cormorant Garamond", fontSize:"13px", fontWeight:600, letterSpacing:"2px", color:"#F0F4FF" }}>INDEPENDENT STATE OF SAMOA</div>
+        <div style={{ fontFamily:"DM Sans", fontSize:"10px", color:"#A8B8D8", letterSpacing:"1px" }}>Malo Sa&#x02BC;oloto Tuto&#x02BC;atasi o S&#x101;moa</div>
+      </div>
+      <div style={{ background:"rgba(201,162,39,0.15)", border:"1px solid #C9A227", borderRadius:"4px", padding:"4px 10px" }}>
+        <span style={{ fontFamily:"IBM Plex Mono", fontSize:"9px", color:"#C9A227", letterSpacing:"0.8px" }}>NUS · ISOC Research Programme</span>
+      </div>
+    </div>
+  );
+}
+
+// ---
+// GOV FOOTER
+// ---
+function GovFooter() {
+  return (
+    <div style={{ width:"100%", padding:"20px 24px", background:"#0A1628", borderTop:"1px solid #1E2E50", display:"flex", flexDirection:"column", gap:"8px", alignItems:"center", boxSizing:"border-box" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:"16px" }}>
+        <span style={{ fontFamily:"IBM Plex Mono", fontSize:"10px", color:"#5A6A8A" }}>Samoa DPI Research Laboratory</span>
+        <div style={{ display:"flex", width:"3px", height:"20px" }}>
+          <div style={{ flex:1, background:"#CE1126" }}/>
+          <div style={{ flex:1, background:"#FFFFFF" }}/>
+          <div style={{ flex:1, background:"#003087" }}/>
+        </div>
+        <span style={{ fontFamily:"IBM Plex Mono", fontSize:"10px", color:"#5A6A8A" }}>Powered by Sovereign Blockchain Infrastructure</span>
+      </div>
+      <div style={{ background:"rgba(206,17,38,0.08)", border:"1px solid rgba(206,17,38,0.3)", borderRadius:"4px", padding:"6px 16px", textAlign:"center" }}>
+        <span style={{ fontFamily:"IBM Plex Mono", fontSize:"9px", color:"#E8445A", letterSpacing:"0.5px" }}>⚠ RESEARCH PILOT ONLY — This system operates under the NUS/ISOC Internet Society Research Programme. Not authorised for public deployment. Sandbox environment — no real citizen data.</span>
+      </div>
+      <div style={{ fontFamily:"DM Sans", fontSize:"9px", color:"#5A6A8A" }}>Research Agreement · Privacy Policy · Contact: synergyblockchaintf@gmail.com · © 2026 Synergy Blockchain Pacific</div>
+    </div>
+  );
+}
+
+// ---
+// RESEARCH ACCESS GATE
+// ---
+function ResearchAccessGate() {
+  const [dismissed, setDismissed] = React.useState(() => !!sessionStorage.getItem("sbp_research_acknowledged"));
+  if (dismissed) return null;
+  const coatStars = (
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gridTemplateRows:"1fr 1fr 1fr", gap:"3px", textAlign:"center", fontSize:"14px", color:"#C9A227", lineHeight:1 }}>
+      <span/><span>★</span><span/>
+      <span>★</span><span>★</span><span>★</span>
+      <span/><span>★</span><span/>
+    </div>
+  );
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:9999, background:"#0A1628", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px" }}>
+      <div style={{ width:"80px", height:"80px", border:"2px solid #C9A227", borderRadius:"50%", background:"transparent", display:"flex", alignItems:"center", justifyContent:"center" }}>
+        {coatStars}
+      </div>
+      <div style={{ fontFamily:"Cormorant Garamond", fontSize:"28px", fontWeight:600, color:"#F0F4FF", letterSpacing:"2px", marginTop:"24px", textAlign:"center" }}>Samoa Digital Public Infrastructure</div>
+      <div style={{ fontFamily:"DM Sans", fontSize:"14px", color:"#A8B8D8", letterSpacing:"1px", marginTop:"4px" }}>Research Laboratory Environment</div>
+      <div style={{ width:"120px", height:"1px", background:"linear-gradient(90deg, transparent, #C9A227, transparent)", margin:"24px auto" }}/>
+      <div style={{ maxWidth:"520px", width:"100%", background:"rgba(0,48,135,0.3)", border:"1px solid #003087", borderLeft:"3px solid #C9A227", borderRadius:"6px", padding:"20px 24px" }}>
+        <p style={{ fontFamily:"DM Sans", fontSize:"13px", lineHeight:1.7, color:"#A8B8D8", margin:0 }}>
+          This system is a restricted research environment operated under the NUS/ISOC Internet Society Research Programme in collaboration with the Central Bank of Samoa. It demonstrates sovereign blockchain infrastructure for the Independent State of Samoa. No real citizen data is stored. This pilot is not authorised for public deployment.
+        </p>
+      </div>
+      <div style={{ fontFamily:"DM Sans", fontSize:"11px", color:"#5A6A8A", textAlign:"center", marginTop:"16px" }}>By entering you confirm you are an authorised research participant or CBS reviewer.</div>
+      <button onClick={() => { sessionStorage.setItem("sbp_research_acknowledged","true"); setDismissed(true); }}
+        style={{ background:"linear-gradient(135deg, #003087, #0A1628)", border:"1px solid #C9A227", borderRadius:"6px", padding:"14px 40px", marginTop:"24px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center" }}>
+        <span style={{ fontFamily:"IBM Plex Mono", fontSize:"12px", color:"#F0F4FF", letterSpacing:"1px" }}>Enter Research Environment</span>
+        <span style={{ fontFamily:"DM Sans", fontSize:"10px", color:"#A8B8D8", marginTop:"4px" }}>Ulufale i le Siosiomaga Su&#x02BC;esu&#x02BC;ega</span>
+      </button>
+      <div style={{ fontFamily:"IBM Plex Mono", fontSize:"9px", color:"#5A6A8A", marginTop:"12px" }}>🔒 Restricted Access · NUS/ISOC 2026</div>
+    </div>
+  );
+}
+
+// ---
 // ROOT APP
 // ---
 export default function App() {
   const { provider, connected, error } = useProvider();
   const { walletAddress, connectWallet, disconnect } = useWallet();
   const [view,        setView]        = useState("home");
+  const [hubInitialTab, setHubInitialTab] = useState("ministries");
   const [blockNumber, setBlockNumber] = useState(null);
 
   // Lifted shared state: expenditures and activity log
@@ -6825,9 +7062,11 @@ export default function App() {
 
   return (
     <div style={{ fontFamily:F.ui }}>
-      <ConnectionBanner 
-        connected={connected} 
-        error={error} 
+      <ResearchAccessGate />
+      <GovAuthorityBar />
+      <ConnectionBanner
+        connected={connected}
+        error={error}
         network={CONFIG.NETWORK}
         walletAddress={walletAddress}
         connectWallet={connectWallet}
@@ -6835,7 +7074,10 @@ export default function App() {
       />
 
       {view === "home" && (
-        <Home {...sharedProps} onSelect={v => setView(v)} />
+        <Home {...sharedProps} onSelect={v => {
+          if (v === "hub:governance") { setHubInitialTab("governance"); setView("hub"); }
+          else { setHubInitialTab("ministries"); setView(v); }
+        }} />
       )}
 
       {ministry === "SBS" && (
@@ -6909,8 +7151,10 @@ export default function App() {
           {...sharedProps}
           onBack={() => setView("home")}
           onSelectMinistry={code => setView("ministry:"+code)}
+          initialTab={hubInitialTab}
         />
       )}
+      <GovFooter />
     </div>
   );
 }

@@ -177,7 +177,7 @@
  */
 
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { ethers } from "ethers";
 
 // ---

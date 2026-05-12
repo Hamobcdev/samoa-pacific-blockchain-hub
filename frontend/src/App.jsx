@@ -4993,9 +4993,9 @@ function Home({ provider, connected, blockNumber, allRecords, allLoading, onSele
           <div style={{ display:"flex", alignItems:"center", gap:"18px", marginBottom:"24px" }}>
             <div style={{ fontSize:"44px" }}>🌺</div>
             <div>
-              <div style={{ fontSize:"11px", fontWeight:700, letterSpacing:"3px", textTransform:"uppercase", color:C.seafoam, marginBottom:"6px" }}>Synergy Blockchain Pacific · Samoa</div>
-              <h1 style={{ fontFamily:F.display, fontSize:"30px", fontWeight:900, margin:0, lineHeight:1.1 }}>Samoa Pacific Blockchain Hub</h1>
-              <div style={{ fontSize:"13px", color:C.silver, marginTop:"6px" }}>Multi-Ministry Digital Government Platform · UNICEF Venture Fund 2026 Application</div>
+              <div style={{ fontSize:"11px", fontWeight:700, letterSpacing:"3px", textTransform:"uppercase", color:C.seafoam, marginBottom:"6px" }}>SAMOA DIGITAL PUBLIC INFRASTRUCTURE</div>
+              <h1 style={{ fontFamily:F.display, fontSize:"30px", fontWeight:900, margin:0, lineHeight:1.1 }}>Samoa Digital Public Infrastructure</h1>
+              <div style={{ fontSize:"13px", color:C.silver, marginTop:"6px" }}>Sovereign Blockchain Research Platform · NUS/ISOC Internet Society Programme 2026</div>
             </div>
             <div style={{ marginLeft:"auto", textAlign:"right" }}>
               <span style={{ ...badge(connected?C.seafoam:C.amber) }}>{connected?"● LIVE — "+CONFIG.NETWORK:"⚠ Offline"}</span>

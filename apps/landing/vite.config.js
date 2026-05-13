@@ -5,4 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: { port: 5180 },
   build:  { outDir: 'dist' },
+  optimizeDeps: {
+    include: ['three', 'tone', 'ethers'],
+  },
 })

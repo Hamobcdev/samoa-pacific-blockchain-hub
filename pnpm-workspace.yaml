@@ -1,0 +1,6 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'frontend' # legacy monolith — preserved
+allowBuilds:
+  esbuild: false

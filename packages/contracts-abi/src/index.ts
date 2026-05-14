@@ -42,5 +42,5 @@ export const MINISTRY_ABI = [
   "function revokeReader(address reader) external",
 ] as const;
 
-export { ADDR } from './addresses';
-export type { ContractKey } from './addresses';
+export { ADDR, ADDR_EXTENDED } from './addresses';
+export type { ContractKey, ExtendedContractKey } from './addresses';

@@ -262,18 +262,14 @@ contract DeploySamoaHub is Script {
         milestones[2] = "End-of-term learning outcomes documented and verified";
 
         uint256[] memory amounts = new uint256[](3);
-        amounts[0] = 30000;
-        amounts[1] = 40000;
-        amounts[2] = 30000;
-
+        amounts[0] = 1000;
+        amounts[1] = 1500;
+        amounts[2] = 2000;
         uint256 grantId = aid.createGrant(
-            "UNICEF Samoa Education Access Programme 2025",
-            admin,
+            bytes32("WST"),
+            uint8(2),
             address(education),
-            100000,
-            50,
-            "EDUCATION",
-            milestones,
+            "UNICEF Education Programme - Samoa 2026",
             amounts
         );
 

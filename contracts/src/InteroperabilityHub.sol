@@ -27,7 +27,20 @@ import { ReentrancyGuardUpgradeable } from "./utils/ReentrancyGuardUpgradeable.s
 /// BIS PFMI P11 compliance: legal basis documented.
 contract InteroperabilityHub is Initializable, UUPSUpgradeable, Pausable, ReentrancyGuardUpgradeable {
 
+    // ── Enums ────────────────────────────────────────────────────
+
+    enum NodeType  { OPERATIONAL, OBSERVER, REGULATORY }
+    enum GovBranch { EXECUTIVE, LEGISLATIVE, JUDICIAL, REGULATORY, SOE, ACADEMIC }
+
     // ── Structs ──────────────────────────────────────────────────
+
+    struct NodeInfo {
+        string    name;
+        NodeType  nodeType;
+        GovBranch branch;
+        bool      active;
+        uint256   registeredAt;
+    }
 
     struct Ministry {
         string  name;
@@ -48,6 +61,7 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, Pausable, Reentr
     mapping(string  => uint256) public ministryIndex;    // code    => index
     mapping(string  => bool)    public ministryExists;
     mapping(address => bool)    public isRegisteredNode; // contractAddr => bool (FIX 3)
+    mapping(address => NodeInfo) public nodeInfo;
 
     // cross-ministry permission log
     struct Permission {
@@ -77,6 +91,7 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, Pausable, Reentr
     event WorkflowExecuted(string workflowType, bytes32 citizenHash, bool success);
     event NDIDSSet(address ndids);
     event AIDTrackerSet(address tracker);
+    event ObserverRegistered(address indexed observer, string name, GovBranch branch);
 
     // ── Errors ───────────────────────────────────────────────────
 
@@ -153,6 +168,22 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, Pausable, Reentr
             registeredAt: block.timestamp // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
         }));
         emit MinistryRegistered(code, name, contractAddr);
+    }
+
+    /// @notice Register a read-only observer node (regulator, academic, SOE).
+    function registerObserver(
+        address observer,
+        string calldata name,
+        GovBranch branch
+    ) external onlyAdmin whenNotPaused {
+        nodeInfo[observer] = NodeInfo({
+            name:         name,
+            nodeType:     NodeType.OBSERVER,
+            branch:       branch,
+            active:       true,
+            registeredAt: block.timestamp
+        });
+        emit ObserverRegistered(observer, name, branch);
     }
 
     // ── Permission Management ────────────────────────────────────

@@ -84,6 +84,81 @@ contract Step3_WireAndSeed is Script {
         hub.registerMinistry("Ministry of Customs and Revenue",          "CUSTOMS",   customsAddr);
         hub.registerMinistry("Samoa Bureau of Statistics",               "SBS",       sbsAddr);
 
+        // ── Observer and Regulatory Node Registration ────────────
+        address obsLEGIS  = vm.envOr("OBSERVER_LEGIS",  address(0x1001));
+        address obsFINCOM = vm.envOr("OBSERVER_FINCOM", address(0x1002));
+        address obsATTGEN = vm.envOr("OBSERVER_ATTGEN", address(0x1003));
+        address obsLTC    = vm.envOr("OBSERVER_LTC",    address(0x2001));
+        address obsSCOURT = vm.envOr("OBSERVER_SCOURT", address(0x2002));
+        address obsELECTC = vm.envOr("OBSERVER_ELECTC", address(0x2003));
+        address obsPTO    = vm.envOr("OBSERVER_PTO",    address(0x4020));
+        address obsSIFA   = vm.envOr("OBSERVER_SIFA",   address(0x3001));
+        address obsAUDIT  = vm.envOr("OBSERVER_AUDIT",  address(0x3002));
+        address obsOMBUDS = vm.envOr("OBSERVER_OMBUDS", address(0x3003));
+        address obsOOTR   = vm.envOr("OBSERVER_OOTR",   address(0x3004));
+        address obsEPC    = vm.envOr("OBSERVER_EPC",    address(0x4001));
+        address obsSWA    = vm.envOr("OBSERVER_SWA",    address(0x4002));
+        address obsSAA    = vm.envOr("OBSERVER_SAA",    address(0x4003));
+        address obsSPA    = vm.envOr("OBSERVER_SPA",    address(0x4004));
+        address obsSSC    = vm.envOr("OBSERVER_SSC",    address(0x4005));
+        address obsSHC    = vm.envOr("OBSERVER_SHC",    address(0x4006));
+        address obsSNPF   = vm.envOr("OBSERVER_SNPF",   address(0x4007));
+        address obsACC    = vm.envOr("OBSERVER_ACC",    address(0x4008));
+        address obsPAL    = vm.envOr("OBSERVER_PAL",    address(0x4009));
+        address obsUTOS   = vm.envOr("OBSERVER_UTOS",   address(0x4010));
+        address obsSLAC   = vm.envOr("OBSERVER_SLAC",   address(0x4011));
+        address obsSTEC   = vm.envOr("OBSERVER_STEC",   address(0x4012));
+        address obsSFES   = vm.envOr("OBSERVER_SFES",   address(0x4013));
+        address obsSSFA   = vm.envOr("OBSERVER_SSFA",   address(0x4014));
+        address obsSEA    = vm.envOr("OBSERVER_SEA",    address(0x4015));
+        address obsGCA    = vm.envOr("OBSERVER_GCA",    address(0x4016));
+        address obsNKF    = vm.envOr("OBSERVER_NKF",    address(0x4017));
+        address obsSROS   = vm.envOr("OBSERVER_SROS",   address(0x4018));
+        address obsPOST   = vm.envOr("OBSERVER_POST",   address(0x4019));
+
+        // Legislative branch
+        hub.registerObserver(obsLEGIS,  "Legislative Assembly of Samoa",          InteroperabilityHub.GovBranch.LEGISLATIVE);
+        hub.registerObserver(obsFINCOM, "Parliamentary Finance Committee",         InteroperabilityHub.GovBranch.LEGISLATIVE);
+        hub.registerObserver(obsATTGEN, "Office of the Attorney General",          InteroperabilityHub.GovBranch.LEGISLATIVE);
+
+        // Judicial branch
+        hub.registerObserver(obsLTC,    "Land and Titles Court",                   InteroperabilityHub.GovBranch.JUDICIAL);
+        hub.registerObserver(obsSCOURT, "Supreme Court of Samoa",                  InteroperabilityHub.GovBranch.JUDICIAL);
+        hub.registerObserver(obsELECTC, "Office of the Electoral Commissioner",    InteroperabilityHub.GovBranch.JUDICIAL);
+        hub.registerObserver(obsPTO,    "Public Trust Office",                     InteroperabilityHub.GovBranch.JUDICIAL);
+
+        // Regulatory authorities
+        // SIFA: Public Trading Body reclassified 2020 — generates revenue + regulatory role
+        hub.registerObserver(obsSIFA,   "Samoa International Finance Authority",   InteroperabilityHub.GovBranch.REGULATORY);
+        hub.registerObserver(obsAUDIT,  "Samoa Audit Office",                      InteroperabilityHub.GovBranch.REGULATORY);
+        hub.registerObserver(obsOMBUDS, "Office of the Ombudsman",                 InteroperabilityHub.GovBranch.REGULATORY);
+        // OOTR: Telecom, broadcast, spectrum regulator — under MCIT but functions independently
+        hub.registerObserver(obsOOTR,   "Office of the Regulator",                 InteroperabilityHub.GovBranch.REGULATORY);
+
+        // Public trading bodies (SOE observers)
+        hub.registerObserver(obsEPC,    "Electric Power Corporation",              InteroperabilityHub.GovBranch.SOE);
+        hub.registerObserver(obsSWA,    "Samoa Water Authority",                   InteroperabilityHub.GovBranch.SOE);
+        hub.registerObserver(obsSAA,    "Samoa Airport Authority",                 InteroperabilityHub.GovBranch.SOE);
+        hub.registerObserver(obsSPA,    "Samoa Ports Authority",                   InteroperabilityHub.GovBranch.SOE);
+        hub.registerObserver(obsSSC,    "Samoa Shipping Corporation",              InteroperabilityHub.GovBranch.SOE);
+        hub.registerObserver(obsSHC,    "Samoa Housing Corporation",               InteroperabilityHub.GovBranch.SOE);
+        hub.registerObserver(obsSNPF,   "Samoa National Provident Fund",           InteroperabilityHub.GovBranch.SOE);
+        hub.registerObserver(obsACC,    "Accident Compensation Corporation",       InteroperabilityHub.GovBranch.SOE);
+        // PAL: Operates as Samoa Airways — PAL is the legal entity
+        hub.registerObserver(obsPAL,    "Polynesian Airlines Ltd",                 InteroperabilityHub.GovBranch.SOE);
+        hub.registerObserver(obsUTOS,   "Unit Trust of Samoa",                     InteroperabilityHub.GovBranch.SOE);
+        hub.registerObserver(obsSLAC,   "Samoa Life Assurance Corporation",        InteroperabilityHub.GovBranch.SOE);
+        hub.registerObserver(obsSTEC,   "Samoa Trust Estates Corporation",         InteroperabilityHub.GovBranch.SOE);
+        hub.registerObserver(obsPOST,   "Samoa Post",                              InteroperabilityHub.GovBranch.SOE);
+
+        // Public beneficial bodies (observer)
+        hub.registerObserver(obsSFES,   "Samoa Fire and Emergency Services",       InteroperabilityHub.GovBranch.SOE);
+        hub.registerObserver(obsSSFA,   "Samoa Sports Facilities Authority",       InteroperabilityHub.GovBranch.SOE);
+        hub.registerObserver(obsSEA,    "Samoa Export Authority",                  InteroperabilityHub.GovBranch.SOE);
+        hub.registerObserver(obsGCA,    "Gambling Control Authority",              InteroperabilityHub.GovBranch.SOE);
+        hub.registerObserver(obsNKF,    "National Kidney Foundation of Samoa",     InteroperabilityHub.GovBranch.SOE);
+        hub.registerObserver(obsSROS,   "Scientific Research Organisation of Samoa", InteroperabilityHub.GovBranch.SOE);
+
         // Tx 4-8: Seed 5 demo citizens with Education node access
         for (uint256 i = 0; i < 5; i++) {
             bytes32 h = keccak256(abi.encodePacked("SAMOA_DEMO_CITIZEN_", i));
@@ -98,18 +173,14 @@ contract Step3_WireAndSeed is Script {
         milestones[2] = "End-of-term outcomes documented and verified";
 
         uint256[] memory amounts = new uint256[](3);
-        amounts[0] = 30000;
-        amounts[1] = 40000;
-        amounts[2] = 30000;
-
+        amounts[0] = 1000;
+        amounts[1] = 1500;
+        amounts[2] = 2000;
         aidTracker.createGrant(
-            "UNICEF Samoa Education Access Programme 2025",
-            address(0x000000000000000000000000000000000000dEaD),
+            bytes32("WST"),
+            uint8(2),
             educationAddr,
-            100000,
-            50,
-            "EDUCATION",
-            milestones,
+            "UNICEF Samoa Education Access Programme 2025",
             amounts
         );
 

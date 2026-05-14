@@ -1,21 +1,26 @@
 import React, { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import { CANVAS_RING_NODES, nodeByCode } from '@samoa-dpi/contracts-abi'
+
+const _toThreeColor = hex => parseInt(hex.replace('#', ''), 16)
+const _cbsNode = nodeByCode('CBS')
 
 const NODE_LIST = [
-  { name: 'CBS',       color: 0xC9A227, size: 0.8  },
-  { name: 'MCIT',      color: 0x003087, size: 0.45 },
-  { name: 'MOF',       color: 0x00A651, size: 0.45 },
-  { name: 'EDUCATION', color: 0x00C4B4, size: 0.45 },
-  { name: 'MCIL',      color: 0xCE1126, size: 0.45 },
-  { name: 'CUSTOMS',   color: 0xF59E0B, size: 0.45 },
-  { name: 'SBS',       color: 0x9C6BDA, size: 0.45 },
-  { name: 'NDIDS',     color: 0xA8B8D8, size: 0.45 },
+  {
+    code:  _cbsNode?.code  ?? 'CBS',
+    name:  _cbsNode?.name  ?? 'Central Bank of Samoa',
+    color: _toThreeColor(_cbsNode?.color ?? '#C9A227'),
+    size:  0.8,
+  },
+  ...CANVAS_RING_NODES.map(node => ({
+    code:  node.code,
+    name:  node.name,
+    color: _toThreeColor(node.color),
+    size:  0.45,
+  })),
 ]
 
-const CSS_COLORS = [
-  '#C9A227','#003087','#00A651','#00C4B4',
-  '#CE1126','#F59E0B','#9C6BDA','#A8B8D8',
-]
+const CSS_COLORS = [_cbsNode, ...CANVAS_RING_NODES].map(n => n?.color ?? '#C9A227')
 
 function MobileNodes() {
   return (
@@ -88,7 +93,7 @@ export default function BlockchainCanvas({ blockNumber }) {
 
     // Build nodes
     const RADIUS   = 9
-    const MINISTRY_COUNT = 7
+    const MINISTRY_COUNT = NODE_LIST.length - 1
     const meshes   = []
     const geometries = []
     const materials  = []

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { C, F } from '@samoa-dpi/shared-ui'
+import { OPERATIONAL_NODES, GOVERNMENT_NODES } from '@samoa-dpi/contracts-abi'
 import ResearchGate      from './ResearchGate.jsx'
 import AuthorityBar      from './AuthorityBar.jsx'
 import BlockchainCanvas  from './BlockchainCanvas.jsx'
@@ -222,10 +223,11 @@ function StatPill({ icon, value, label, live }) {
 
 function StatsStrip({ isLive }) {
   const stats = [
-    { icon: '🏛',  value: '7',        label: 'Government Ministries', live: false },
-    { icon: '👤',  value: '25',       label: 'Citizens Registered',   live: false },
-    { icon: '⟳',  value: '7',        label: 'Active Workflows',      live: false },
-    { icon: '●',   value: isLive ? 'Live' : 'Offline', label: 'Amoy Testnet', live: isLive },
+    { icon: '🏛',  value: String(OPERATIONAL_NODES.length), label: 'Active Nodes',        live: false },
+    { icon: '⬡',  value: String(GOVERNMENT_NODES.length),  label: 'Gov Entities',        live: false },
+    { icon: '👤',  value: '25',                             label: 'Citizens Registered', live: false },
+    { icon: '⟳',  value: '7',                              label: 'Active Workflows',    live: false },
+    { icon: '●',   value: isLive ? 'Live' : 'Offline',     label: 'Amoy Testnet',        live: isLive },
   ]
   return (
     <div style={{

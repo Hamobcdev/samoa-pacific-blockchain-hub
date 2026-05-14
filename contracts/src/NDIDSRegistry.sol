@@ -261,4 +261,9 @@ contract NDIDSRegistry is Initializable, UUPSUpgradeable, Pausable {
     //
     // Requires: OpenZeppelin EIP712 + ECDSA, a citizenHash => wallet mapping,
     // and a citizen wallet registration flow (separate SBS process).
+
+    /// @dev Storage gap for UUPS upgrade safety.
+    /// Reserves 50 slots to prevent storage
+    /// collision in future upgrades.
+    uint256[50] private __gap;
 }

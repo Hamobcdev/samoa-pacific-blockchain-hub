@@ -248,25 +248,17 @@ contract SamoaPacificBlockchainHubTest is Test {
     // ════════════════════════════════════════════════════════════
 
     function _createUNICEFGrant() internal returns (uint256 grantId) {
-        string[] memory milestones = new string[](3);
-        milestones[0] = "Programme setup & capacity training complete";
-        milestones[1] = "50 children enrolled with verified attendance";
-        milestones[2] = "End-of-term assessment: learning outcomes documented";
-
         uint256[] memory amounts = new uint256[](3);
-        amounts[0] = 30_000 ether;   // 30,000 USDC equivalent
+        amounts[0] = 30_000 ether;   // 30,000 WST equivalent
         amounts[1] = 40_000 ether;
         amounts[2] = 30_000 ether;
 
         vm.prank(admin);
         grantId = aidTracker.createGrant(
-            "UNICEF Samoa Education Access Programme 2025",
-            unicef,
+            bytes32("WST"),
+            uint8(2),
             address(educationNode),
-            100_000 ether,
-            50,             // target: 50 children
-            "EDUCATION",
-            milestones,
+            "UNICEF Samoa Education Access Programme 2025",
             amounts
         );
     }
@@ -276,13 +268,12 @@ contract SamoaPacificBlockchainHubTest is Test {
         assertEq(grantId, 0);
         assertEq(aidTracker.totalGrants(), 1);
 
-        (uint256 id, string memory title,,,,,, , , uint256 target,,) =
+        (uint256 id, string memory title,,,,,,,,,,) =
             aidTracker.getGrant(0);
 
         assertEq(id, 0);
-        assertEq(target, 50);
         assertEq(aidTracker.getTrancheCount(0), 3);
-        // Check title contains expected text
+        // Check purpose/title contains expected text
         assertTrue(bytes(title).length > 0);
     }
 
@@ -358,7 +349,8 @@ contract SamoaPacificBlockchainHubTest is Test {
         _createUNICEFGrant();
         AIDisbursementTracker.Tranche[] memory trail = aidTracker.getAuditTrail(0);
         assertEq(trail.length, 3);
-        assertEq(trail[0].milestone, "Programme setup & capacity training complete");
+        // Milestones are not passed in Phase 1 createGrant; trail entries use empty milestone
+        assertEq(trail[0].milestone, "");
     }
 
     // ════════════════════════════════════════════════════════════

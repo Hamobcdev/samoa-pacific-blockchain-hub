@@ -328,4 +328,9 @@ contract MinistryNode is Initializable, UUPSUpgradeable, Pausable, ReentrancyGua
 
     function _authorizeUpgrade(address newImplementation)
         internal override onlyAdmin {}
+
+    /// @dev Storage gap for UUPS upgrade safety.
+    /// Reserves 50 slots to prevent storage
+    /// collision in future upgrades.
+    uint256[50] private __gap;
 }

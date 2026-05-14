@@ -44,3 +44,21 @@ export const MINISTRY_ABI = [
 
 export { ADDR, ADDR_EXTENDED } from './addresses';
 export type { ContractKey, ExtendedContractKey } from './addresses';
+
+export {
+  GOVERNMENT_NODES,
+  OPERATIONAL_NODES,
+  OBSERVER_NODES,
+  REGULATORY_NODES,
+  PHASE_1_NODES,
+  PHASE_2_NODES,
+  CANVAS_RING_NODES,
+  nodesByBranch,
+  nodeByCode,
+} from './government-nodes'
+
+export type {
+  GovernmentNode,
+  NodeType,
+  GovBranch,
+} from './government-nodes'

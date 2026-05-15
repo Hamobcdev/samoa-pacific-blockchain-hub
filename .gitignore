@@ -22,3 +22,7 @@ package-lock.json
 .vercel
 .env*.local
 docs/RESEARCH_LOG.md
+
+# Build artifacts — never commit
+apps/*/dist/
+api/dist/

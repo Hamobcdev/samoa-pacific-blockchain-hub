@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { GLOBAL_STYLES, COLORS, TYPOGRAPHY } from './theme.js'
 import { t } from './i18n.js'
+import { ResearchGate } from '@samoa-dpi/shared-ui'
 import { useRole }            from './hooks/useRole.js'
 import { useSession }         from './hooks/useSession.js'
 import { useAuditLog }        from './hooks/useAuditLog.js'
@@ -90,13 +91,16 @@ export default function App() {
 
   if (!hasRole) {
     return (
-      <CurrencyProvider lang={lang}>
-        <RolePicker onSelect={handleRoleSelect} lang={lang} />
-      </CurrencyProvider>
+      <ResearchGate storageKey="sdpi_admin_acknowledged">
+        <CurrencyProvider lang={lang}>
+          <RolePicker onSelect={handleRoleSelect} lang={lang} />
+        </CurrencyProvider>
+      </ResearchGate>
     )
   }
 
   return (
+    <ResearchGate storageKey="sdpi_admin_acknowledged">
     <CurrencyProvider lang={lang}>
       <a href="#main-content" className="skip-link">
         {lang === 'SM' ? 'Alu i le Amataga' : 'Skip to main content'}
@@ -191,5 +195,6 @@ export default function App() {
         </div>
       </div>
     </CurrencyProvider>
+    </ResearchGate>
   )
 }

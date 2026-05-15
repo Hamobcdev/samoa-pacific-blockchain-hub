@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { C, F } from '@samoa-dpi/shared-ui'
 import { OPERATIONAL_NODES, GOVERNMENT_NODES } from '@samoa-dpi/contracts-abi'
-import ResearchGate      from './ResearchGate.jsx'
+import { ResearchGate }  from '@samoa-dpi/shared-ui'
 import AuthorityBar      from './AuthorityBar.jsx'
 import BlockchainCanvas  from './BlockchainCanvas.jsx'
 import TapaPattern       from './TapaPattern.jsx'

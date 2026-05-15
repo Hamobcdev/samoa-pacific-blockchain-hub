@@ -1,77 +1,51 @@
 # ISOC Submission — Live Platform Reference
-# Samoa DPI · NUS/ISOC Research Programme 2026
-# Last updated: 2026-05-15
+# NUS/ISOC Research Programme 2026
 
----
+## Live Demo URLs — Publicly Accessible
 
-## Publicly Accessible Demo URLs
+These URLs allow any ISOC reviewer to independently verify
+the platform without contacting Synergy Blockchain Pacific.
+All portals are live in production on Vercel.
 
-| Portal | URL | Status |
-|---|---|---|
-| Landing | [Vercel URL — add after Vercel project creation] | Phase 1 |
-| Citizens | [Vercel URL — add after Vercel project creation] | Phase 1 |
-| Admin (CBS) | [Vercel URL — add after Vercel project creation] | Phase 1 |
-| DBS | [Vercel URL — add after Vercel project creation] | Phase 2 stub |
-| Donor | [Vercel URL — add after Vercel project creation] | Phase 2 stub |
-| Verify | [Vercel URL — add after Vercel project creation] | Phase 2 stub |
+| Portal | URL | Audience |
+|--------|-----|----------|
+| Landing | https://samoa-dpi-landing.vercel.app | Public |
+| Citizens | https://samoa-dpi-citizens.vercel.app | Samoan citizens |
+| CBS Admin | https://samoa-dpi-admin.vercel.app | CBS leadership and staff |
+| DBS Distribution | https://samoa-dpi-dbs.vercel.app | DBS and retail banks |
+| Donor Oversight | https://samoa-dpi-donor.vercel.app | Development partners |
+| Verify | https://samoa-dpi-verify.vercel.app | Employers, service providers |
 
----
+## Verified Commit
 
-## Verified Repository
+Branch: feat/currency-architecture
+Repository: github.com/Hamobcdev/samoa-pacific-blockchain-hub
 
-**Repository:** https://github.com/Hamobcdev/samoa-pacific-blockchain-hub  
-**Branch:** feat/currency-architecture  
-**Package manager:** pnpm  
-**Commit at time of ISOC submission:** [run `git log --oneline -1` at submission time]
+## On-Chain Verification
 
----
+All contracts are deployed on Polygon Amoy testnet (chainId: 80002)
+and queryable by any reviewer directly on Polygonscan Amoy.
 
-## Smart Contracts — Polygon Amoy Testnet
+| Contract | Address |
+|---|---|
+| NDIDSRegistry | 0x0E832d0C324Cd70ca58Dd1B0965151167853cE42 |
+| AIDisbursementTracker | 0x3fD12fe1400BD9B8cd7ebE59C47EA27ab6bF5EdB |
+| InteroperabilityHub | 0x6c213b53b41c325317dF0443442b0eae9c7618Cc |
+| MinistryNode — CBS | 0xeC404FB5564da6f6c77DD7C8A694B1A3fFCe99c1 |
+| MinistryNode — MCIT | 0x4F117fdC9BB2b781d52731E5674f669Bfe1E6402 |
+| MinistryNode — MOF | 0x8c26B5E477d6feFf2a75C0Fbd7f3667c4dB07FC4 |
+| MinistryNode — MCIL | 0xe9b67Df4a062C20167D963DD74fc436c1B83EceD |
+| MinistryNode — Education | 0xa3Cb3B9A6DF26cd550A6D8A49EF693c78750F27d |
+| MinistryNode — Customs | 0x6462197ff41c7EbA925e0F9EB980e61454e40366 |
 
-All contracts deployed 18 March 2026. Independently queryable via Polygonscan Amoy.
+## Research Environment Statement
 
-| Contract | Role | Address |
-|---|---|---|
-| NDIDSRegistry | National Digital Identity — hash-only, zero PII | `0x0E832d0C324Cd70ca58Dd1B0965151167853cE42` |
-| InteroperabilityHub | Cross-ministry routing + consent enforcement | `0x6c213b53b41c325317dF0443442b0eae9c7618Cc` |
-| AIDisbursementTracker | Grant lifecycle — milestone-based tranche release | `0x3fD12fe1400BD9B8cd7ebE59C47EA27ab6bF5EdB` |
-| CBS MinistryNode | Central Bank of Samoa validator | `0xeC404FB5564da6f6c77DD7C8A694B1A3fFCe99c1` |
-| MCIT MinistryNode | Ministry of Communications | `0x4F117fdC9BB2b781d52731E5674f669Bfe1E6402` |
-| MOF MinistryNode | Ministry of Finance | `0x8c26B5E477d6feFf2a75C0Fbd7f3667c4dB07FC4` |
+This is a Phase 1 research prototype.
+No real citizen data is held.
+No real funds are involved.
+Not officially sanctioned by the Government of Samoa.
 
-**Polygonscan Amoy explorer:** https://amoy.polygonscan.com/  
-*Search any address above to verify deployment and transaction history.*
-
----
-
-## Research Environment Note
-
-This is a Phase 1 research prototype operating under the NUS/ISOC Research Programme 2026.
-
-- No real citizen data is held on any system.
-- All citizen identity records are simulated hash references.
-- Financial amounts shown are for research demonstration only.
-- The platform is not officially sanctioned by the Government of Samoa.
-- Formal CBS engagement is at the exploratory stage — sandbox application being prepared.
-- MCIT has been briefed — formal endorsement being sought.
-
-**Research Principal Investigator:** Dr. Edna Temese, PhD — National University of Samoa (NUS)  
-**Research Advisor:** Prof. Stan Karanasios — University of Queensland  
-**Technical Partner:** Synergy Blockchain Pacific (SBP)  
-**Contact:** synergyblockchaintf@gmail.com
-
----
-
-## Independent Verification Checklist for ISOC Reviewers
-
-- [ ] Clone repository: `git clone https://github.com/Hamobcdev/samoa-pacific-blockchain-hub`
-- [ ] Install: `pnpm install`
-- [ ] Build all portals: `pnpm --filter @samoa-dpi/landing build && pnpm --filter @samoa-dpi/citizens build && pnpm --filter @samoa-dpi/admin build`
-- [ ] Run smart contract tests: `cd contracts && forge test -vv` — expect 29/29 passing
-- [ ] Verify NDIDSRegistry on Polygonscan Amoy at address above
-- [ ] Verify InteroperabilityHub on Polygonscan Amoy at address above
-- [ ] Access live demo at Vercel URLs above (add URLs after deployment)
-
----
-
-*samoa-pacific-blockchain-hub · feat/currency-architecture · NUS/ISOC Research Programme 2026*
+Operated under the NUS/ISOC Research Programme 2026.
+Principal Investigator: Dr. Edna Temese — National University of Samoa.
+Technical Partner: Synergy Blockchain Pacific — Apia, Samoa.
+Contact: synergyblockchaintf@gmail.com

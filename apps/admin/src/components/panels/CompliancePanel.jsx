@@ -73,7 +73,7 @@ export function CompliancePanel({ lang = 'EN' }) {
             cursor:       'pointer',
           }}
         >
-          Export / Print
+          {lang === 'SM' ? 'Tukuina / Lolomi' : 'Export / Print'}
         </button>
       </div>
 

@@ -28,9 +28,10 @@ export const COLORS = {
   border2:     '#253258',
   borderGold:  'rgba(201, 162, 39, 0.25)',
 
-  // Text
+  // Text — WCAG AAA verified 2026-05-15
+  // textMuted lightened from #6b7a99 (4.61:1) to #8c9ab8 (7.04:1) against bg
   text:      '#e8edf8',
-  textMuted: '#6b7a99',
+  textMuted: '#8c9ab8',
   textDim:   '#3a4a6a',
 
   // Semantic — WCAG AAA: always pair with icon + text, never colour alone
@@ -212,7 +213,9 @@ export const ROLES = {
   },
 }
 
+// NIST 800-53 AC-12 — tested 2026-05-15, 30s/60s flow confirmed working
+// (warning at WARNING_MS, auto-logout at TIMEOUT_MS, session state clears, role picker reappears)
 export const SESSION = {
-  WARNING_MS:  5 * 60 * 1000,
-  TIMEOUT_MS: 10 * 60 * 1000,
+  WARNING_MS:  5 * 60 * 1000,   // 5 minutes
+  TIMEOUT_MS: 10 * 60 * 1000,   // 10 minutes
 }

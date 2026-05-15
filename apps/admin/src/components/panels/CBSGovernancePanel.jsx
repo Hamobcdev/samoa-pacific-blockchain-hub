@@ -99,7 +99,7 @@ export function CBSGovernancePanel({ governance, lang = 'EN' }) {
               cursor:       'pointer',
             }}
           >
-            Export / Print
+            {lang === 'SM' ? 'Tukuina / Lolomi' : 'Export / Print'}
           </button>
         </div>
       </div>

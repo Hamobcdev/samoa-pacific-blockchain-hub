@@ -27,7 +27,7 @@ export function AuditRemediationPanel({ auditLog, lang = 'EN' }) {
               padding:       '3px 8px',
             }}
           >
-            CLEAR
+            {lang === 'SM' ? "Fa'amaʻi" : 'Clear'}
           </button>
         )}
       </div>

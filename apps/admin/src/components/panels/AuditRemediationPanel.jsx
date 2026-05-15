@@ -1,6 +1,6 @@
 import React from 'react'
 import { COLORS, TYPOGRAPHY } from '../../theme.js'
-import { TimestampDisplay } from '../currency/TimestampDisplay.jsx'
+import { TimestampDisplay } from '@samoa-dpi/shared-ui'
 import { ResearchLabel } from '../shared/ResearchLabel.jsx'
 
 export function AuditRemediationPanel({ auditLog, lang = 'EN' }) {

@@ -1,0 +1,15 @@
+{
+  "name": "@samoa-dpi/api",
+  "version": "0.1.0",
+  "description": "Samoa DPI RPC proxy + audit log server",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.0",
+    "hono": "^4.0.0"
+  }
+}

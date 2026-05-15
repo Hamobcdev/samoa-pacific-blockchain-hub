@@ -1,59 +1,96 @@
-import React from 'react'
-import { ResearchGate } from '@samoa-dpi/shared-ui'
+import { useState } from 'react';
+import { ResearchGate, LanguageProvider, useLang, FeatureGate } from '@samoa-dpi/shared-ui';
+import { BankRegistryView }  from './components/BankRegistryView';
+import { InstitutionalView } from './components/InstitutionalView';
+import { CorrespondentView } from './components/CorrespondentView';
+import { DBSRolePicker }     from './components/DBSRolePicker';
 
-function StubPortal({ title, titleSM, phase, description }) {
+const TABS = [
+  { id: 'banks',         label: { en: 'Retail Distributors', sm: 'Faʻasoa Tau' } },
+  { id: 'institutional', label: { en: 'Institutional',       sm: 'Faʻalapotopotoga' } },
+  { id: 'correspondent', label: { en: 'Correspondent Banks', sm: 'Faletupe' } },
+];
+
+function DBSApp() {
+  const { lang } = useLang();
+  const [role, setRole]           = useState(null);
+  const [bankCode, setBankCode]   = useState(null);
+  const [activeTab, setActiveTab] = useState('banks');
+
+  if (!role) return (
+    <DBSRolePicker
+      onSelect={(r, code) => { setRole(r); if (code) setBankCode(code); }}
+      lang={lang}
+    />
+  );
+
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#070910',
-      color: '#e8edf8',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: "'IBM Plex Sans', sans-serif",
-      padding: '40px 20px',
-      textAlign: 'center',
-    }}>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: '3px', color: '#C9A227', marginBottom: 24 }}>
-        SAMOA DPI · RESEARCH PROTOTYPE · {phase}
-      </div>
-      <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 36, fontWeight: 700, color: '#e8edf8', marginBottom: 8 }}>
-        {title}
-      </h1>
-      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: '#8c9ab8', marginBottom: 32, maxWidth: 480 }}>
-        {description}
-      </p>
-      <div style={{
-        background: '#0c1222',
-        border: '1px solid #f0b42940',
-        borderLeft: '3px solid #f0b429',
-        borderRadius: 6,
-        padding: '12px 20px',
-        fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: 11,
-        color: '#f0b429',
-        letterSpacing: '0.5px',
+    <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
+      {/* Header */}
+      <header style={{
+        borderBottom: '1px solid var(--color-border)',
+        padding: '16px 24px',
+        display: 'flex', alignItems: 'center', gap: '16px',
       }}>
-        ⊘ Awaiting CBS governance confirmation — Phase 2
-      </div>
-      <div style={{ marginTop: 48, fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#3a4a6a', letterSpacing: '1px' }}>
-        Research prototype operated under the NUS/ISOC Research Programme 2026.
-        No real financial data is held. Contact: synergyblockchaintf@gmail.com
-      </div>
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <div style={{ width: '20px', height: '4px', background: 'var(--color-flag-red)', borderRadius: '2px' }} />
+          <div style={{ width: '20px', height: '4px', background: 'var(--color-flag-blue)', borderRadius: '2px' }} />
+        </div>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '13px',
+                       fontWeight: 600, color: 'var(--color-text)' }}>
+          WST-DPI DISTRIBUTION PORTAL
+        </span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px',
+                       color: 'var(--color-muted)', marginLeft: 'auto' }}>
+          {role === 'DBS_STAFF' ? 'DBS Staff' : `Bank Officer — ${bankCode}`}
+        </span>
+        <button onClick={() => { setRole(null); setBankCode(null); }}
+          style={{ fontFamily: 'var(--font-mono)', fontSize: '10px',
+                   color: 'var(--color-muted)', background: 'none',
+                   border: '1px solid var(--color-border)', borderRadius: '4px',
+                   padding: '3px 10px', cursor: 'pointer' }}
+          data-print-hide>
+          Change Role
+        </button>
+      </header>
+
+      {/* Tab bar */}
+      <nav style={{ display: 'flex', gap: '4px', padding: '12px 24px',
+                    borderBottom: '1px solid var(--color-border)' }}
+           data-print-hide>
+        {TABS.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            style={{
+              fontFamily: 'var(--font-mono)', fontSize: '11px',
+              padding: '6px 14px', borderRadius: '4px', cursor: 'pointer',
+              border: '1px solid ' + (activeTab === tab.id
+                ? 'var(--color-gold)' : 'var(--color-border)'),
+              background: activeTab === tab.id
+                ? 'rgba(201,162,39,0.08)' : 'none',
+              color: activeTab === tab.id
+                ? 'var(--color-gold)' : 'var(--color-muted)',
+            }}>
+            {tab.label[lang]}
+          </button>
+        ))}
+      </nav>
+
+      {/* Panel */}
+      <main style={{ padding: '24px' }}>
+        {activeTab === 'banks'         && <BankRegistryView role={role} bankCode={bankCode} lang={lang} />}
+        {activeTab === 'institutional' && <InstitutionalView lang={lang} />}
+        {activeTab === 'correspondent' && <CorrespondentView lang={lang} />}
+      </main>
     </div>
-  )
+  );
 }
 
 export default function App() {
   return (
     <ResearchGate storageKey="sdpi_dbs_acknowledged">
-      <StubPortal
-        title="Development Bank of Samoa"
-        titleSM="Faletupe Atinae o Samoa"
-        phase="PHASE 2"
-        description="DBS portal for development financing, SME loans, and Pacific regional fund management. Activates upon CBS key management authority confirmation."
-      />
+      <LanguageProvider defaultLang="en">
+        <DBSApp />
+      </LanguageProvider>
     </ResearchGate>
-  )
+  );
 }

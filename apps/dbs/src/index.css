@@ -1,0 +1,16 @@
+@import '@samoa-dpi/shared-ui/src/tokens.css';
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+@media print {
+  [data-print-hide] { display: none !important; }
+  body { background: white; color: black; font-size: 11pt; }
+  [data-panel] { page-break-after: always; }
+}

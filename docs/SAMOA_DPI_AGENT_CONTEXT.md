@@ -135,7 +135,7 @@ NUS/ISOC (separate deadline 22 May):
 - Research codebase: MIT licence at programme end (ISOC Deliverable D9)
 - Production deployments: AGPL or commercial licence (SBP retains)
 - Trademarks: "Samoa DPI", "WST-DPI Digital Tālā", "Synergy Blockchain Pacific" (SBP)
-- Commercial value: services, relationships, training — not code
+- Commercial value: nearly a decade of research, the government relationship and trust, the operational expertise to deploy and maintain sovereign infrastructure, the training and upskilling capability, and the Pacific regional network of similar government relationships — not code
 
 ---
 

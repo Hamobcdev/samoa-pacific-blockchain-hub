@@ -1,58 +1,71 @@
-import React from 'react'
-import { ResearchGate } from '@samoa-dpi/shared-ui'
+import { useState } from 'react';
+import { ResearchGate, LanguageProvider, useLang } from '@samoa-dpi/shared-ui';
+import { GrantLifecycleView } from './components/GrantLifecycleView';
+import { DEMO_GRANTS } from './data/grants';
 
-function StubPortal({ title, phase, description }) {
+function DonorApp() {
+  const { lang } = useLang();
+  const [selectedId, setSelectedId] = useState('1');
+  const grant = DEMO_GRANTS.find(g => g.grantId === selectedId);
+
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#070910',
-      color: '#e8edf8',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: "'IBM Plex Sans', sans-serif",
-      padding: '40px 20px',
-      textAlign: 'center',
-    }}>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: '3px', color: '#C9A227', marginBottom: 24 }}>
-        SAMOA DPI · RESEARCH PROTOTYPE · {phase}
+    <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
+      <header style={{ borderBottom: '1px solid var(--color-border)',
+                       padding: '16px 24px', display: 'flex',
+                       alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <div style={{ width: '20px', height: '4px', background: 'var(--color-flag-red)', borderRadius: '2px' }} />
+          <div style={{ width: '20px', height: '4px', background: 'var(--color-flag-blue)', borderRadius: '2px' }} />
+        </div>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '13px',
+                       fontWeight: 600, color: 'var(--color-text)' }}>
+          {lang === 'sm' ? 'FAʻAALIA O MANAOGA' : 'DEVELOPMENT PARTNER OVERSIGHT'}
+        </span>
+        {/* DONOR-2 — Export button */}
+        <button onClick={() => window.print()}
+          style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)',
+                   fontSize: '11px', color: 'var(--color-gold)',
+                   background: 'none',
+                   border: '1px solid rgba(201,162,39,0.4)',
+                   borderRadius: '4px', padding: '6px 16px', cursor: 'pointer' }}
+          data-print-hide>
+          Export PDF / Print
+        </button>
+      </header>
+
+      {/* Grant selector */}
+      <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--color-border)',
+                    display: 'flex', gap: '8px', flexWrap: 'wrap' }}
+           data-print-hide>
+        {DEMO_GRANTS.map(g => (
+          <button key={g.grantId} onClick={() => setSelectedId(g.grantId)} style={{
+            fontFamily: 'var(--font-mono)', fontSize: '11px', padding: '6px 14px',
+            borderRadius: '4px', cursor: 'pointer',
+            border: '1px solid ' + (selectedId === g.grantId
+              ? 'var(--color-gold)' : 'var(--color-border)'),
+            background: selectedId === g.grantId
+              ? 'rgba(201,162,39,0.08)' : 'none',
+            color: selectedId === g.grantId
+              ? 'var(--color-gold)' : 'var(--color-muted)',
+          }}>
+            Grant #{g.grantId} — {g.grantor}
+          </button>
+        ))}
       </div>
-      <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 36, fontWeight: 700, color: '#e8edf8', marginBottom: 8 }}>
-        {title}
-      </h1>
-      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: '#8c9ab8', marginBottom: 32, maxWidth: 480 }}>
-        {description}
-      </p>
-      <div style={{
-        background: '#0c1222',
-        border: '1px solid #f0b42940',
-        borderLeft: '3px solid #f0b429',
-        borderRadius: 6,
-        padding: '12px 20px',
-        fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: 11,
-        color: '#f0b429',
-        letterSpacing: '0.5px',
-      }}>
-        ⊘ AID Disbursement Tracker deployed — donor interface Phase 2
-      </div>
-      <div style={{ marginTop: 48, fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#3a4a6a', letterSpacing: '1px' }}>
-        Research prototype operated under the NUS/ISOC Research Programme 2026.
-        No real grant data is held. Contact: synergyblockchaintf@gmail.com
-      </div>
+
+      <main style={{ padding: '24px' }}>
+        <GrantLifecycleView grant={grant} lang={lang} />
+      </main>
     </div>
-  )
+  );
 }
 
 export default function App() {
   return (
     <ResearchGate storageKey="sdpi_donor_acknowledged">
-      <StubPortal
-        title="Development Partner Portal"
-        phase="PHASE 2"
-        description="UNICEF and development partner dashboard for AID disbursement tracking, milestone verification, and transparent tranche release on the Samoa DPI blockchain layer."
-      />
+      <LanguageProvider defaultLang="en">
+        <DonorApp />
+      </LanguageProvider>
     </ResearchGate>
-  )
+  );
 }

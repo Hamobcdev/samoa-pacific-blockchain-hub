@@ -1,20 +1,22 @@
 {
   "name": "@samoa-dpi/donor",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "UNICEF Donor / Development Partner portal — Phase 2 stub",
+  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev":     "vite --port 5184",
+    "build":   "vite build",
+    "preview": "vite preview --port 5184"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@samoa-dpi/shared-ui": "workspace:*"
+    "@samoa-dpi/contracts-abi": "workspace:*",
+    "@samoa-dpi/shared-ui":    "workspace:*",
+    "decimal.js":              "^10.4.3",
+    "react":                   "^18.2.0",
+    "react-dom":               "^18.2.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.2.0",
-    "vite": "^5.0.0"
+    "@vitejs/plugin-react": "^4.0.0",
+    "vite":                 "^5.0.0"
   }
 }

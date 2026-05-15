@@ -1,6 +1,7 @@
 import React from 'react'
 import { COLORS, TYPOGRAPHY } from '../../theme.js'
 import { TimestampDisplay } from '../currency/TimestampDisplay.jsx'
+import { ResearchLabel } from '../shared/ResearchLabel.jsx'
 
 export function AuditRemediationPanel({ auditLog, lang = 'EN' }) {
   const { entries, clear } = auditLog
@@ -85,6 +86,8 @@ export function AuditRemediationPanel({ auditLog, lang = 'EN' }) {
       <div style={{ color: COLORS.textDim, fontFamily: TYPOGRAPHY.mono, fontSize: 9 }}>
         {lang === 'SM' ? 'Faailoga 500 mulimuli' : 'Last 500 entries · In-memory only · Not persisted across sessions'}
       </div>
+
+      <ResearchLabel />
     </div>
   )
 }

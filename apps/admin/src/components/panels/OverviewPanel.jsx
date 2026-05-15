@@ -3,6 +3,7 @@ import { COLORS, TYPOGRAPHY, SEVERITY_COLORS } from '../../theme.js'
 import { GOVERNMENT_NODES, OPERATIONAL_NODES } from '@samoa-dpi/contracts-abi'
 import { AmountDisplay } from '../currency/AmountDisplay.jsx'
 import { SkeletonPanel } from '../shared/SkeletonLoader.jsx'
+import { ResearchLabel } from '../shared/ResearchLabel.jsx'
 
 function StatCard({ label, value, sub, color, icon }) {
   return (
@@ -84,6 +85,8 @@ export function OverviewPanel({ nodeHealth, governance, lang = 'EN' }) {
           </div>
         </div>
       )}
+
+      <ResearchLabel />
     </div>
   )
 }

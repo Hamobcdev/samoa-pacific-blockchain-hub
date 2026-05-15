@@ -1,5 +1,6 @@
 import React from 'react'
 import { COLORS, TYPOGRAPHY } from '../../theme.js'
+import { ResearchLabel } from '../shared/ResearchLabel.jsx'
 
 export function StubPanel({ titleKey, lang = 'EN', phase = 2 }) {
   const title = titleKey?.replace('nav.', '').toUpperCase() ?? 'PANEL'
@@ -36,6 +37,8 @@ export function StubPanel({ titleKey, lang = 'EN', phase = 2 }) {
           ? 'Fa\'amatalaga: E mana\'omia CBS Pulega i luma o le fa\'aola'
           : 'Requires CBS governance decisions before activation. See Governance panel.'}
       </div>
+
+      <ResearchLabel />
     </div>
   )
 }

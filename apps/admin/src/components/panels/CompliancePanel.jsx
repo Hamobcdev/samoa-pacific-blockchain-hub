@@ -1,5 +1,6 @@
 import React from 'react'
 import { COLORS, TYPOGRAPHY } from '../../theme.js'
+import { ResearchLabel } from '../shared/ResearchLabel.jsx'
 
 const FRAMEWORKS = [
   {
@@ -103,6 +104,8 @@ export function CompliancePanel({ lang = 'EN' }) {
           ? "E manaomia mea uma i luga mo le amata o Vaega 2."
           : "All frameworks above must reach READY status before Phase 2 launch. Status is derived from CBS governance decisions."}
       </div>
+
+      <ResearchLabel />
     </div>
   )
 }

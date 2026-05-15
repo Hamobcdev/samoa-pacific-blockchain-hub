@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { COLORS, TYPOGRAPHY, SEVERITY_COLORS } from '../../theme.js'
+import { ResearchLabel } from '../shared/ResearchLabel.jsx'
 
 const SEVERITY_ICON = { CRITICAL: '✗', HIGH: '!', MEDIUM: '~', LOW: 'ℹ' }
 
@@ -123,6 +124,8 @@ export function CBSGovernancePanel({ governance, lang = 'EN' }) {
           ? "Ia fa'afou e le CBS. E le'i fa'atonutonuina se tasi."
           : "Constitutional source — all items pending CBS confirmation. Do not add, remove, or reorder without explicit CBS instruction."}
       </div>
+
+      <ResearchLabel />
     </div>
   )
 }

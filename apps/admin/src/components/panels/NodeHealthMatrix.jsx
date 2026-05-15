@@ -2,6 +2,7 @@ import React from 'react'
 import { COLORS, TYPOGRAPHY, NODE_STATUS } from '../../theme.js'
 import { SkeletonPanel } from '../shared/SkeletonLoader.jsx'
 import { TimestampDisplay } from '../currency/TimestampDisplay.jsx'
+import { ResearchLabel } from '../shared/ResearchLabel.jsx'
 
 function NodeRow({ node, lang }) {
   const s = NODE_STATUS[node.status] ?? NODE_STATUS.OFFLINE
@@ -94,6 +95,8 @@ export function NodeHealthMatrix({ nodeHealth, lang = 'EN' }) {
       <div style={{ color: COLORS.textDim, fontFamily: TYPOGRAPHY.mono, fontSize: 9, textAlign: 'right' }}>
         {lang === 'SM' ? 'Siaki 12s' : 'Polled every 12s'} · <TimestampDisplay timestamp={lastPoll} compact />
       </div>
+
+      <ResearchLabel />
     </div>
   )
 }

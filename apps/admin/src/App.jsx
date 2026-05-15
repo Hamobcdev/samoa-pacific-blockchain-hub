@@ -19,6 +19,7 @@ import { CompliancePanel }    from './components/panels/CompliancePanel.jsx'
 import { NodeHealthMatrix }   from './components/panels/NodeHealthMatrix.jsx'
 import { AuditRemediationPanel } from './components/panels/AuditRemediationPanel.jsx'
 import { StubPanel }          from './components/panels/StubPanel.jsx'
+import { ResearchContextPanel } from './components/panels/ResearchContextPanel.jsx'
 
 function injectGlobalStyles() {
   if (typeof document === 'undefined') return
@@ -37,6 +38,7 @@ const PANEL_MAP = {
   compliance: CompliancePanel,
   nodes:      NodeHealthMatrix,
   audit:      AuditRemediationPanel,
+  research:   ResearchContextPanel,
 }
 
 function PanelContent({ activePanel, nodeHealth, governance, auditLog, lang }) {

@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { key: 'ministry',    icon: '🏛', access: ['full','readonly','technical','finance'] },
   { key: 'donor',       icon: '◈', access: ['full','readonly'] },
   { key: 'dbs',         icon: '◉', access: ['full','finance'] },
+  { key: 'research',    icon: '◑', access: ['full','readonly','technical','finance'] },
 ]
 
 export function AdminSidebar({ activePanel, onNav, role, lang, onSignOut, governancePending }) {

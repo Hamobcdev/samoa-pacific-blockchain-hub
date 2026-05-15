@@ -8,6 +8,7 @@ export const STRINGS = {
   'nav.ministry':     { EN: 'Ministry Portals',              SM: 'Matagaluega' },
   'nav.donor':        { EN: 'Donor Oversight',               SM: 'Mataala Foakina' },
   'nav.dbs':          { EN: 'DBS Distribution',              SM: 'DBS Tufatufa' },
+  'nav.research':     { EN: 'Research Context',              SM: "Su'esu'ega" },
   'status.active':    { EN: 'Active',                        SM: "Ati'ae" },
   'status.health':    { EN: 'Health',                        SM: 'Soifua' },
   'status.nodes':     { EN: 'Nodes',                         SM: 'Node' },

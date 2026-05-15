@@ -15,6 +15,9 @@ export { ErrorPage } from './ErrorPage.jsx';
 // @ts-ignore — JSX components, resolved by Vite
 export { LanguageProvider, useLang, useLanguage, LanguageToggle } from './LanguageToggle.jsx';
 
+// @ts-ignore — feature flags, resolved by Vite (import.meta.env)
+export { FLAGS, useFlag, FeatureGate } from './feature-flags.js';
+
 // @ts-ignore — JSX/JS currency components, resolved by Vite
 export {
   CURRENCY_CONFIGS,

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { COLORS, TYPOGRAPHY, SEVERITY_COLORS } from '../../theme.js'
 import { ResearchLabel } from '../shared/ResearchLabel.jsx'
+import { FeatureGate } from '@samoa-dpi/shared-ui'
 
 const SEVERITY_ICON = { CRITICAL: '✗', HIGH: '!', MEDIUM: '~', LOW: 'ℹ' }
 
@@ -143,6 +144,27 @@ export function CBSGovernancePanel({ governance, lang = 'EN' }) {
           ? "Ia fa'afou e le CBS. E le'i fa'atonutonuina se tasi."
           : "Constitutional source — all items pending CBS confirmation. Do not add, remove, or reorder without explicit CBS instruction."}
       </div>
+
+      <FeatureGate flag="MULTISIG_ACTIVE">
+        <div style={{
+          background:    COLORS.surface2,
+          border:        `1px solid ${COLORS.border2}`,
+          borderRadius:  6,
+          padding:       '16px 18px',
+          display:       'flex',
+          flexDirection: 'column',
+          gap:           8,
+        }}>
+          <div style={{ color: COLORS.gold, fontFamily: TYPOGRAPHY.mono, fontSize: 9, letterSpacing: '2px' }}>
+            MULTISIG GOVERNANCE — PHASE 2
+          </div>
+          <div style={{ color: COLORS.textMuted, fontSize: 12, fontFamily: TYPOGRAPHY.sans }}>
+            {lang === 'SM'
+              ? 'E manaʻomia le talia e le au pule e lua pe sili atu.'
+              : 'Requires approval from two or more authorised signatories.'}
+          </div>
+        </div>
+      </FeatureGate>
 
       <ResearchLabel />
     </div>

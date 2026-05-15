@@ -20,40 +20,44 @@ const LEGACY_URL = 'https://samoa-pacific-blockchain-hub.vercel.app'
 const PORTALS = [
   {
     id:        'citizens',
-    label:     'I am a Citizen',
+    label:     'Citizens Portal',
     href:      '#',
     icon:      '◉',
-    desc:      'Access personal services, verify your identity, and track benefit eligibility.',
+    desc:      'View your government records and Digital Tālā',
+    audience:  'For Samoan citizens',
     showLive:  false,
     badge:     null,
     legacyUrl: null,
   },
   {
     id:        'ministry',
-    label:     'I am a Government Officer',
+    label:     'CBS Administration',
     href:      '#',
     icon:      '⬡',
-    desc:      'Ministry dashboards, cross-ministry workflows, and service record management.',
+    desc:      'CBS oversight, governance decisions, node health',
+    audience:  'For CBS and ministry officials',
     showLive:  true,
     badge:     null,
     legacyUrl: LEGACY_URL,
   },
   {
     id:        'donor',
-    label:     'I am a Development Partner',
+    label:     'Development Partners',
     href:      '#',
     icon:      '◈',
-    desc:      'UNICEF grant tracking, tranche verification, and impact reporting.',
+    desc:      'Grant lifecycle transparency and disbursement verification',
+    audience:  'For World Bank, ADB, bilateral donors',
     showLive:  false,
     badge:     'Coming Phase 2',
     legacyUrl: null,
   },
   {
     id:        'verify',
-    label:     'Verify a Document',
+    label:     'Verify a Credential',
     href:      '#',
     icon:      '✦',
-    desc:      'Instantly verify any government-issued credential against the NDIDS chain.',
+    desc:      'Confirm a government-issued record is authentic',
+    audience:  'For employers, service providers, verification bodies',
     showLive:  false,
     badge:     'Coming Phase 2',
     legacyUrl: null,
@@ -62,7 +66,7 @@ const PORTALS = [
 
 // ─── Portal Card ────────────────────────────────────────────────────────────
 
-function PortalCard({ label, href, icon, desc, showLive, isLive, badge, legacyUrl, hoverCard, clickCard, onShowToast }) {
+function PortalCard({ label, href, icon, desc, audience, showLive, isLive, badge, legacyUrl, hoverCard, clickCard, onShowToast }) {
   const [hovered, setHovered] = React.useState(false)
 
   const handleClick = (e) => {
@@ -109,6 +113,12 @@ function PortalCard({ label, href, icon, desc, showLive, isLive, badge, legacyUr
       <span style={{ fontFamily: F.ui, fontSize: '13px', color: C.silver, lineHeight: '1.5', flex: 1 }}>
         {desc}
       </span>
+
+      {audience && (
+        <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: '10px', color: C.gold, opacity: 0.75, letterSpacing: '0.3px' }}>
+          {audience}
+        </span>
+      )}
 
       {legacyUrl && (
         <a
@@ -164,6 +174,37 @@ function PortalCard({ label, href, icon, desc, showLive, isLive, badge, legacyUr
         </span>
       </div>
     </a>
+  )
+}
+
+// ─── Static Node Network (mobile fallback for Three.js canvas — LAND-2) ────
+
+function StaticNodeNetwork() {
+  const nodes = [
+    { x: 50,  y: 50,  color: '#C9A227' },
+    { x: 200, y: 30,  color: '#CE1126' },
+    { x: 350, y: 60,  color: '#003087' },
+    { x: 480, y: 40,  color: '#C9A227' },
+    { x: 80,  y: 150, color: '#003087' },
+    { x: 260, y: 140, color: '#CE1126' },
+    { x: 420, y: 160, color: '#C9A227' },
+    { x: 550, y: 130, color: '#003087' },
+  ]
+  const edges = [
+    [0,1],[1,2],[2,3],[0,4],[1,5],[2,6],[3,7],[4,5],[5,6],[6,7],
+  ]
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:0, overflow:'hidden', opacity:0.35 }}>
+      <svg viewBox="0 0 600 200" style={{ width:'100%', height:'100%', objectFit:'cover' }} aria-hidden="true">
+        {edges.map(([a,b],i) => (
+          <line key={i} x1={nodes[a].x} y1={nodes[a].y} x2={nodes[b].x} y2={nodes[b].y}
+            stroke="#1b2540" strokeWidth="1" />
+        ))}
+        {nodes.map((n,i) => (
+          <circle key={i} cx={n.x} cy={n.y} r="6" fill={n.color} opacity="0.8" />
+        ))}
+      </svg>
+    </div>
   )
 }
 
@@ -249,27 +290,22 @@ function StatsStrip({ isLive }) {
 function GovFooter() {
   return (
     <div style={{ width:'100%', padding:'20px 24px', background:'#0A1628', borderTop:'1px solid #1E2E50', display:'flex', flexDirection:'column', gap:'8px', alignItems:'center', boxSizing:'border-box' }}>
-      <div style={{ display:'flex', alignItems:'center', gap:'16px' }}>
-        <span style={{ fontFamily:'IBM Plex Mono', fontSize:'10px', color:'#5A6A8A' }}>Samoa DPI Research Laboratory</span>
-        <div style={{ display:'flex', width:'3px', height:'20px' }}>
-          <div style={{ flex:1, background:'#CE1126' }}/>
-          <div style={{ flex:1, background:'#FFFFFF' }}/>
-          <div style={{ flex:1, background:'#003087' }}/>
-        </div>
-        <span style={{ fontFamily:'IBM Plex Mono', fontSize:'10px', color:'#5A6A8A' }}>Powered by Sovereign Blockchain Infrastructure</span>
+      <div style={{ fontFamily:'IBM Plex Mono, monospace', fontSize:'10px', color:'#6b7a99', textAlign:'center', lineHeight:1.7, maxWidth:'640px' }}>
+        This is a research prototype operated under the NUS/ISOC Research Programme 2026.
+        No real citizen data is held. This platform is not officially sanctioned by the
+        Government of Samoa. For enquiries: synergyblockchaintf@gmail.com
       </div>
-      <div style={{ background:'rgba(206,17,38,0.08)', border:'1px solid rgba(206,17,38,0.3)', borderRadius:'4px', padding:'6px 16px', textAlign:'center' }}>
-        <span style={{ fontFamily:'IBM Plex Mono', fontSize:'9px', color:'#E8445A', letterSpacing:'0.5px' }}>⚠ RESEARCH PILOT ONLY — This system operates under the NUS/ISOC Internet Society Research Programme. Not authorised for public deployment. Sandbox environment — no real citizen data.</span>
-      </div>
-      <div style={{ fontFamily:'DM Sans', fontSize:'9px', color:'#5A6A8A' }}>Research Agreement · Privacy Policy · Contact: synergyblockchaintf@gmail.com · © 2026 Synergy Blockchain Pacific</div>
     </div>
   )
 }
 
 // ─── Root App ───────────────────────────────────────────────────────────────
 
+const IS_MOBILE_DEVICE = typeof window !== 'undefined' &&
+  (window.innerWidth < 768 || /iPhone|iPad|Android/i.test(navigator.userAgent))
+
 export default function App() {
-  const { soundEnabled, toggleSound, hoverCard, clickCard, blockPulse } = useSoundSystem()
+  const { soundEnabled, toggleSound, hoverCard, clickCard, blockPulse } = useSoundSystem(IS_MOBILE_DEVICE)
   const { blockNumber, isLive } = useChainStats()
   const prevBlockRef  = useRef(null)
   const toastTimerRef = useRef(null)
@@ -306,8 +342,11 @@ export default function App() {
       {/* toast notification */}
       <Toast visible={toastVisible} />
 
-      {/* z-0 — WebGL network */}
-      <BlockchainCanvas blockNumber={blockNumber} />
+      {/* z-0 — WebGL network (desktop) or static SVG (mobile — LAND-2) */}
+      {IS_MOBILE_DEVICE
+        ? <StaticNodeNetwork />
+        : <BlockchainCanvas blockNumber={blockNumber} />
+      }
 
       {/* z-1 — tapa cloth overlay */}
       <TapaPattern />

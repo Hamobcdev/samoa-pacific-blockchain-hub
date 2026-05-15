@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import * as Tone from 'tone'
 
-export default function useSoundSystem() {
+export default function useSoundSystem(disableAudio = false) {
   const [soundEnabled, setSoundEnabled] = useState(false)
   const initialized = useRef(false)
   const oscRef      = useRef(null)
@@ -24,6 +24,7 @@ export default function useSoundSystem() {
   }, [])
 
   const toggleSound = useCallback(async () => {
+    if (disableAudio) return
     if (!soundEnabled) {
       await init()
       if (oscRef.current) oscRef.current.volume.rampTo(-40, 1)
@@ -31,7 +32,7 @@ export default function useSoundSystem() {
       if (oscRef.current) oscRef.current.volume.rampTo(-80, 1)
     }
     setSoundEnabled(prev => !prev)
-  }, [soundEnabled, init])
+  }, [soundEnabled, init, disableAudio])
 
   const hoverCard = useCallback(async () => {
     if (!soundEnabled || !initialized.current) return

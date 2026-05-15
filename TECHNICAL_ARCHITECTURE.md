@@ -252,7 +252,7 @@ function App() {
 
   // Route to correct dashboard automatically
   if (address === NDIDS_ADMIN)     return <NDIDSDashboard />
-  if (address === AID_VERIFIER)    return <UNICEFDashboard />
+  if (address === AID_VERIFIER)    return <DonorDashboard />
   if (ministryCode)                return <MinistryDashboard ministry={ministryCode} />
   return <PublicDashboard />
 }
@@ -266,9 +266,9 @@ The smart contracts already enforce all permissions at the transaction level. A 
 
 Each ministry would be issued a hardware wallet (Ledger or Trezor) by the NDIDS authority. The wallet address is registered in the relevant `MinistryNode` contract as the `admin`. The ministry officer plugs in their hardware wallet, connects to the dashboard, and the system detects their address and shows only their node's data.
 
-**UNICEF / donor wallet setup:**
+**Development partner / donor wallet setup:**
 
-The AID tracker contract has a separate `authorisedVerifiers` mapping. UNICEF field officers are added to this mapping. When they connect with their wallet, the dashboard detects their verifier status and shows the grant accountability view with the ability to submit field evidence.
+The AID tracker contract has a separate `authorisedVerifiers` mapping. Development partner field officers are added to this mapping. When they connect with their wallet, the dashboard detects their verifier status and shows the grant accountability view with the ability to submit field evidence.
 
 **Public view:**
 
@@ -406,7 +406,7 @@ This mirrors how real inter-agency data sharing agreements work. Each agency con
 The complete flow from grant creation to verified delivery:
 
 ```
-UNICEF creates grant (admin)
+Development partner creates grant (admin)
          │
          ▼
 Grant created on AIDisbursementTracker
@@ -417,7 +417,7 @@ Milestone 1 achieved → admin releases Tranche 1
 Tranche 1 status: Pending → Released
          │
          ▼
-UNICEF field officer submits field report IPFS hash
+Development partner field officer submits field report IPFS hash
 verifyUsage(grantId, 0, evidenceHash, beneficiariesCount)
 Tranche 1 status: Released → Verified
          │
@@ -451,7 +451,7 @@ Yes. The contracts, tests, and cast scripts are chain-agnostic. The only differe
 |---|---|---|
 | RPC URL | `http://127.0.0.1:8545` | `https://polygon-rpc.com` |
 | Private key | Hardcoded public test key | Encrypted keystore |
-| Gas cost | Zero (test ETH) | ~$3-8 USD (real POL) |
+| Gas cost | Zero (test ETH) | Fraction of a cent (real POL) — typically $0.001–$0.05 |
 | Transaction speed | Instant | ~2 seconds per block |
 | State persistence | Lost on restart | Permanent |
 | Polygonscan | Not applicable | Publicly visible |
@@ -465,7 +465,7 @@ Yes. The contracts, tests, and cast scripts are chain-agnostic. The only differe
 This means you can:
 - Run `bash contracts/demo/run_demo.sh 3` in a terminal
 - Watch the AID grant lifecycle execute in real time
-- Switch to the browser and refresh the UNICEF Donor dashboard
+- Switch to the browser and refresh the Development Partner dashboard
 - See the updated grant status, tranche states, and audit trail reflecting the actual on-chain state
 
 ### Recommended demo flow using live chain
@@ -489,7 +489,7 @@ bash contracts/demo/run_demo.sh 2
 # 5. Switch to browser — show NDIDS Admin view (service count incremented)
 # 6. Show Ministry Officer — Education records the enrolment
 # 7. Show Ministry Officer — MOF sees the cross-ministry record
-# 8. Run Scenario 3 — AID lifecycle (visible in UNICEF Donor dashboard)
+# 8. Run Scenario 3 — AID lifecycle (visible in Development Partner dashboard)
 ```
 
 ---
@@ -498,7 +498,7 @@ bash contracts/demo/run_demo.sh 2
 
 ### Phase 1 — PoC (current)
 
-Architecture proven. All contracts deployed. Test suite passing. Multi-stakeholder dashboard. Demo scripts. UNICEF application submitted.
+Architecture proven. All contracts deployed. Test suite passing. Multi-stakeholder dashboard. Demo scripts. NUS/ISOC research submission complete.
 
 ### Phase 2 — Pilot (months 3-9)
 

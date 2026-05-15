@@ -100,7 +100,7 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, Pausable, Reentr
     error AlreadyExists();
     error AlreadySet();                              // FIX 1: once-set guard
     error ZeroAddress();
-    error EnrollmentStepFailed(string step);
+    error EnrolmentStepFailed(string step);
     error UnregisteredMinistryNode(address node);   // FIX 3: node validation
     error VerificationExpired(bytes32 citizenHash); // CISA-1: expired NDIDS verification
 
@@ -230,7 +230,7 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, Pausable, Reentr
         emit PermissionRevoked(fromCode, toCode);
     }
 
-    // ── Cross-Ministry Workflow: School Enrollment + Benefit ──────
+    // ── Cross-Ministry Workflow: School Enrolment + Benefit ──────
 
     /**
      * @notice Execute the full child services workflow:
@@ -244,7 +244,7 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, Pausable, Reentr
      * @param mofNode       MOF contract address
      * @param dataHash      Off-chain data hash (enrolment record)
      */
-    function executeEnrollmentWorkflow(
+    function executeEnrolmentWorkflow(
         bytes32 citizenHash,
         address educationNode,
         address mofNode,
@@ -262,7 +262,7 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, Pausable, Reentr
         // Record workflow attempt upfront; update success flag after
         uint256 logIndex = workflowLog.length;
         workflowLog.push(WorkflowEvent({
-            workflowType: "ENROLLMENT_AND_BENEFIT",
+            workflowType: "ENROLMENT_AND_BENEFIT",
             citizenHash:  citizenHash,
             ministryCode: "MULTI",
             timestamp:    block.timestamp, // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
@@ -271,7 +271,7 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, Pausable, Reentr
 
         // ── External calls AFTER state write ─────────────────────
 
-        // Step 1: Record school enrollment (Education node verifies via NDIDS)
+        // Step 1: Record school enrolment (Education node verifies via NDIDS)
         // B4 — capture return value, require success
         try MinistryNode(educationNode).recordService(
             citizenHash,
@@ -298,7 +298,7 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, Pausable, Reentr
 
 
 
-        emit WorkflowExecuted("ENROLLMENT_AND_BENEFIT", citizenHash, success);
+        emit WorkflowExecuted("ENROLMENT_AND_BENEFIT", citizenHash, success);
     }
 
     // ── Queries ──────────────────────────────────────────────────

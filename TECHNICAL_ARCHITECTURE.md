@@ -1,8 +1,9 @@
 # Technical Architecture
 
-## Samoa Pacific Blockchain Hub
+## Samoa Digital Public Infrastructure (DPI)
 
-**Synergy Blockchain Pacific · UNICEF Venture Fund 2026**
+**National University of Samoa · NUS/ISOC Research Programme 2026**
+**Technical Partner: Synergy Blockchain Pacific · Apia, Samoa**
 
 ---
 

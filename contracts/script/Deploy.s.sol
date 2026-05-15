@@ -251,9 +251,9 @@ contract DeploySamoaHub is Script {
         }
 
         // ── 8. Hub workflows ──────────────────────────────────────
-        hub.executeEnrollmentWorkflow(eduHashes[0], address(education), address(mof), dummyDataHash);
-        hub.executeEnrollmentWorkflow(eduHashes[1], address(education), address(mof), dummyDataHash);
-        hub.executeEnrollmentWorkflow(eduHashes[2], address(education), address(mof), dummyDataHash);
+        hub.executeEnrolmentWorkflow(eduHashes[0], address(education), address(mof), dummyDataHash);
+        hub.executeEnrolmentWorkflow(eduHashes[1], address(education), address(mof), dummyDataHash);
+        hub.executeEnrolmentWorkflow(eduHashes[2], address(education), address(mof), dummyDataHash);
 
         // ── 9. Create UNICEF grant ────────────────────────────────
         string[] memory milestones = new string[](3);

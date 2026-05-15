@@ -378,7 +378,7 @@ contract SamoaPacificBlockchainHubTest is Test {
         assertEq(rec.serviceType, "MOF_PAYMENT");
     }
 
-    function test_Hub_CrossMinistryEnrollmentWorkflow() public {
+    function test_Hub_CrossMinistryEnrolmentWorkflow() public {
         // Setup: register citizen and grant education access to NDIDS
         vm.startPrank(admin);
         ndids.registerCitizen(CITIZEN_HASH);
@@ -391,7 +391,7 @@ contract SamoaPacificBlockchainHubTest is Test {
 
         // Execute the full workflow through the hub
         vm.prank(admin);
-        bool success = hub.executeEnrollmentWorkflow(
+        bool success = hub.executeEnrolmentWorkflow(
             CITIZEN_HASH,
             address(educationNode),
             address(mofNode),
@@ -413,7 +413,7 @@ contract SamoaPacificBlockchainHubTest is Test {
         InteroperabilityHub.WorkflowEvent[] memory log = hub.getWorkflowLog(0, 100);
         assertEq(log.length, 1);
         assertTrue(log[0].success);
-        assertEq(log[0].workflowType, "ENROLLMENT_AND_BENEFIT");
+        assertEq(log[0].workflowType, "ENROLMENT_AND_BENEFIT");
     }
 
     function test_Hub_GetAllMinistries() public view {

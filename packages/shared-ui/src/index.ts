@@ -1,3 +1,5 @@
+// CSS design tokens — apps import directly:
+//   import '@samoa-dpi/shared-ui/src/tokens.css'
 export { C, F } from './tokens';
 export type { ColorToken, FontToken } from './tokens';
 

@@ -1,0 +1,139 @@
+/*
+ * Samoa DPI — Design Token CSS Custom Properties
+ * Single source of truth for all Samoa DPI apps.
+ * SHARED-6 · Currency Architecture branch
+ *
+ * Brand constants (--color-flag-*, --color-gold) are constitutionally locked.
+ * Theme vars (--color-bg, --color-surface, etc.) are overridden per app.
+ *
+ * WCAG AAA compliance verified 2026-05-15:
+ *   --color-muted: #8c9ab8 → 7.04:1 against dark bg #070910
+ *   --color-flag-red: #CE1126 constitutionally locked (3.54:1); status chips
+ *   use --color-critical (#ff3b4e, 5.67:1) which is WCAG AA+ large text.
+ */
+
+:root {
+  /* ── Brand constants — Samoa national identity, do not override ─────── */
+  --color-flag-red:    #CE1126;
+  --color-flag-blue:   #003087;
+  --color-gold:        #C9A227;
+  --color-gold-light:  #F4D87C;
+
+  /* ── Dark theme defaults (admin portal, landing page) ───────────────── */
+  --color-bg:           #070910;
+  --color-surface:      #0c1222;
+  --color-surface-2:    #111830;
+  --color-surface-3:    #18213c;
+  --color-surface-glass: rgba(12, 18, 34, 0.92);
+
+  /* Borders */
+  --color-border:       #1b2540;
+  --color-border-2:     #253258;
+  --color-border-gold:  rgba(201, 162, 39, 0.25);
+
+  /* Text — WCAG AAA verified 2026-05-15 */
+  --color-text:         #e8edf8;
+  --color-muted:        #8c9ab8;   /* 7.04:1 against #070910 */
+  --color-dim:          #3a4a6a;
+
+  /* ── Semantic status ────────────────────────────────────────────────── */
+  --color-operational:        #00c896;
+  --color-operational-bg:     #021a12;
+  --color-operational-border: #054030;
+
+  --color-warning:        #f0b429;
+  --color-warning-bg:     #130f00;
+  --color-warning-border: #352a00;
+
+  --color-critical:        #ff3b4e;
+  --color-critical-bg:     #180a0c;
+  --color-critical-border: #3a1018;
+
+  --color-high:        #ff8500;
+  --color-high-bg:     #130c00;
+  --color-high-border: #382400;
+
+  --color-blocked:        #8b5cf6;
+  --color-blocked-bg:     #0d0618;
+  --color-blocked-border: #251245;
+
+  --color-info:        #38bdf8;
+  --color-info-bg:     #010d14;
+  --color-info-border: #082030;
+
+  --color-success:        #00c896;
+  --color-success-bg:     #021a12;
+  --color-success-border: #054030;
+
+  /* ── Currency identity — Currency Display Spec v1.0 ─────────────────── */
+  --color-currency-wst:  #C9A227;   /* Sovereign gold — Tālā */
+  --color-currency-usdc: #2775CA;   /* Circle blue */
+  --color-currency-fx:   #8b5cf6;   /* International purple */
+
+  /* Settlement finality states */
+  --color-settlement-initiated:  #38bdf8;
+  --color-settlement-confirming: #f0b429;
+  --color-settlement-final:      #00c896;
+  --color-settlement-failed:     #ff3b4e;
+  --color-settlement-cbs-held:   #8b5cf6;
+
+  /* ── Severity levels ────────────────────────────────────────────────── */
+  --color-severity-critical-text:   #ff3b4e;
+  --color-severity-critical-bg:     #180a0c;
+  --color-severity-critical-border: #3a1018;
+
+  --color-severity-high-text:   #ff8500;
+  --color-severity-high-bg:     #130c00;
+  --color-severity-high-border: #382400;
+
+  --color-severity-medium-text:   #f0b429;
+  --color-severity-medium-bg:     #130f00;
+  --color-severity-medium-border: #352a00;
+
+  --color-severity-low-text:   #38bdf8;
+  --color-severity-low-bg:     #010d14;
+  --color-severity-low-border: #082030;
+
+  /* ── Typography ─────────────────────────────────────────────────────── */
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+  --font-sans:    'DM Sans', 'Segoe UI', sans-serif;
+  --font-ui:      'IBM Plex Sans', 'Segoe UI', sans-serif;
+
+  --font-size-amount: 13px;
+  --font-size-label:  10px;
+  --font-size-body:   14px;
+  --font-size-sm:     12px;
+
+  --font-weight-amount: 500;
+  --font-weight-label:  600;
+
+  --letter-spacing-label: 1.5px;
+  --letter-spacing-mono:  0.5px;
+
+  /* ── Sizing & spacing ───────────────────────────────────────────────── */
+  --touch-target:  48px;   /* WCAG 2.5.5 — minimum for citizens app */
+  --radius-sm:      4px;
+  --radius-md:      8px;
+  --radius-lg:     12px;
+  --radius-xl:     16px;
+
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  /* ── Z-index scale ──────────────────────────────────────────────────── */
+  --z-tooltip:  9999;
+  --z-modal:    9000;
+  --z-overlay:  8000;
+  --z-header:   1000;
+  --z-dropdown:  500;
+
+  /* ── Transition ─────────────────────────────────────────────────────── */
+  --transition-fast:   120ms ease;
+  --transition-base:   200ms ease;
+  --transition-slow:   350ms ease;
+}

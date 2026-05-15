@@ -1,0 +1,4 @@
+{
+  "installCommand": "pnpm install",
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet ."
+}

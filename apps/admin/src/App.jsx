@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { GLOBAL_STYLES, COLORS, TYPOGRAPHY } from './theme.js'
 import { t } from './i18n.js'
-import { ResearchGate, CurrencyProvider } from '@samoa-dpi/shared-ui'
+import { ResearchGate, CurrencyProvider, LanguageProvider, useLang } from '@samoa-dpi/shared-ui'
 import { useRole }            from './hooks/useRole.js'
 import { useSession }         from './hooks/useSession.js'
 import { useAuditLog }        from './hooks/useAuditLog.js'
@@ -52,10 +52,10 @@ function PanelContent({ activePanel, nodeHealth, governance, auditLog, lang }) {
   return <StubPanel titleKey={`nav.${activePanel}`} lang={lang} phase={2} />
 }
 
-export default function App() {
-  const [hasRole, setHasRole]       = useState(false)
+function AdminApp() {
+  const { lang, toggle: toggleLang } = useLang()
+  const [hasRole, setHasRole]         = useState(false)
   const [activePanel, setActivePanel] = useState('overview')
-  const [lang, setLang]             = useState('EN')
 
   const { roleId, role, setRole, can } = useRole()
   const auditLog    = useAuditLog()
@@ -84,10 +84,6 @@ export default function App() {
     auditLog.log('SIGN_OUT', '', roleId)
     setHasRole(false)
   }, [roleId, auditLog])
-
-  const toggleLang = useCallback(() => {
-    setLang(l => l === 'EN' ? 'SM' : 'EN')
-  }, [])
 
   if (!hasRole) {
     return (
@@ -196,5 +192,13 @@ export default function App() {
       </div>
     </CurrencyProvider>
     </ResearchGate>
+  )
+}
+
+export default function App() {
+  return (
+    <LanguageProvider defaultLang="EN">
+      <AdminApp />
+    </LanguageProvider>
   )
 }

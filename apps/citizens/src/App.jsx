@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ResearchGate } from '@samoa-dpi/shared-ui'
-import { LanguageProvider, useLanguage } from './context/LanguageContext'
+import { ResearchGate, LanguageProvider, useLanguage } from '@samoa-dpi/shared-ui'
 import { OnboardingOverlay } from './components/OnboardingOverlay'
 import { IdentityView }     from './components/IdentityView'
 import { ConsentView }      from './components/ConsentView'

@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Samoa DPI — Cybersecurity Framework v1</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:         #070910;
+    --surface:    #0c1222;
+    --surface2:   #111830;
+    --border:     #1b2540;
+    --border2:    #253258;
+    --text:       #e8edf8;
+    --muted:      #6b7a99;
+    --dim:        #3a4a6a;
+    --mono:       'IBM Plex Mono', monospace;
+    --sans:       'IBM Plex Sans', sans-serif;
+    --red:        #CE1126;
+    --blue:       #003087;
+    --gold:       #C9A227;
+    --green:      #00c896;
+    --amber:      #f0b429;
+    --critical:   #ff3b4e;
+    --high:       #ff8500;
+    --medium:     #f0b429;
+    --low:        #38bdf8;
+    --blocked:    #8b5cf6;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.75;
+    padding: 40px 24px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  /* ── HEADER ── */
+  .doc-header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 28px;
+    margin-bottom: 40px;
+  }
+
+  .flag-stripe {
+    width: 100%; height: 5px;
+    background: linear-gradient(90deg, var(--red) 50%, var(--blue) 50%);
+    border-radius: 2px; margin-bottom: 24px;
+  }
+
+  .doc-classification {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 2px; color: var(--critical);
+    border: 1px solid var(--critical); display: inline-block;
+    padding: 3px 10px; border-radius: 3px; margin-bottom: 16px;
+    background: rgba(255,59,78,0.06);
+  }
+
+  h1 {
+    font-family: var(--mono); font-size: 22px; font-weight: 700;
+    color: var(--text); letter-spacing: -0.5px; margin-bottom: 6px;
+  }
+
+  .doc-meta {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    line-height: 1.8;
+  }
+
+  .doc-meta strong { color: var(--gold); }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
+    padding: 20px 24px; border-radius: 6px; margin-bottom: 40px;
+  }
+  .toc h3 {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 12px;
+  }
+  .toc ol { padding-left: 20px; }
+  .toc li {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    padding: 2px 0; cursor: pointer;
+  }
+  .toc li:hover { color: var(--text); }
+  .toc a { color: inherit; text-decoration: none; }
+
+  /* ── SECTIONS ── */
+  .section { margin-bottom: 52px; }
+
+  .section-number {
+    font-family: var(--mono); font-size: 10px; color: var(--gold);
+    letter-spacing: 1px; margin-bottom: 6px;
+  }
+
+  h2 {
+    font-family: var(--mono); font-size: 16px; font-weight: 600;
+    color: var(--text); margin-bottom: 4px;
+    border-bottom: 1px solid var(--border); padding-bottom: 10px;
+  }
+
+  h3 {
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    color: var(--gold); margin: 24px 0 10px; letter-spacing: 0.3px;
+  }
+
+  h4 {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--muted); margin: 16px 0 8px;
+    letter-spacing: 0.8px; text-transform: uppercase;
+  }
+
+  p { margin-bottom: 12px; color: var(--text); }
+
+  ul, ol { padding-left: 20px; margin-bottom: 12px; }
+  li { padding: 3px 0; }
+  li strong { color: var(--gold); }
+
+  /* ── CALLOUTS ── */
+  .callout {
+    padding: 14px 18px; border-radius: 5px; margin: 16px 0;
+    font-size: 13px; line-height: 1.65;
+  }
+  .callout-critical {
+    background: rgba(255,59,78,0.07); border: 1px solid rgba(255,59,78,0.3);
+    border-left: 3px solid var(--critical);
+  }
+  .callout-high {
+    background: rgba(255,133,0,0.07); border: 1px solid rgba(255,133,0,0.3);
+    border-left: 3px solid var(--high);
+  }
+  .callout-gold {
+    background: rgba(201,162,39,0.07); border: 1px solid rgba(201,162,39,0.3);
+    border-left: 3px solid var(--gold);
+  }
+  .callout-green {
+    background: rgba(0,200,150,0.07); border: 1px solid rgba(0,200,150,0.3);
+    border-left: 3px solid var(--green);
+  }
+  .callout-blue {
+    background: rgba(0,48,135,0.15); border: 1px solid rgba(0,48,135,0.4);
+    border-left: 3px solid var(--blue);
+  }
+  .callout-label {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px;
+  }
+
+  /* ── CODE BLOCKS ── */
+  .code-block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 5px; padding: 16px; margin: 12px 0;
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    overflow-x: auto; line-height: 1.7;
+  }
+  .code-block .kw  { color: var(--blue);  font-weight: 600; } /* not real blue - use gold */
+  .code-block .fn  { color: var(--gold); }
+  .code-block .cm  { color: var(--dim); }
+  .code-block .st  { color: var(--green); }
+
+  /* ── TABLES ── */
+  table {
+    width: 100%; border-collapse: collapse; margin: 16px 0;
+    font-size: 12px;
+  }
+  th {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--muted); padding: 8px 12px;
+    border-bottom: 1px solid var(--border); text-align: left;
+    background: var(--surface);
+  }
+  td {
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    vertical-align: top; color: var(--text);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface); }
+
+  /* ── SEVERITY TAGS ── */
+  .tag {
+    display: inline-block; font-family: var(--mono); font-size: 9px;
+    font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 3px; margin-right: 4px;
+    white-space: nowrap;
+  }
+  .tag-critical { background: rgba(255,59,78,0.12);  color: var(--critical); border: 1px solid rgba(255,59,78,0.3); }
+  .tag-high     { background: rgba(255,133,0,0.12);  color: var(--high);     border: 1px solid rgba(255,133,0,0.3); }
+  .tag-medium   { background: rgba(240,180,41,0.12); color: var(--medium);   border: 1px solid rgba(240,180,41,0.3); }
+  .tag-low      { background: rgba(56,189,248,0.12); color: var(--low);      border: 1px solid rgba(56,189,248,0.3); }
+  .tag-gold     { background: rgba(201,162,39,0.12); color: var(--gold);     border: 1px solid rgba(201,162,39,0.3); }
+  .tag-green    { background: rgba(0,200,150,0.12);  color: var(--green);    border: 1px solid rgba(0,200,150,0.3); }
+
+  /* ── DIVIDER ── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  /* ── FOOTER ── */
+  .doc-footer {
+    margin-top: 60px; padding: 20px 24px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-top: 3px solid var(--gold); border-radius: 6px;
+    font-family: var(--mono); font-size: 10px; color: var(--dim);
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<header class="doc-header">
+  <div class="flag-stripe"></div>
+  <div class="doc-classification">INTERNAL — SYNERGY BLOCKCHAIN PACIFIC — NOT FOR PUBLIC DISTRIBUTION</div>
+  <h1>SAMOA DPI CYBERSECURITY FRAMEWORK</h1>
+  <div class="doc-meta">
+    <strong>Document:</strong> Decentralised Node Architecture · AI Governance · Sovereign Chain Security<br>
+    <strong>Version:</strong> 1.0 · Initial · 2026-05-15<br>
+    <strong>Author:</strong> Synergy Blockchain Pacific · Anthony George Williams<br>
+    <strong>Status:</strong> Founding Guiding Principle · Applies to all SBP technical work immediately<br>
+    <strong>Current platform:</strong> Polygon Amoy (testnet) → Polygon Mainnet → Sovereign Geth Clique PoA Chain<br>
+    <strong>Regulatory alignment:</strong> NIST 800-53 · OWASP ASVS Level 3 · CISA ZTMM 2.0 · BIS PFMI P17 · FATF R.15 · IMO FAL.5
+  </div>
+</header>
+
+<!-- TOC -->
+<div class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#s1">Strategic Security Posture</a></li>
+    <li><a href="#s2">Threat Model — Adversary Analysis</a></li>
+    <li><a href="#s3">Decentralised Node Architecture Security</a></li>
+    <li><a href="#s4">Smart Contract Security Standards</a></li>
+    <li><a href="#s5">Network Layer Security — Polygon to Sovereign Chain</a></li>
+    <li><a href="#s6">Cold Wallet Authentication & Identity Security</a></li>
+    <li><a href="#s7">AI Governance & Compliance Layer</a></li>
+    <li><a href="#s8">One Maritime Window — Security Architecture</a></li>
+    <li><a href="#s9">Sovereign Storage Architecture</a></li>
+    <li><a href="#s10">Frontend & API Security Standards</a></li>
+    <li><a href="#s11">Incident Response & Recovery</a></li>
+    <li><a href="#s12">Sovereign Chain Migration Security Gates</a></li>
+    <li><a href="#s13">Compliance Summary Matrix</a></li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section" id="s1">
+  <div class="section-number">SECTION 01</div>
+  <h2>Strategic Security Posture</h2>
+
+  <div class="callout callout-gold">
+    <div class="callout-label">⊕ Founding Principle</div>
+    The Samoa DPI is sovereign critical infrastructure. Security is not a feature to be added — it is the foundation on which everything else is built. Every architectural decision is evaluated first through the lens of national security, then through functionality. A breach of this system is a breach of Samoa's sovereign data, financial integrity, and public trust. The consequences extend beyond technology: they affect national sovereignty, international standing, and the welfare of every Samoan citizen whose records are on the platform.
+  </div>
+
+  <h3>Security Philosophy</h3>
+  <p>The platform applies <strong>Zero Trust Architecture</strong> as its governing security philosophy. Zero Trust means: no implicit trust at any layer. Every user, every device, every API call, every contract interaction is explicitly verified. The network location of a request grants nothing. Legitimate credentials from yesterday are re-verified today.</p>
+
+  <p>Applied to Samoa DPI, Zero Trust means:</p>
+  <ul>
+    <li><strong>Every ministry official</strong> authenticates with a cold wallet signature on every session — not once at account creation</li>
+    <li><strong>Every cross-ministry data access</strong> requires explicit consent verification through the InteroperabilityHub, not an assumed permission</li>
+    <li><strong>Every AI agent action</strong> is logged on-chain and subject to the same wallet-based access control as human actors</li>
+    <li><strong>Every contract call</strong> validates the caller's identity against the relevant authorisedReaders mapping before executing</li>
+    <li><strong>Every frontend</strong> assumes the RPC endpoint, the smart contracts, and the user's device may all be compromised — and builds defences accordingly</li>
+  </ul>
+
+  <h3>The Decentralisation Security Dividend</h3>
+  <p>The single most important security property of this architecture is its decentralisation. Each of the 25 operational ministry nodes is an independent smart contract with its own access control list. This creates a security architecture where:</p>
+  <ul>
+    <li><strong>Blast radius is bounded.</strong> Compromising CBS's ministry node does not expose MOH's records. An attacker must compromise each ministry's contract independently.</li>
+    <li><strong>Byzantine fault tolerance.</strong> With 25 operational nodes across 3 validator institutions (CBS, MOF, MCIT), the network can tolerate up to 8 node failures simultaneously before consensus is threatened.</li>
+    <li><strong>No single point of failure.</strong> There is no central server, no central database, no single API key that unlocks the entire system. An attacker who compromises any single component gains access only to that component's data.</li>
+    <li><strong>Auditability is structural.</strong> Every state change is recorded in an immutable, publicly verifiable on-chain transaction. Tampering is cryptographically detectable.</li>
+  </ul>
+
+  <div class="callout callout-green">
+    <div class="callout-label">✓ Security Advantage Over Centralised Systems</div>
+    Estonia's X-Road uses a centralised security server for each organisation. India's Aadhaar uses centralised biometric storage. Both have had significant breach incidents. Samoa DPI's architecture makes the equivalent breach combinatorially more expensive: an attacker must compromise 25 separate smart contracts, each with independent access control, protected by cold wallet signatures, on an immutably-logged network. This is not incremental security improvement — it is a categorical architectural advantage.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section" id="s2">
+  <div class="section-number">SECTION 02</div>
+  <h2>Threat Model — Adversary Analysis</h2>
+
+  <h3>Threat Actor Classification</h3>
+  <table>
+    <thead>
+      <tr><th>Threat Actor</th><th>Capability</th><th>Motivation</th><th>Primary Attack Vector</th><th>Risk Level</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Nation-State Adversary</strong></td>
+        <td>Sophisticated, well-resourced, patient</td>
+        <td>Geopolitical intelligence, economic espionage, destabilisation</td>
+        <td>Supply chain compromise, validator node infiltration, long-term persistence</td>
+        <td><span class="tag tag-critical">Critical</span></td>
+      </tr>
+      <tr>
+        <td><strong>Criminal Organisation</strong></td>
+        <td>Moderate to high, financially motivated</td>
+        <td>Financial theft (WST-DPI), ransomware, identity theft</td>
+        <td>Smart contract exploits, key theft, phishing of ministry officials</td>
+        <td><span class="tag tag-critical">Critical</span></td>
+      </tr>
+      <tr>
+        <td><strong>Insider Threat</strong></td>
+        <td>High (legitimate access), limited scope</td>
+        <td>Financial gain, coercion, ideology, negligence</td>
+        <td>Abuse of authorised wallet access, key leakage, data exfiltration</td>
+        <td><span class="tag tag-high">High</span></td>
+      </tr>
+      <tr>
+        <td><strong>Opportunistic Attacker</strong></td>
+        <td>Low to moderate</td>
+        <td>Notoriety, opportunism, testing</td>
+        <td>Known vulnerabilities in dependencies, misconfigured APIs, exposed keys</td>
+        <td><span class="tag tag-high">High</span></td>
+      </tr>
+      <tr>
+        <td><strong>Compromised AI Agent</strong></td>
+        <td>Variable — depends on agent capabilities</td>
+        <td>Misalignment, prompt injection, adversarial attack on AI system</td>
+        <td>Rogue transactions, data exfiltration, privilege escalation through AI interface</td>
+        <td><span class="tag tag-high">High</span></td>
+      </tr>
+      <tr>
+        <td><strong>Disgruntled Official</strong></td>
+        <td>Moderate (legitimate access during tenure)</td>
+        <td>Grievance, whistleblowing, sabotage</td>
+        <td>Unauthorised data access, record falsification, key compromise before departure</td>
+        <td><span class="tag tag-medium">Medium</span></td>
+      </tr>
+      <tr>
+        <td><strong>Supply Chain Attacker</strong></td>
+        <td>High (targets trusted dependencies)</td>
+        <td>Mass impact, cryptocurrency theft</td>
+        <td>Compromised npm packages, malicious Solidity libraries, poisoned build tools</td>
+        <td><span class="tag tag-high">High</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Critical Assets — What Attackers Want</h3>
+  <ul>
+    <li><strong>Validator private keys</strong> — Control of the sovereign chain. Highest value target.</li>
+    <li><strong>CBS Governor wallet</strong> — Control of all four smart contracts. Must be a hardware wallet in HSM.</li>
+    <li><strong>Ministry node admin keys</strong> — Ability to write fraudulent service records.</li>
+    <li><strong>WST-DPI treasury</strong> — AIDisbursementTracker grant funds. Direct financial theft vector.</li>
+    <li><strong>Citizen NDIDS hashes</strong> — Identity correlation (linking hashes to real citizens via external data).</li>
+    <li><strong>RPC endpoint credentials</strong> — Ability to send crafted transactions directly to the chain.</li>
+    <li><strong>AI agent wallet keys</strong> — Ability to execute AI-authorised transactions maliciously.</li>
+  </ul>
+
+  <h3>Attack Scenarios — High Priority</h3>
+
+  <h4>Scenario A — Treasury Drain</h4>
+  <p>Attacker targets AIDisbursementTracker.sol. Objective: call releaseTranche() to drain grant funds to an attacker-controlled address. Defences: onlyAdmin modifier requires authorised wallet; TimelockController creates delay window; multisig requires 2-of-3 keyholders; CBS circuit breaker can pause all state changes within the timelock window.</p>
+
+  <h4>Scenario B — Identity Record Falsification</h4>
+  <p>Insider (ministry official) writes fraudulent service records (e.g., falsely records benefits as disbursed). Defence: cold wallet signature is timestamped on-chain — every record has an immutable author address. Rogue records are detectable by comparing the on-chain author address to the official's registered address. CBS can audit the full record history at any time.</p>
+
+  <h4>Scenario C — Supply Chain Poisoning</h4>
+  <p>Attacker compromises an npm dependency used by a portal frontend. Malicious code exfiltrates session data or modifies transaction parameters. Defences: Subresource Integrity on all CDN resources; npm audit in CI/CD pipeline; Content Security Policy blocks inline scripts; no private keys ever reach the browser; cold wallet signs independently of the browser.</p>
+
+  <h4>Scenario D — Rogue AI Agent</h4>
+  <p>An AI agent authorised to flag suspicious transactions is manipulated via adversarial prompting to flag legitimate transactions or approve fraudulent ones. Defences: all AI actions require on-chain signatures; human-in-the-loop for any action above a configurable threshold; AI agent wallet address can be revoked immediately by CBS; all AI actions are permanently logged and distinguishable from human actions.</p>
+
+  <h4>Scenario E — Validator Collusion (Sovereign Chain)</h4>
+  <p>Two of three validators collude to approve fraudulent blocks. Defences: validator set requires CBS + MOF + MCIT — institutional accountability makes collusion politically and legally costly; all validator actions are publicly visible on the chain; observer nodes (30) detect anomalous block patterns; Clique PoA has a mandatory signing delay that prevents rapid block stuffing.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section" id="s3">
+  <div class="section-number">SECTION 03</div>
+  <h2>Decentralised Node Architecture Security</h2>
+
+  <h3>Ministry Node Isolation Model</h3>
+  <p>Each MinistryNode.sol is an independent smart contract with its own:</p>
+  <ul>
+    <li><strong>MINISTRY_ADMIN</strong> — the sole address authorised to write service records and manage readers</li>
+    <li><strong>authorisedReaders</strong> — whitelist of addresses (human officials and AI agents) permitted to read records</li>
+    <li><strong>Private _records array</strong> — no public getter; read access enforced by onlyAuthorised modifier</li>
+    <li><strong>hub address</strong> — the sole InteroperabilityHub address permitted to trigger workflows</li>
+  </ul>
+
+  <div class="callout callout-gold">
+    <div class="callout-label">⊕ Isolation Guarantee</div>
+    Wallet address X, even if it is registered as authorisedReader in MOH's node, cannot read MOF's records unless it is also on MOF's authorisedReaders list. This is enforced at the EVM level — not by application logic, not by the UI, not by the API. It cannot be bypassed by an application vulnerability.
+  </div>
+
+  <h3>Constitutional 55-Node Security Architecture</h3>
+  <table>
+    <thead>
+      <tr><th>Node Type</th><th>Count</th><th>Role</th><th>Security Function</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Operational Validators</td><td>25</td><td>Block production + consensus</td><td>Byzantine fault tolerance (f ≤ 8 simultaneous failures)</td></tr>
+      <tr><td>Observer Nodes</td><td>30</td><td>Monitoring + verification</td><td>Independent anomaly detection; cannot be used to alter state</td></tr>
+      <tr><td>CBS Validator Group</td><td>~8 operational</td><td>Central bank oversight</td><td>Veto power on block production if MCIT + MOF both compromised</td></tr>
+      <tr><td>MCIT Validator Group</td><td>~8 operational</td><td>Technology authority</td><td>Technical infrastructure oversight</td></tr>
+      <tr><td>MOF Validator Group</td><td>~9 operational</td><td>Finance oversight</td><td>Financial transaction integrity</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Blast Radius Analysis</h3>
+  <p>If any single component is compromised, the maximum damage is bounded:</p>
+  <table>
+    <thead>
+      <tr><th>Compromised Component</th><th>Maximum Blast Radius</th><th>Unaffected Components</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>One MinistryNode admin key</td><td>One ministry's service records can be falsified. Read access unchanged for others.</td><td>All other 24+ ministry nodes, NDIDS, AIDisbursementTracker, Hub</td></tr>
+      <tr><td>InteroperabilityHub</td><td>Cross-ministry workflows halted. Individual nodes still operate independently.</td><td>Individual ministry nodes, NDIDS, treasury</td></tr>
+      <tr><td>NDIDSRegistry</td><td>Identity lookups unavailable. New service records cannot be NDIDS-verified.</td><td>Existing service records, treasury, cross-ministry workflows</td></tr>
+      <tr><td>AIDisbursementTracker</td><td>Grant management compromised. Service records unaffected.</td><td>All ministry nodes, NDIDS, Hub workflows</td></tr>
+      <tr><td>One validator node</td><td>Temporary reduction in block production speed. No data breach.</td><td>24 other validator nodes maintain consensus</td></tr>
+      <tr><td>Frontend portal (any)</td><td>UI unavailable. On-chain state unchanged and accessible via other interfaces.</td><td>All smart contracts, all other portals</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section" id="s4">
+  <div class="section-number">SECTION 04</div>
+  <h2>Smart Contract Security Standards</h2>
+
+  <h3>Mandatory Security Patterns — All Contracts</h3>
+  <p>Every smart contract deployed to Samoa DPI must implement all of the following. No exceptions without documented CBS approval.</p>
+
+  <ul>
+    <li><strong>UUPS Upgradeable (OZ)</strong> — upgrades require ADMIN role + timelocked governance approval</li>
+    <li><strong>Pausable (OZ)</strong> — circuit breaker on all state-changing functions; pause authority assigned by CBS</li>
+    <li><strong>ReentrancyGuard</strong> — all external call functions marked nonReentrant</li>
+    <li><strong>Access Control</strong> — no function executable without verified role; onlyAdmin / onlyHub / onlyAuthorised as applicable</li>
+    <li><strong>Storage Gaps</strong> — uint256[50] private __gap in all UUPS contracts; prevents storage collision on upgrade</li>
+    <li><strong>Zero-Address Checks</strong> — require(address != address(0)) on all address parameters</li>
+    <li><strong>TimelockController</strong> — all high-value operations (tranche release, admin transfer, contract upgrade) delayed by CBS-defined window</li>
+    <li><strong>Multisig Governance</strong> — admin role held by Gnosis Safe 2-of-3; keyholders confirmed by CBS</li>
+    <li><strong>NatSpec Documentation</strong> — every function documented with @notice, @param, @return; legal authority cited per BIS PFMI P11</li>
+    <li><strong>Event Emission</strong> — every state change emits an event with indexed parameters for off-chain monitoring</li>
+  </ul>
+
+  <h3>Prohibited Patterns</h3>
+  <div class="callout callout-critical">
+    <div class="callout-label">✗ Hard Prohibitions — Never Use</div>
+    <ul>
+      <li>tx.origin for authentication (use msg.sender)</li>
+      <li>delegatecall to unverified external contracts</li>
+      <li>block.timestamp as sole source of randomness</li>
+      <li>Unbounded loops over user-controlled arrays (gas DoS vector)</li>
+      <li>transfer() or send() for ETH — use call() with reentrancy guard</li>
+      <li>Hardcoded addresses in contract code (use immutable set in initializer)</li>
+      <li>External library calls without version pinning</li>
+      <li>Admin private keys in deployment scripts or version control</li>
+    </ul>
+  </div>
+
+  <h3>Audit Requirements</h3>
+  <ul>
+    <li><strong>Pre-testnet:</strong> Internal code review against this framework by SBP technical team</li>
+    <li><strong>Pre-mainnet:</strong> External audit by a recognised smart contract audit firm (Certik, Trail of Bits, OpenZeppelin, or equivalent)</li>
+    <li><strong>Pre-CBS pilot:</strong> CBS technical review of audit report</li>
+    <li><strong>Post-upgrade:</strong> Any contract upgrade requires a new internal review and disclosure to CBS within 5 days</li>
+    <li><strong>Ongoing:</strong> Continuous monitoring via event indexer (The Graph / Blockscout) for anomalous patterns</li>
+  </ul>
+
+  <h3>Dependency Security</h3>
+  <ul>
+    <li>OpenZeppelin contracts: pin to exact version in foundry.toml. Do not use @latest.</li>
+    <li>Run <code>forge audit</code> equivalent (Slither, Mythril) on every PR that touches contract code</li>
+    <li>All npm dependencies: <code>pnpm audit --audit-level=high</code> passes before any deployment</li>
+    <li>Subresource Integrity (SRI) on all CDN-loaded scripts in frontend</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section" id="s5">
+  <div class="section-number">SECTION 05</div>
+  <h2>Network Layer Security — Polygon to Sovereign Chain</h2>
+
+  <h3>Current State: Polygon Amoy Testnet</h3>
+  <div class="callout callout-high">
+    <div class="callout-label">⚠ Current Limitations — Testnet Environment</div>
+    Polygon Amoy testnet provides no security guarantees for production use. It is correct for the research phase only. No real citizen data, no real WST-DPI, no production keys should ever touch testnet environments. All testnet wallets and keys are expendable.
+  </div>
+
+  <h3>Transition: Polygon Mainnet (Phase 2)</h3>
+  <p>Before migrating to Polygon Mainnet (if sovereign chain is not yet ready):</p>
+  <ul>
+    <li>All testnet keys rotated — new fresh keys generated on cold wallets for mainnet</li>
+    <li>External audit complete (Section 04)</li>
+    <li>Gnosis Safe multisig deployed — admin EOA replaced on all four contracts</li>
+    <li>Circuit breaker authority assigned by CBS</li>
+    <li>TimelockController deployed and wired</li>
+    <li>RPC endpoint changed from Alchemy testnet to Alchemy mainnet — API key rotated</li>
+    <li>Server-side RPC proxy deployed (no Alchemy key in browser bundle ever)</li>
+  </ul>
+
+  <h3>Target State: Sovereign Geth Clique PoA Chain</h3>
+
+  <h4>Validator Node Security Requirements</h4>
+  <ul>
+    <li><strong>Hardware Security Module (HSM)</strong> required for all validator signing keys — Thales Luna or equivalent. Private keys never exist in software at rest.</li>
+    <li><strong>Geographic separation</strong> — CBS validator in Apia CBS HQ, MOF validator in Treasury building, MCIT validator in MCIT facilities. No two validators on the same physical network.</li>
+    <li><strong>Network segmentation</strong> — Validator nodes on isolated VLAN, not accessible from the public internet. External access only through authenticated bastion host with MFA.</li>
+    <li><strong>Clique signer rotation</strong> — Validator set rotatable via on-chain governance vote. Compromised validator can be removed without chain restart.</li>
+    <li><strong>Monitoring</strong> — Prometheus + Grafana on all validator nodes. Missed block alerts to CBS IT within 30 seconds. Backup validator promotion procedure documented and tested quarterly.</li>
+  </ul>
+
+  <h4>Sovereign Chain Network Parameters</h4>
+  <div class="code-block">
+// genesis.json security parameters
+{
+  "config": {
+    "chainId": &lt;SAMOA_CHAIN_ID&gt;,        // Unique — register with EVM chain ID registry
+    "clique": {
+      "period": 5,                       // 5 second block time
+      "epoch": 30000                     // Validator set checkpoint every 30,000 blocks
+    }
+  },
+  "difficulty": "0x1",
+  "gasLimit": "0x1C9C380",              // 30M gas — sufficient for complex workflows
+  "extraData": "&lt;VALIDATOR_ADDRESSES&gt;"   // Set by CBS after AUTH-1 policy decision
+}
+  </div>
+
+  <h4>DDoS Protection</h4>
+  <ul>
+    <li>RPC endpoint not publicly exposed — only accessible via authenticated server-side proxy</li>
+    <li>Rate limiting: 100 requests/minute per authenticated session on the proxy</li>
+    <li>IP-based rate limiting at the load balancer layer</li>
+    <li>Validator peer connections restricted to known validator IP ranges</li>
+    <li>WebSocket connections to validator nodes require validator peer certificate</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section" id="s6">
+  <div class="section-number">SECTION 06</div>
+  <h2>Cold Wallet Authentication &amp; Identity Security</h2>
+
+  <h3>Authentication Architecture</h3>
+  <p>Production authentication for all ministry officials and system administrators uses cold hardware wallets (Ledger Nano X or Trezor Model T). The private key never leaves the hardware device. The browser, the server, and the network never see the private key at any point.</p>
+
+  <h3>EIP-712 Ministry Access Token — Message Structure</h3>
+  <div class="code-block">
+// Structured data signed by the ministry official's cold wallet
+// Domain separator prevents cross-portal replay attacks
+const domain = {
+  name: "SamoaDPI",
+  version: "1",
+  chainId: SAMOA_CHAIN_ID,
+  verifyingContract: MINISTRY_NODE_ADDRESS,  // Specific to this ministry
+}
+
+const types = {
+  PortalAccess: [
+    { name: "ministry",    type: "bytes32" },  // e.g. keccak256("MOF")
+    { name: "portalDomain",type: "string"  },  // "mof.dpi.gov.ws"
+    { name: "timestamp",   type: "uint256" },  // Block timestamp
+    { name: "nonce",       type: "uint256" },  // From MinistryNode.nonces[address]
+    { name: "action",      type: "string"  },  // "LOGIN" | "READ" | "WRITE"
+  ]
+}
+
+// After signature: recover address, verify in authorisedReaders,
+// emit PortalAccess event on-chain, increment nonce
+  </div>
+
+  <h3>Nonce Management — Replay Attack Prevention</h3>
+  <ul>
+    <li>Each authorized address has a nonce counter in MinistryNode.sol: <code>mapping(address =&gt; uint256) public nonces</code></li>
+    <li>Every signature includes the current nonce. After verification, the nonce increments on-chain.</li>
+    <li>A signature valid yesterday is not valid today — the nonce has changed.</li>
+    <li>Cross-portal replay is prevented by the domain separator including the verifyingContract address.</li>
+    <li>Cross-chain replay is prevented by the domain separator including the chainId.</li>
+  </ul>
+
+  <h3>Key Lifecycle Management</h3>
+  <table>
+    <thead>
+      <tr><th>Event</th><th>Action</th><th>Authority</th><th>On-Chain Record</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>New official appointed</td><td>Issue cold wallet device; register address in ministry node</td><td>CBS/PSC Key Management Authority</td><td>AddAuthorisedReader event</td></tr>
+      <tr><td>Official departs</td><td>Revoke address from all ministry nodes immediately</td><td>CBS/PSC + Ministry IT contact</td><td>RevokeAuthorisedReader event</td></tr>
+      <tr><td>Device lost or stolen</td><td>Emergency revocation within 1 hour; replacement device issued</td><td>CBS/PSC emergency contact (24/7)</td><td>RevokeAuthorisedReader event</td></tr>
+      <tr><td>Key rotation (annual)</td><td>New key pair generated; old address revoked; new address registered</td><td>CBS/PSC Key Management Authority</td><td>Both events on-chain</td></tr>
+      <tr><td>Suspected compromise</td><td>Immediate revocation; investigation; replacement</td><td>CBS Governor + CBS IT</td><td>Emergency revocation event</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-critical">
+    <div class="callout-label">✗ Critical — Key Management Authority Required</div>
+    The CBS/PSC Key Management Authority role must be formally established before Phase 2 authentication goes live. This authority is responsible for the physical security of cold wallet devices, the accuracy of the authorisedReaders registry, and the 24/7 emergency revocation capability. Failure to establish this authority means there is no way to respond to a lost device or compromised key within an acceptable window.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section" id="s7">
+  <div class="section-number">SECTION 07</div>
+  <h2>AI Governance &amp; Compliance Layer</h2>
+
+  <h3>The Problem: Agentic AI in Sovereign Infrastructure</h3>
+  <p>As AI systems become capable of autonomous action, government institutions will deploy AI agents to automate tasks: reviewing grant applications, flagging suspicious transactions, routing service requests, generating compliance reports. These agents, if uncontrolled, represent a new attack surface — either through misalignment (the agent optimises for the wrong objective) or through adversarial manipulation (prompt injection, data poisoning, model compromise).</p>
+
+  <p>The Samoa DPI platform is designed from the outset to govern AI agents with the same cryptographic rigour applied to human officials. This is not an optional feature — it is a constitutional requirement for any AI agent that interacts with sovereign citizen data or government financial systems.</p>
+
+  <h3>AI Agent Authentication Model</h3>
+  <p>Every AI agent that interacts with Samoa DPI must:</p>
+  <ol>
+    <li><strong>Have a dedicated wallet address</strong> — not shared with any human official or other agent</li>
+    <li><strong>Be registered in the relevant contract's authorisedReaders</strong> — by the CBS/PSC Key Management Authority</li>
+    <li><strong>Sign every interaction</strong> — AI-initiated transactions are signed by the agent's wallet, creating a cryptographically verifiable audit trail</li>
+    <li><strong>Include an agent type flag</strong> — in the EIP-712 message: <code>actor: "AI_AGENT"</code> so on-chain logs distinguish AI actions from human actions</li>
+    <li><strong>Have a capability scope</strong> — each agent's wallet is authorised for specific actions only (read-only, flag-only, approve-only). No agent has full admin access.</li>
+    <li><strong>Have an expiry date</strong> — agent authorisations expire and must be renewed by the Key Management Authority. Prevents long-term unmonitored operation.</li>
+  </ol>
+
+  <h3>On-Chain AI Action Log</h3>
+  <div class="code-block">
+// Extended PortalAccess event for AI agents
+event AIAgentAction(
+  address indexed agent,           // Agent's wallet address
+  bytes32 indexed agentId,         // Human-readable agent identifier (hashed)
+  bytes32 indexed ministryCode,    // Which ministry's data was accessed
+  string  action,                  // "READ" | "FLAG" | "APPROVE" | "REJECT"
+  bytes32 targetRecord,            // Which record was acted upon
+  uint256 timestamp,
+  string  justification            // AI's stated reason (hashed IPFS reference)
+);
+
+// Human-in-the-loop requirement for high-value actions
+// Any AI action with financial impact above threshold requires
+// TimelockController delay + human confirmation signature
+  </div>
+
+  <h3>Human-in-the-Loop Requirements</h3>
+  <table>
+    <thead>
+      <tr><th>AI Action</th><th>Threshold</th><th>Human Override Required</th><th>Timelock</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Read citizen record</td><td>Any</td><td>No (logged but autonomous)</td><td>None</td></tr>
+      <tr><td>Flag suspicious transaction</td><td>Any</td><td>No (flag only — human reviews flag)</td><td>None</td></tr>
+      <tr><td>Approve grant tranche</td><td>Any amount</td><td>Yes — CBS analyst must countersign</td><td>TimelockController</td></tr>
+      <tr><td>Reject grant tranche</td><td>Any amount</td><td>Yes — CBS analyst must countersign</td><td>TimelockController</td></tr>
+      <tr><td>Revoke access permission</td><td>N/A</td><td>Yes — CBS Governor must countersign</td><td>TimelockController</td></tr>
+      <tr><td>Write service record</td><td>Any</td><td>Yes — Ministry admin must countersign</td><td>None (immediate but dual-sig)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Rogue AI Kill Switch</h3>
+  <p>If an AI agent exhibits anomalous behaviour (unusual transaction patterns, access to unexpected records, high-frequency actions), the following kill switch procedure activates:</p>
+  <ol>
+    <li><strong>Automated detection</strong> — event indexer monitors AI action frequency, scope, and patterns. Anomaly triggers an alert to CBS IT on-call.</li>
+    <li><strong>Immediate suspension</strong> — CBS on-call engineer can revoke the agent's wallet address from all authorisedReaders in a single Gnosis Safe transaction. All agent access ceases immediately.</li>
+    <li><strong>On-chain record</strong> — the revocation is permanent and publicly verifiable. There is no way to secretly reinstate the agent.</li>
+    <li><strong>Post-incident audit</strong> — all on-chain AI actions (immutably logged) are reviewed to determine the scope of any anomalous behaviour.</li>
+    <li><strong>Root cause analysis</strong> — was the AI model compromised? Was it adversarial prompting? Was it a legitimate but unexpected capability? Document and report to CBS.</li>
+  </ol>
+
+  <h3>AI Compliance Monitoring Dashboard</h3>
+  <p>A dedicated panel in the CBS Admin portal (Phase 2) provides real-time monitoring of all AI agent activity:</p>
+  <ul>
+    <li>List of all registered AI agents with status (active/suspended/expired)</li>
+    <li>Action frequency chart per agent (anomaly detection via standard deviation)</li>
+    <li>Recent AI actions with full on-chain references</li>
+    <li>Pending human-in-the-loop approvals</li>
+    <li>Emergency revocation button (CBS Governor role only)</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section" id="s8">
+  <div class="section-number">SECTION 08</div>
+  <h2>One Maritime Window — Security Architecture</h2>
+
+  <h3>Strategic Context</h3>
+  <p>Samoa ratified the WTO Trade Facilitation Agreement and the One Maritime Window (OMW) obligation was due for implementation by January 2024. A technical blueprint exists. The DPI platform provides the exact architectural components required for a compliant OMW implementation — without building new infrastructure.</p>
+
+  <div class="callout callout-gold">
+    <div class="callout-label">⊕ Commercial Opportunity</div>
+    The OMW module, once built for Samoa, can be licensed to other Pacific Island nations (Tonga, Vanuatu, Fiji, Solomon Islands, PNG, Micronesia, Cook Islands) — all of whom have identical WTO TFA obligations and no functioning technical implementation. This is the Pacific expansion commercial model: Samoa builds first, Pacific neighbors license the implementation. Revenue funds ongoing Samoa DPI development and positions Synergy Blockchain Pacific as the Pacific region's sovereign digital infrastructure provider.
+  </div>
+
+  <h3>Ministry Nodes Involved in OMW</h3>
+  <table>
+    <thead>
+      <tr><th>Ministry/Agency</th><th>Node Code</th><th>OMW Role</th><th>Declarations Processed</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Ministry of Commerce, Industry &amp; Labour (Customs)</td><td>MCIL</td><td>Primary — customs clearance</td><td>Import/export declarations, duty assessment, release orders</td></tr>
+      <tr><td>Ministry of Works, Transport &amp; Infrastructure (Port)</td><td>MWTI</td><td>Port authority — vessel clearance</td><td>Arrival/departure notification, berth allocation, harbour dues (WST-DPI)</td></tr>
+      <tr><td>Ministry of Natural Resources &amp; Environment (Biosecurity)</td><td>MNRE</td><td>Quarantine &amp; biosecurity</td><td>Phytosanitary certificates, agricultural inspection, quarantine decisions</td></tr>
+      <tr><td>Ministry of Health</td><td>MOH</td><td>Health declarations</td><td>Ship sanitation certificates, health declarations, crew health records</td></tr>
+      <tr><td>Ministry of Justice (Immigration)</td><td>MOJ</td><td>Crew &amp; passenger clearance</td><td>Crew lists, passenger manifests, shore leave approvals</td></tr>
+      <tr><td>Ministry of Finance (Maritime Safety)</td><td>MOF</td><td>Maritime financial</td><td>Maritime dues, registration fees, safety certificate fees (WST-DPI)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>OMW Transaction Flow — Security Architecture</h3>
+  <div class="code-block">
+// One Maritime Window submission flow
+// Single submission → InteroperabilityHub routes to all 6 ministry nodes
+
+1. Ship agent authenticates (cold wallet or API key for accredited agents)
+2. Submits Form OMW-1 (standardised XML per IMO FAL.5 / WTO TFA)
+3. InteroperabilityHub.executeOMWClearance(vesselId, formDataHash, ministries[])
+   → Routes to MCIL (customs)      → CustomsNode.processDeclaration()
+   → Routes to MWTI (port)         → PortNode.processArrival()
+   → Routes to MNRE (biosecurity)  → BiosecurityNode.processInspection()
+   → Routes to MOH (health)        → HealthNode.processHealthDeclaration()
+   → Routes to MOJ (immigration)   → ImmigrationNode.processCrewList()
+4. Each ministry approves/rejects asynchronously (on-chain vote)
+5. When all 6 approve: PortNode.issuePortClearance() emits PortCleared event
+6. WST-DPI payment triggered: AIDisbursementTracker releases harbour dues
+7. Agent receives consolidated clearance reference (on-chain transaction hash)
+8. All steps permanently recorded — full audit trail from submission to clearance
+  </div>
+
+  <h3>OMW-Specific Security Requirements</h3>
+  <ul>
+    <li><strong>Accredited agent API keys</strong> — shipping agents authenticate via API key (server-side) + EIP-712 signature for submissions. Keys issued by Maritime Authority, registered on-chain.</li>
+    <li><strong>IMO FAL.5 compliance</strong> — all data formats conform to IMO Facilitation Committee standards. Non-conforming submissions rejected at the InteroperabilityHub level.</li>
+    <li><strong>Cross-border data security</strong> — OMW submission data includes sensitive commercial information (cargo manifests, shipper details). Off-chain data stored encrypted; only the hash is on-chain.</li>
+    <li><strong>Payment security</strong> — Harbour dues paid in WST-DPI via AIDisbursementTracker. Payments require port authority approval (on-chain signature) before release. TimelockController applies.</li>
+    <li><strong>SLA monitoring</strong> — Each ministry node's processing time is monitored. If any node fails to respond within the defined SLA window, CBS receives an automated alert and can trigger escalation. On-chain: configurable timeout per ministry.</li>
+    <li><strong>Dangerous goods</strong> — IMDG dangerous goods declarations trigger additional security review workflow. These submissions are flagged automatically and routed to a specialist queue with enhanced audit logging.</li>
+  </ul>
+
+  <h3>2029 Blockchain Standards Readiness</h3>
+  <p>The IMO and WTO are converging on mandatory digital maritime documentation standards in the 2028-2030 timeframe. By building the OMW on blockchain infrastructure now, Samoa:</p>
+  <ul>
+    <li>Demonstrates compliance with WTO TFA Article 10.4 immediately</li>
+    <li>Has immutable proof of every maritime clearance for trade dispute resolution</li>
+    <li>Is positioned to connect to international blockchain maritime trade networks (TradeLens successors, BIMCO Digital Standards) when they mature</li>
+    <li>Can migrate the on-chain records to whatever international standard emerges — the data format is open and portable</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section" id="s9">
+  <div class="section-number">SECTION 09</div>
+  <h2>Sovereign Storage Architecture</h2>
+
+  <h3>Data Residency Requirements</h3>
+  <div class="callout callout-critical">
+    <div class="callout-label">✗ Constitutional Requirement — Data Sovereignty</div>
+    All Samoan government data — citizen records, ministry service records, financial transaction data, maritime clearance records — must be stored in jurisdictions that Samoa's legal framework governs or has explicit data sharing agreements with. No Samoan government data may be stored on infrastructure controlled by a foreign government without CBS approval and MCIT legal review.
+  </div>
+
+  <h3>Three-Layer Storage Architecture</h3>
+  <table>
+    <thead>
+      <tr><th>Layer</th><th>What's Stored</th><th>Technology</th><th>Residency Requirement</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Layer 1 — On-Chain</strong></td>
+        <td>Hashes, access control, event logs, transaction records, governance decisions</td>
+        <td>Polygon (Phase 1) → Sovereign chain (Phase 3)</td>
+        <td>Sovereign chain: Samoa. Polygon: decentralised (acceptable for hashes — no PII)</td>
+      </tr>
+      <tr>
+        <td><strong>Layer 2 — Off-Chain Structured</strong></td>
+        <td>Ministry service records (full data), citizen reference data, grant documentation</td>
+        <td>Supabase (Phase 2) → Sovereign PostgreSQL (Phase 3)</td>
+        <td>Supabase: region-selectable (choose Sydney/AP-Southeast). Sovereign: Samoa data centre.</td>
+      </tr>
+      <tr>
+        <td><strong>Layer 3 — Document Storage</strong></td>
+        <td>Supporting documents, OMW forms, certificates, grant supporting evidence</td>
+        <td>IPFS with sovereign pinning node (Phase 3)</td>
+        <td>Primary pin: Samoa-hosted IPFS node. Secondary: Pacific regional node (Fiji/NZ).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Encryption Standards</h3>
+  <ul>
+    <li><strong>In transit:</strong> TLS 1.3 minimum on all connections. TLS 1.0 and 1.1 disabled.</li>
+    <li><strong>At rest (Layer 2):</strong> AES-256-GCM. Encryption keys managed by CBS Key Management Authority (HSM).</li>
+    <li><strong>Document storage (Layer 3):</strong> Documents encrypted with the submitter's public key before IPFS upload. Only the authorised reader with the corresponding private key can decrypt.</li>
+    <li><strong>Key hierarchy:</strong> Master key (CBS HSM) → Ministry keys (ministry HSM) → Session keys (derived per transaction). Compromise of session key does not expose master key.</li>
+  </ul>
+
+  <h3>Sovereign Chain Storage Migration Path</h3>
+  <ol>
+    <li><strong>Phase 1 (current):</strong> Polygon Amoy testnet — no production data, no encryption required</li>
+    <li><strong>Phase 2:</strong> Polygon Mainnet + Supabase (Sydney region) — encryption at rest, TLS in transit</li>
+    <li><strong>Phase 3:</strong> Sovereign Geth chain + self-hosted Supabase — full data residency in Samoa</li>
+    <li><strong>Phase 4:</strong> Sovereign chain + sovereign IPFS + sovereign PostgreSQL — complete stack sovereignty</li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section" id="s10">
+  <div class="section-number">SECTION 10</div>
+  <h2>Frontend &amp; API Security Standards</h2>
+
+  <h3>Content Security Policy — Per Portal</h3>
+  <p>Each portal has a CSP tailored to its actual resource requirements. More restrictive is always better.</p>
+  <div class="code-block">
+// Citizens portal — most restrictive (no wallet, no external data)
+Content-Security-Policy:
+  default-src 'self';
+  script-src 'self';
+  style-src 'self' https://fonts.googleapis.com;
+  font-src https://fonts.gstatic.com;
+  connect-src 'self' https://api.dpi.gov.ws;
+  img-src 'self' data:;
+  frame-ancestors 'none';
+
+// Admin portal — allows RPC proxy
+Content-Security-Policy:
+  default-src 'self';
+  script-src 'self';
+  connect-src 'self' https://api.admin.dpi.gov.ws https://rpc.dpi.gov.ws;
+  frame-ancestors 'none';
+
+// Ministry portal — allows WalletConnect relay
+Content-Security-Policy:
+  connect-src 'self' https://relay.walletconnect.com https://rpc.dpi.gov.ws;
+  frame-ancestors 'none';
+  </div>
+
+  <h3>Secrets Management — Hard Rules</h3>
+  <ul>
+    <li><strong>Zero secrets in the browser bundle.</strong> No API keys, no private keys, no RPC credentials reach the client. Ever. The Vite VITE_ prefix pattern is prohibited for any value that is not intentionally public.</li>
+    <li><strong>All RPC calls proxied server-side.</strong> The browser calls /api/rpc, the server calls the RPC endpoint with the credential. The credential never leaves the server.</li>
+    <li><strong>Environment variables audited on every deployment.</strong> A CI step runs <code>grep -r "VITE_.*KEY\|VITE_.*SECRET" dist/</code> and fails the build if any sensitive values are found in the bundle.</li>
+    <li><strong>Git history clean.</strong> Any secret accidentally committed must trigger: immediate rotation + <code>git filter-repo</code> to remove from history + incident report to CBS IT.</li>
+  </ul>
+
+  <h3>Input Validation &amp; Output Encoding</h3>
+  <ul>
+    <li>All user inputs validated on both client (UX) and server/contract (security) — never trust client-side validation alone</li>
+    <li>Ethereum addresses validated with checksum verification before any contract call</li>
+    <li>All displayed data HTML-escaped before rendering — no dangerouslySetInnerHTML without sanitization</li>
+    <li>OMW form submissions validated against IMO FAL.5 schema before InteroperabilityHub call</li>
+    <li>Financial amounts validated against DecimalMath library precision — no floating-point arithmetic on currency values</li>
+  </ul>
+
+  <h3>Session Security</h3>
+  <ul>
+    <li>Session state in sessionStorage only — cleared on tab close</li>
+    <li>Session timeout: 5-minute warning, 10-minute auto-logout (NIST 800-53 AC-12)</li>
+    <li>No session persistence across browser restarts for admin/ministry portals</li>
+    <li>Citizens portal: optional 30-day remember (localStorage, no sensitive state)</li>
+    <li>All audit log entries include session ID for forensic correlation</li>
+  </ul>
+
+  <h3>Security Headers — All Portals</h3>
+  <div class="code-block">
+// Required on all portal deployments at CDN/server level
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: geolocation=(), microphone=(), camera=()
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section" id="s11">
+  <div class="section-number">SECTION 11</div>
+  <h2>Incident Response &amp; Recovery</h2>
+
+  <h3>Severity Classification</h3>
+  <table>
+    <thead>
+      <tr><th>Severity</th><th>Definition</th><th>Response Time</th><th>Escalation</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="tag tag-critical">P1 — Critical</span></td><td>Active breach, funds at risk, chain halted, citizen data compromised</td><td>Immediate — &lt;15 minutes</td><td>CBS Governor + CBS IT + SBP CTO + Police</td></tr>
+      <tr><td><span class="tag tag-high">P2 — High</span></td><td>Suspected breach, anomalous AI behaviour, validator node offline</td><td>&lt;1 hour</td><td>CBS IT + SBP Technical</td></tr>
+      <tr><td><span class="tag tag-medium">P3 — Medium</span></td><td>Portal unavailable, dependency vulnerability discovered, key at risk</td><td>&lt;4 hours</td><td>SBP Technical + CBS IT notification</td></tr>
+      <tr><td><span class="tag tag-low">P4 — Low</span></td><td>Performance degradation, non-critical component failure</td><td>&lt;24 hours</td><td>SBP Technical</td></tr>
+    </tbody>
+  </table>
+
+  <h3>P1 Response Procedure</h3>
+  <ol>
+    <li><strong>Detection</strong> — Automated alert (event indexer anomaly) or manual report. Alert CBS IT on-call immediately.</li>
+    <li><strong>Containment</strong> — CBS Governor triggers circuit breaker (Pausable.pause() via Gnosis Safe). All state-changing operations halt within one transaction confirmation. No new WST-DPI can be moved.</li>
+    <li><strong>Assessment</strong> — SBP technical team reviews on-chain logs (immutable — cannot be tampered). Determine scope of breach.</li>
+    <li><strong>Revocation</strong> — If any wallet address is suspected compromised: immediate revocation from all contracts via Gnosis Safe 2-of-3.</li>
+    <li><strong>Preservation</strong> — Take snapshots of all on-chain state. Archive all logs. These are the forensic record.</li>
+    <li><strong>Recovery</strong> — Only after full scope determination. Restore from last known-good state. Upgrade contracts if required via TimelockController.</li>
+    <li><strong>Disclosure</strong> — CBS Governor to notify relevant government stakeholders within 24 hours. Public disclosure policy per CBS communications authority.</li>
+    <li><strong>Post-incident review</strong> — Full written report within 5 business days. Update this framework with lessons learned.</li>
+  </ol>
+
+  <h3>Circuit Breaker — The Emergency Stop</h3>
+  <div class="code-block">
+// Emergency pause — callable by pauseAuthority address (assigned by CBS)
+// Pauses ALL state-changing operations across all four contracts simultaneously
+// Does NOT pause view/read functions — read-only monitoring continues
+
+function triggerEmergencyPause() external {
+  require(msg.sender == pauseAuthority, "NotPauseAuthority");
+  _pause();                              // OZ Pausable
+  emit EmergencyPause(msg.sender, block.timestamp, "Manual trigger");
+}
+
+// Resume requires 2-of-3 Gnosis Safe + CBS Governor confirmation
+// Timelock applies: minimum 24-hour delay before resumption after P1 event
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section" id="s12">
+  <div class="section-number">SECTION 12</div>
+  <h2>Sovereign Chain Migration Security Gates</h2>
+
+  <p>Migration from Polygon to the sovereign Geth Clique chain is a high-risk operation. Every gate below must pass before migration proceeds. No exceptions.</p>
+
+  <h3>Pre-Migration Gates</h3>
+  <ul>
+    <li>✗ External smart contract audit complete and all Critical/High findings resolved</li>
+    <li>✗ Gnosis Safe 2-of-3 deployed and tested with all three keyholders</li>
+    <li>✗ Circuit breaker authority assigned and tested (pause + resume on testnet)</li>
+    <li>✗ TimelockController deployed and delay window set by CBS</li>
+    <li>✗ All three validator HSMs procured and configured</li>
+    <li>✗ Validator nodes deployed in geographically separate facilities</li>
+    <li>✗ Genesis block generated with CBS-confirmed validator addresses</li>
+    <li>✗ Sovereign chain run in private testnet for minimum 30 days without incident</li>
+    <li>✗ All ministry official cold wallets issued and addresses registered</li>
+    <li>✗ Key Management Authority formally established (CBS/PSC)</li>
+    <li>✗ Incident response procedure tested (tabletop exercise)</li>
+    <li>✗ Backup validator promotion procedure tested</li>
+    <li>✗ Monitoring infrastructure (Prometheus + Grafana) live and alert-tested</li>
+    <li>✗ MCIT legal review of data residency on sovereign chain complete</li>
+    <li>✗ CBS Governor formal sign-off on migration readiness</li>
+  </ul>
+
+  <h3>Migration Execution Security</h3>
+  <ul>
+    <li>All Polygon state exported and verified before migration</li>
+    <li>New contract addresses deployed on sovereign chain; Polygon contracts paused (not destroyed)</li>
+    <li>Parallel operation period (minimum 30 days): both chains active, sovereign chain in observer mode</li>
+    <li>Cutover: atomic — all portals switch to sovereign chain RPC simultaneously via environment variable update</li>
+    <li>Polygon contracts remain paused for 90 days as fallback; then decommissioned via Gnosis Safe</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section" id="s13">
+  <div class="section-number">SECTION 13</div>
+  <h2>Compliance Summary Matrix</h2>
+
+  <table>
+    <thead>
+      <tr><th>Standard</th><th>Relevant Controls</th><th>Current Status</th><th>Gap / Action Required</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>NIST 800-53</strong></td>
+        <td>AC-2 (Account Mgmt), AC-12 (Session Term), AU-2 (Audit Events), SC-28 (Encryption at Rest)</td>
+        <td><span class="tag tag-medium">Partial</span></td>
+        <td>Session management implemented. Encryption at rest Phase 2. Audit log in-memory only — needs persistence.</td>
+      </tr>
+      <tr>
+        <td><strong>OWASP ASVS L3</strong></td>
+        <td>V1 (Architecture), V2 (Auth), V3 (Session), V5 (Validation), V9 (Comms), V14 (Config)</td>
+        <td><span class="tag tag-medium">Partial</span></td>
+        <td>CSP implemented. SRI not yet added. Input validation partial. Penetration test required pre-production.</td>
+      </tr>
+      <tr>
+        <td><strong>CISA ZTMM 2.0</strong></td>
+        <td>Identity pillar, Data pillar, Applications pillar</td>
+        <td><span class="tag tag-medium">Partial</span></td>
+        <td>Cold wallet auth (Phase 2). W3C DID (Phase 2). Session expiry implemented. NDIDS hash-only (no PII). Compliant design, partial implementation.</td>
+      </tr>
+      <tr>
+        <td><strong>BIS PFMI P17</strong></td>
+        <td>Operational risk, Circuit breaker, Recovery procedures</td>
+        <td><span class="tag tag-medium">Partial</span></td>
+        <td>Pausable implemented on all contracts. Pause authority unassigned (CBS-blocked). Incident response procedure drafted here — needs testing.</td>
+      </tr>
+      <tr>
+        <td><strong>FATF R.15</strong></td>
+        <td>AML/CFT monitoring, SAR reporting, transaction traceability</td>
+        <td><span class="tag tag-medium">Partial</span></td>
+        <td>flagService() architecture drafted. SAR workflow CBS-blocked. On-chain event logs provide FATF-compliant audit trail for all transactions.</td>
+      </tr>
+      <tr>
+        <td><strong>IMO FAL.5</strong></td>
+        <td>Electronic maritime declarations, Single Window, standardised formats</td>
+        <td><span class="tag tag-low">Planned</span></td>
+        <td>OMW architecture designed (Section 08). Implementation Phase 2. InteroperabilityHub provides the routing layer. Format compliance requires IMO FAL.5 schema validation.</td>
+      </tr>
+      <tr>
+        <td><strong>WTO TFA Art. 10.4</strong></td>
+        <td>Single Window for trade documentation</td>
+        <td><span class="tag tag-low">Planned</span></td>
+        <td>OMW on DPI Platform satisfies this requirement when implemented. Current: blueprint exists, January 2024 deadline passed. Phase 2 target.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="doc-footer">
+  Samoa DPI Cybersecurity Framework v1.0 · Synergy Blockchain Pacific · 2026-05-15<br>
+  This document is a founding guiding principle. It applies to all SBP technical work immediately upon adoption.<br>
+  Review cycle: Quarterly, or following any P1/P2 incident, or upon any new regulatory guidance.<br>
+  Custodian: Anthony George Williams (CEO/CTO, Synergy Blockchain Pacific) · CBS IT oversight: CBS Governor<br>
+  Next review date: 2026-08-15
+</div>
+
+</body>
+</html>

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Samoa DPI — Contracts &amp; Backend Security Checklist v1</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#0d0f14; --surface:#141720; --surface2:#1c2030;
+    --border:#2a2f3e; --border2:#363d52;
+    --text:#e2e6f0; --muted:#6b7280;
+    --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+    --critical:#ff4757; --critical-bg:#1a0a0d; --critical-border:#3d1217;
+    --high:#ff8c00; --high-bg:#150e00; --high-border:#3d2800;
+    --medium:#f4c430; --medium-bg:#141000; --medium-border:#3a2f00;
+    --low:#4fc3f7; --low-bg:#020d12; --low-border:#0a2535;
+    --done:#00c896; --done-bg:#021a12; --done-border:#054030;
+    --blocked:#9c6bda; --blocked-bg:#0f0818; --blocked-border:#2a1550;
+    --phase2:#38bdf8; --phase2-bg:#010d14; --phase2-border:#082030;
+    --phase3:#a78bfa; --phase3-bg:#0d0814; --phase3-border:#2a1a50;
+    --gold:#C9A227; --red:#CE1126; --blue:#003087;
+  }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.6; padding:32px 20px; max-width:1040px; margin:0 auto; }
+  .flag { width:100%; height:4px; background:linear-gradient(90deg,var(--red) 50%,var(--blue) 50%); border-radius:2px; margin-bottom:20px; }
+  header { border-bottom:1px solid var(--border); padding-bottom:24px; margin-bottom:32px; }
+  .header-top { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .title-block h1 { font-family:var(--mono); font-size:17px; font-weight:600; color:var(--text); letter-spacing:-0.3px; }
+  .title-block p { font-size:11px; color:var(--muted); margin-top:4px; font-family:var(--mono); }
+  .progress-block { text-align:right; }
+  .progress-bar-wrap { width:240px; height:6px; background:var(--border); border-radius:3px; overflow:hidden; margin-bottom:6px; }
+  .progress-bar-fill { height:100%; background:var(--done); border-radius:3px; transition:width 0.4s ease; }
+  .progress-label { font-family:var(--mono); font-size:11px; color:var(--muted); }
+  .progress-label span { color:var(--done); font-weight:600; }
+  .legend { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; padding-top:16px; border-top:1px solid var(--border); align-items:center; }
+  .legend-item { display:flex; align-items:center; gap:5px; font-family:var(--mono); font-size:10px; color:var(--muted); }
+  .legend-dot { width:8px; height:8px; border-radius:50%; }
+  .reset-btn { font-family:var(--mono); font-size:11px; color:var(--muted); background:none; border:1px solid var(--border); padding:4px 10px; border-radius:4px; cursor:pointer; transition:all 0.15s; margin-left:auto; }
+  .reset-btn:hover { border-color:var(--border2); color:var(--text); }
+  .phase-banner { margin:28px 0 16px; padding:10px 16px; border-radius:5px; font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; display:flex; align-items:center; gap:10px; }
+  .phase-banner.p1 { background:var(--done-bg); border:1px solid var(--done-border); color:var(--done); }
+  .phase-banner.p2 { background:var(--phase2-bg); border:1px solid var(--phase2-border); color:var(--phase2); }
+  .phase-banner.p3 { background:var(--phase3-bg); border:1px solid var(--phase3-border); color:var(--phase3); }
+  .phase-banner.pb { background:var(--blocked-bg); border:1px solid var(--blocked-border); color:var(--blocked); }
+  .section { margin-bottom:32px; }
+  .section-header { display:flex; align-items:center; gap:12px; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+  .section-title { font-family:var(--mono); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); }
+  .section-count { font-family:var(--mono); font-size:11px; color:var(--muted); margin-left:auto; }
+  .section-desc { font-family:var(--sans); font-size:12px; color:var(--muted); margin-bottom:10px; line-height:1.6; }
+  .item { display:grid; grid-template-columns:20px 1fr; gap:12px; padding:11px 14px; border:1px solid var(--border); border-radius:6px; margin-bottom:5px; background:var(--surface); cursor:pointer; transition:all 0.15s ease; user-select:none; }
+  .item:hover { border-color:var(--border2); background:var(--surface2); }
+  .item.done { background:var(--done-bg); border-color:var(--done-border); opacity:0.65; }
+  .item.done .item-title { text-decoration:line-through; color:var(--muted); }
+  .item.cbs-blocked { border-left:3px solid var(--blocked); }
+  .item.phase2-item { border-left:3px solid var(--phase2); }
+  .item.phase3-item { border-left:3px solid var(--phase3); }
+  .checkbox { width:16px; height:16px; border:1.5px solid var(--border2); border-radius:3px; flex-shrink:0; margin-top:2px; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
+  .item.done .checkbox { background:var(--done); border-color:var(--done); }
+  .checkmark { display:none; color:#000; font-size:10px; font-weight:700; line-height:1; }
+  .item.done .checkmark { display:block; }
+  .item-top { display:flex; align-items:flex-start; gap:8px; flex-wrap:wrap; }
+  .item-id { font-family:var(--mono); font-size:10px; color:var(--muted); flex-shrink:0; margin-top:2px; }
+  .item-title { font-size:13px; font-weight:500; color:var(--text); flex:1; min-width:0; }
+  .item-fix { font-size:12px; color:var(--muted); margin-top:4px; font-family:var(--mono); line-height:1.55; }
+  .item-location { font-size:11px; color:#3d5a80; margin-top:3px; font-family:var(--mono); }
+  .item-blocked { font-size:11px; color:var(--blocked); margin-top:4px; font-family:var(--mono); }
+  .badge { font-family:var(--mono); font-size:9px; font-weight:600; letter-spacing:0.8px; text-transform:uppercase; padding:2px 7px; border-radius:3px; flex-shrink:0; white-space:nowrap; }
+  .badge-critical { background:var(--critical-bg); color:var(--critical); border:1px solid var(--critical-border); }
+  .badge-high     { background:var(--high-bg);     color:var(--high);     border:1px solid var(--high-border); }
+  .badge-medium   { background:var(--medium-bg);   color:var(--medium);   border:1px solid var(--medium-border); }
+  .badge-low      { background:var(--low-bg);       color:var(--low);      border:1px solid var(--low-border); }
+  .badge-blocked  { background:var(--blocked-bg);  color:var(--blocked);  border:1px solid var(--blocked-border); }
+  .badge-phase2   { background:var(--phase2-bg);   color:var(--phase2);   border:1px solid var(--phase2-border); }
+  .badge-phase3   { background:var(--phase3-bg);   color:var(--phase3);   border:1px solid var(--phase3-border); }
+  .badge-omw      { background:#0a1820; color:#38bdf8; border:1px solid #0a2535; }
+  .badge-ai       { background:#0f0818; color:#8b5cf6; border:1px solid #2a1550; }
+</style>
+</head>
+<body>
+<header>
+  <div class="flag"></div>
+  <div class="header-top">
+    <div class="title-block">
+      <h1>SAMOA DPI — CONTRACTS &amp; BACKEND SECURITY CHECKLIST</h1>
+      <p>Smart Contracts · Node Operations · AI Governance · OMW · Sovereign Chain · v1.0 · 2026-05-15</p>
+    </div>
+    <div class="progress-block">
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="progress-label"><span id="progress-done">0</span> / <span id="progress-total">0</span> complete</div>
+    </div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--critical)"></div>Critical</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--high)"></div>High</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--medium)"></div>Medium</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--blocked)"></div>CBS-Blocked</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--phase2)"></div>Phase 2</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--phase3)"></div>Phase 3</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--done)"></div>Done</div>
+    <button class="reset-btn" onclick="resetAll()">Reset all</button>
+  </div>
+</header>
+
+<div class="phase-banner p1">▸ PHASE 1 — Current · Required before CBS demo and NUS/ISOC submission</div>
+
+<!-- SECTION 1 -->
+<div class="section">
+  <div class="section-header"><div class="section-title">01 · Smart Contract Security — Immediate</div><div class="section-count" id="count-s1"></div></div>
+  <div class="section-desc">Security hardening on the existing four contracts. All items must be complete before any mainnet deployment consideration.</div>
+
+  <div class="item" data-id="SC-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">SC-1</span><span class="item-title">Add PortalAccess event to MinistryNode.sol — on-chain access timestamping</span><span class="badge badge-high">High</span></div>
+      <div class="item-fix">→ Add: event PortalAccess(address indexed official, bytes32 indexed ministryCode, string action, uint256 timestamp) · Emit in any future authentication function · This is the blockchain timestamp that makes official access irrefutably auditable · forge test must still pass (29/29) after addition</div>
+      <div class="item-location">contracts/src/MinistryNode.sol · contracts/test/ — update tests</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="SC-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">SC-2</span><span class="item-title">Add AIAgentAction event to MinistryNode.sol — distinguishes AI from human actions</span><span class="badge badge-high">High</span></div>
+      <div class="item-fix">→ Add: event AIAgentAction(address indexed agent, bytes32 indexed agentId, bytes32 indexed ministryCode, string action, bytes32 targetRecord, uint256 timestamp) · Required for AI governance layer · Ensures AI-initiated transactions are permanently distinguishable from human transactions in the on-chain log</div>
+      <div class="item-location">contracts/src/MinistryNode.sol</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="SC-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">SC-3</span><span class="item-title">Nonce mapping — add to MinistryNode.sol for EIP-712 replay attack prevention</span><span class="badge badge-high">High</span></div>
+      <div class="item-fix">→ Add: mapping(address => uint256) public nonces · Function: function getNonce(address account) external view returns (uint256) · Increment nonce in authentication function after successful signature verification · Prevents replay attacks across sessions and portals</div>
+      <div class="item-location">contracts/src/MinistryNode.sol</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="SC-4" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">SC-4</span><span class="item-title">Slither static analysis — run on all four contracts and resolve High findings</span><span class="badge badge-high">High</span></div>
+      <div class="item-fix">→ Install Slither: pip install slither-analyzer · Run: slither contracts/src/ --print human-summary · Resolve all High and Critical findings before mainnet · Document Medium findings with CBS-approved risk acceptance or fix · Add Slither to CI/CD pipeline: fail on any new High finding</div>
+      <div class="item-location">contracts/src/ — all four contracts · CI/CD pipeline</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="SC-5" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">SC-5</span><span class="item-title">Forge coverage — achieve 95%+ test coverage across all four contracts</span><span class="badge badge-medium">Medium</span></div>
+      <div class="item-fix">→ Run: forge coverage --report lcov · Current: 22 + 7 tests cover primary paths · Add tests for: edge cases in access control, revert conditions, event emissions, reentrancy scenarios, pause/unpause flows · 95% branch coverage minimum before mainnet</div>
+      <div class="item-location">contracts/test/ · SamoaPacificBlockchainHub.t.sol · SamoaIntegrationScenarios.t.sol</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="SC-6" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">SC-6</span><span class="item-title">Foundry fuzzing — fuzz all public functions with unbounded inputs</span><span class="badge badge-medium">Medium</span></div>
+      <div class="item-fix">→ Add fuzz tests for: createGrant() with arbitrary amounts and tranches · recordService() with arbitrary serviceType strings · batchRegister() with large arrays (gas DoS detection) · Min 10,000 fuzz runs per function · Document any invariants violated</div>
+      <div class="item-location">contracts/test/ — add FuzzTests.t.sol</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 2 -->
+<div class="section">
+  <div class="section-header"><div class="section-title">02 · One Maritime Window — Contract Architecture</div><div class="section-count" id="count-s2"></div></div>
+  <div class="section-desc">The OMW is an application of the existing InteroperabilityHub architecture. These are the contract additions required to support the maritime single window workflow.</div>
+
+  <div class="item phase2-item" data-id="OMW-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">OMW-1</span><span class="item-title">OMW ministry node deployments — MCIL, MWTI, MNRE, MOH, MOJ, MOF maritime</span><span class="badge badge-critical">Critical</span><span class="badge badge-omw">OMW</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Deploy MinistryNode.sol for: CUSTOMS (MCIL), PORT (MWTI), BIOSECURITY (MNRE), HEALTH-MARITIME (MOH), IMMIGRATION-MARITIME (MOJ), MARITIME-FINANCE (MOF) · Each deployed with correct ministryCode, ministryName, MINISTRY_ADMIN address · Register all 6 in InteroperabilityHub · Update @samoa-dpi/contracts-abi GOVERNMENT_NODES registry</div>
+      <div class="item-location">contracts/script/Step2_MinistryNodes.s.sol · contracts-abi/src/government-nodes.ts</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="OMW-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">OMW-2</span><span class="item-title">executeOMWClearance() — InteroperabilityHub workflow for maritime single window</span><span class="badge badge-critical">Critical</span><span class="badge badge-omw">OMW</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Add to InteroperabilityHub.sol: function executeOMWClearance(bytes32 vesselId, bytes32 formDataHash, address[] calldata ministryNodes) · Routes form hash to each ministry node as a service record · Tracks approval status per ministry (approved/pending/rejected) · Emits OMWClearanceIssued when all ministries approve · Emits OMWClearanceRejected with reason if any ministry rejects · WST-DPI payment triggered on clearance via AIDisbursementTracker</div>
+      <div class="item-location">contracts/src/InteroperabilityHub.sol</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="OMW-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">OMW-3</span><span class="item-title">Shipping agent API key registry — accredited agent authentication on-chain</span><span class="badge badge-high">High</span><span class="badge badge-omw">OMW</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Shipping agents are not government officials — they cannot use cold wallets for every submission · Accredited agents register a server-side wallet address (not cold) with Port Authority · Port Authority adds agent address to PORT MinistryNode authorisedReaders · Agent signs submissions server-side (automated) · Maritime Authority maintains registry of accredited agents on-chain · Annual reaccreditation required</div>
+      <div class="item-location">contracts/src/MinistryNode.sol · PORT node authorisedReaders</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="OMW-4" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">OMW-4</span><span class="item-title">IMO FAL.5 schema validation — enforce at contract level, not just UI</span><span class="badge badge-high">High</span><span class="badge badge-omw">OMW</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ OMW form submissions must pass IMO FAL.5 format validation before InteroperabilityHub accepts them · Validation: off-chain (server) validates XML/JSON format against IMO schema · Hash of validated data is submitted on-chain · If validation fails: submission rejected with specific error code, not accepted with invalid data · This prevents invalid maritime declarations from polluting the on-chain record</div>
+      <div class="item-location">api/src/validators/imofal5.js — new file · InteroperabilityHub.sol</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="OMW-5" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">OMW-5</span><span class="item-title">WST-DPI harbour dues integration — port fees paid via AIDisbursementTracker</span><span class="badge badge-high">High</span><span class="badge badge-omw">OMW</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ When OMW clearance is issued, harbour dues are automatically processed via AIDisbursementTracker · Grant type: HARBOUR_DUES · Recipient: PORT authority (MWTI) wallet · Payer: shipping agent's registered address · Amount: calculated by PORT ministry node based on vessel GT and berth duration · Currency: WST-DPI, 2dp, per Currency Display Spec v1.0 · TimelockController: immediate release for dues (unlike grant tranches) — CBS to confirm</div>
+      <div class="item-location">contracts/src/AIDisbursementTracker.sol · InteroperabilityHub.sol</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 3 -->
+<div class="section">
+  <div class="section-header"><div class="section-title">03 · AI Governance Contract Layer</div><div class="section-count" id="count-s3"></div></div>
+  <div class="section-desc">Smart contract additions to support the AI governance framework. These ensure AI agents are governed by the same cryptographic access control as human officials, with additional constraints.</div>
+
+  <div class="item phase2-item" data-id="AI-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">AI-1</span><span class="item-title">AIAgentRegistry.sol — new contract for AI agent lifecycle management</span><span class="badge badge-high">High</span><span class="badge badge-ai">AI GOV</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ New contract: manages all registered AI agents · Fields per agent: address, agentId (bytes32), capabilities (bytes32 bitmask), expiryTimestamp, registeredBy, isActive · Functions: registerAgent(), revokeAgent(), renewAgent(), isAgentAuthorised(address, bytes32 capability) · Events: AgentRegistered, AgentRevoked, AgentExpired · Admin: CBS Governor via Gnosis Safe · This is the kill switch registry — revoke here removes agent from all ministry nodes</div>
+      <div class="item-location">contracts/src/AIAgentRegistry.sol — new file</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="AI-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">AI-2</span><span class="item-title">AI agent capability bitmask — limit scope of each agent at contract level</span><span class="badge badge-high">High</span><span class="badge badge-ai">AI GOV</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Each AI agent has a capabilities bitmask: bit 0 = READ, bit 1 = FLAG, bit 2 = APPROVE_TRANCHE, bit 3 = WRITE_RECORD · No agent can have capabilities beyond what is registered · InteroperabilityHub and MinistryNode check AIAgentRegistry before executing any AI-initiated call · An agent authorised for READ cannot call WRITE functions — enforced at contract level</div>
+      <div class="item-location">contracts/src/AIAgentRegistry.sol · contracts/src/MinistryNode.sol · InteroperabilityHub.sol</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="AI-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">AI-3</span><span class="item-title">Human-in-the-loop modifier — require human countersignature for AI high-value actions</span><span class="badge badge-high">High</span><span class="badge badge-ai">AI GOV</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Modifier: requireHumanCountersignature() · Applied to: releaseTranche() when caller is AI agent, approveOMWClearance() when auto-approved by AI · Stores pending AI action with hash · Human (CBS analyst wallet) must call confirmAIAction(bytes32 actionHash) to execute · Pending actions expire after configurable window (CBS decision) · This is the technical implementation of Section 07's human-in-the-loop requirement</div>
+      <div class="item-location">contracts/src/AIDisbursementTracker.sol · InteroperabilityHub.sol</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="AI-4" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">AI-4</span><span class="item-title">AI anomaly detection event indexer — real-time monitoring of AI agent patterns</span><span class="badge badge-medium">Medium</span><span class="badge badge-ai">AI GOV</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Blockscout (sovereign chain) or The Graph (Polygon) indexes all AIAgentAction events · Alert thresholds: >50 AI actions/hour per agent, access to >5 ministries in 10 minutes, any APPROVE action without human countersig · Alerts fire to CBS IT Slack/email within 30 seconds · Dashboard panel in CBS Admin portal shows AI agent activity in real-time</div>
+      <div class="item-location">api/src/monitoring/aiMonitor.js — new file · Admin portal AI panel</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 4 -->
+<div class="section">
+  <div class="section-header"><div class="section-title">04 · Node Operator Security</div><div class="section-count" id="count-s4"></div></div>
+  <div class="section-desc">Operational security requirements for anyone running a validator or observer node on the sovereign chain. Applies post-Phase 3 deployment.</div>
+
+  <div class="item phase3-item" data-id="NODE-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">NODE-1</span><span class="item-title">HSM requirement — all validator signing keys in hardware security modules</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ Thales Luna Network HSM or equivalent for each validator institution · Private keys generated inside HSM — never exported · HSM connected to validator node via authenticated local network only · Annual HSM firmware audit · Backup HSM at secondary facility for each institution · CBS/PSC Key Management Authority maintains HSM access credentials</div>
+      <div class="item-location">Infrastructure — CBS, MOF, MCIT facilities</div>
+    </div>
+  </div>
+
+  <div class="item phase3-item" data-id="NODE-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">NODE-2</span><span class="item-title">Network segmentation — validator nodes on isolated VLAN, no public internet exposure</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ Validator nodes: isolated VLAN, firewalled from public internet · Peer connections: only to known validator IP ranges (whitelist-only) · RPC access: via authenticated bastion host only, with MFA · External RPC (for portals): server-side proxy only, never direct validator exposure · Network diagram required before go-live — reviewed by MCIT</div>
+      <div class="item-location">Infrastructure — network architecture</div>
+    </div>
+  </div>
+
+  <div class="item phase3-item" data-id="NODE-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">NODE-3</span><span class="item-title">Prometheus + Grafana monitoring — missed block alerts within 30 seconds</span><span class="badge badge-high">High</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ Prometheus scrapes all 55 nodes every 5 seconds · Grafana dashboard: block production rate, peer count, latency, disk usage, memory · Alert rules: missed block slot → PagerDuty alert to CBS IT within 30s · Consecutive missed blocks (>3) → P2 incident → CBS IT escalation · Monthly: backup validator promotion drill</div>
+      <div class="item-location">Infrastructure — monitoring stack</div>
+    </div>
+  </div>
+
+  <div class="item phase3-item" data-id="NODE-4" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">NODE-4</span><span class="item-title">Clique validator rotation procedure — documented and tested quarterly</span><span class="badge badge-high">High</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ Document: how to add a new validator via Clique PROPOSE vote · Document: how to remove a compromised validator via PROPOSE false vote · Test: rotate a test validator on devnet quarterly · Requires: 2/3 of current validators to vote (Byzantine fault tolerance) · CBS Governor coordinates rotation decisions · Each rotation emits on-chain governance event</div>
+      <div class="item-location">docs/VALIDATOR_ROTATION_PROCEDURE.md — new file</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 5 -->
+<div class="section">
+  <div class="section-header"><div class="section-title">05 · RPC &amp; API Security</div><div class="section-count" id="count-s5"></div></div>
+  <div class="section-desc">The RPC proxy is the gateway between all portal frontends and the blockchain. Its security is critical — a compromised proxy can intercept or modify all blockchain interactions.</div>
+
+  <div class="item phase2-item" data-id="RPC-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">RPC-1</span><span class="item-title">Server-side RPC proxy deployment — replaces localhost:3001 placeholder</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Deploy minimal Express/Hono server: /api/rpc proxies to RPC endpoint · Alchemy/sovereign chain RPC credential stored in server environment only · CORS: restricted to *.dpi.gov.ws origins (production) or localhost (dev) · Rate limiting: 100 req/min per authenticated session · Request logging: all RPC calls logged with timestamp, origin, method · Never expose the RPC credential URL in any response</div>
+      <div class="item-location">api/ — new directory · Separate Vercel/server deployment</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="RPC-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">RPC-2</span><span class="item-title">Method allowlist — RPC proxy only forwards approved JSON-RPC methods</span><span class="badge badge-high">High</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Allowlist of permitted JSON-RPC methods the proxy will forward: eth_call, eth_getTransactionReceipt, eth_blockNumber, eth_getLogs, eth_sendRawTransaction (ministry portals only) · All other methods: reject with 403 · This prevents an attacker who reaches the proxy from using it to probe the RPC node for sensitive information · eth_sendRawTransaction: requires authenticated session (ministry portal with active wallet session)</div>
+      <div class="item-location">api/src/middleware/methodAllowlist.js — new file</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="RPC-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">RPC-3</span><span class="item-title">Audit log persistence — all RPC calls and portal actions written to persistent store</span><span class="badge badge-high">High</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Current: useAuditLog() is in-memory only — cleared on page reload · Phase 2: POST all audit log entries to /api/audit with authenticated session token · Store: Supabase (Phase 2) → sovereign PostgreSQL (Phase 3) · Retention: minimum 7 years for government audit requirements · Access: read-only for CBS IT auditors, write-only for the platform · NIST 800-53 AU-9 compliance: audit logs protected from modification</div>
+      <div class="item-location">api/src/routes/audit.js · Supabase audit_log table</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 6 -->
+<div class="section">
+  <div class="section-header"><div class="section-title">06 · CBS Governance — Contract Security Decisions</div><div class="section-count" id="count-s6"></div></div>
+  <div class="section-desc">Contract-level implementations that are blocked pending CBS policy decisions. Technical implementations are ready; only CBS answers required.</div>
+
+  <div class="item cbs-blocked" data-id="GOV-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">GOV-1</span><span class="item-title">Gnosis Safe 2-of-3 deployment — replace single admin EOA across all 4 contracts</span><span class="badge badge-critical">Critical</span><span class="badge badge-blocked">CBS-Blocked</span></div>
+      <div class="item-fix">→ Deployment scripts ready. Gnosis Safe contract ready. Awaiting: CBS confirms 3 keyholders and quorum threshold · After confirmation: deploy Safe, redeploy all 4 contracts with Safe as ADMIN, verify on Polygonscan · All 4 contracts: NDIDSRegistry, MinistryNode (×6), InteroperabilityHub, AIDisbursementTracker</div>
+      <div class="item-location">contracts/script/ · All 4 contracts</div>
+      <div class="item-blocked">⊘ Awaiting CBS: confirm 3 keyholders and 2-of-3 quorum threshold</div>
+    </div>
+  </div>
+
+  <div class="item cbs-blocked" data-id="GOV-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">GOV-2</span><span class="item-title">TimelockController deployment — mandatory delay on all high-value operations</span><span class="badge badge-critical">Critical</span><span class="badge badge-blocked">CBS-Blocked</span></div>
+      <div class="item-fix">→ OZ TimelockController ready for deployment. Awaiting CBS decision on delay windows · Applies to: releaseTranche(), contract upgrades, admin transfer, pauseAuthority assignment · Recommended delay: 48 hours for fund releases, 72 hours for contract upgrades · After CBS decides: deploy Timelock, wire to AIDisbursementTracker and Hub admin functions</div>
+      <div class="item-location">contracts/src/AIDisbursementTracker.sol · InteroperabilityHub.sol</div>
+      <div class="item-blocked">⊘ Awaiting CBS: governance-mandated timelock delay windows per function type</div>
+    </div>
+  </div>
+
+  <div class="item cbs-blocked" data-id="GOV-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">GOV-3</span><span class="item-title">Pause authority assignment — circuit breaker address set in all 4 contracts</span><span class="badge badge-critical">Critical</span><span class="badge badge-blocked">CBS-Blocked</span></div>
+      <div class="item-fix">→ OZ Pausable implemented on all contracts. pauseAuthority address field exists. Awaiting: CBS decision on who has emergency pause authority · Recommended: CBS Governor wallet + MCIT Emergency address (2-address OR gate — either can pause unilaterally in emergency) · After CBS decides: call setPauseAuthority() on all 4 contracts via Gnosis Safe</div>
+      <div class="item-location">All 4 contracts · pauseAuthority state variable</div>
+      <div class="item-blocked">⊘ Awaiting CBS: who holds emergency pause authority?</div>
+    </div>
+  </div>
+
+  <div class="item cbs-blocked" data-id="GOV-4" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">GOV-4</span><span class="item-title">FATF flagService() integration — SAR reporting workflow wired to CBS compliance</span><span class="badge badge-high">High</span><span class="badge badge-blocked">CBS-Blocked</span></div>
+      <div class="item-fix">→ flagService() architecture ready in MinistryNode.sol and AIDisbursementTracker.sol · Awaiting: CBS to define SAR reporting chain, receiving authority address, integration with CBS AML compliance team · After CBS decides: wire flagService() to emit SAR event readable by CBS compliance monitoring system</div>
+      <div class="item-location">contracts/src/MinistryNode.sol · AIDisbursementTracker.sol</div>
+      <div class="item-blocked">⊘ Awaiting CBS: SAR receiving authority and compliance integration specification</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 7 -->
+<div class="section">
+  <div class="section-header"><div class="section-title">07 · Sovereign Chain Migration Security Gates</div><div class="section-count" id="count-s7"></div></div>
+  <div class="section-desc">Every gate must pass before migration from Polygon to sovereign chain. No exceptions without CBS Governor written approval.</div>
+
+  <div class="item phase3-item" data-id="MIG-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">MIG-1</span><span class="item-title">External smart contract audit — all Critical/High findings resolved before mainnet</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ Engage: Certik, Trail of Bits, OpenZeppelin, or equivalent Pacific/Australia firm · Scope: all 4 core contracts + AIAgentRegistry + OMW additions to InteroperabilityHub · Timeline: allow 4-6 weeks for audit + remediation · Audit report: submitted to CBS with SBP response to each finding · No mainnet deployment without CBS review of audit report</div>
+      <div class="item-location">All contracts · External audit firm engagement</div>
+    </div>
+  </div>
+
+  <div class="item phase3-item" data-id="MIG-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">MIG-2</span><span class="item-title">30-day sovereign chain private testnet — no incidents before production</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ Run sovereign Geth chain privately for 30 days with all 3 validator institutions · Simulate: block production, validator rotation, emergency pause, AI agent actions, OMW workflows · Measure: block time consistency, latency, validator uptime, monitoring alerting · Pass criteria: 99.5% block production uptime, all emergency procedures tested, monitoring alerts verified</div>
+      <div class="item-location">Infrastructure · Private testnet environment</div>
+    </div>
+  </div>
+
+  <div class="item phase3-item" data-id="MIG-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">MIG-3</span><span class="item-title">Penetration test — external pen test of all portals, APIs, and RPC proxy before production</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ Engage CREST-certified penetration testing firm · Scope: all 7 portals, RPC proxy API, validator node network perimeter · Test vectors: XSS, CSRF, CSP bypass, API key extraction attempts, smart contract interaction via compromised frontend, social engineering simulation · All Critical/High findings remediated before go-live · Pen test report submitted to CBS and MCIT</div>
+      <div class="item-location">All portals · api/ · Network infrastructure</div>
+    </div>
+  </div>
+
+  <div class="item phase3-item" data-id="MIG-4" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">MIG-4</span><span class="item-title">Data residency certification — all Samoan government data confirmed in approved jurisdictions</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ MCIT legal review confirms: on-chain data (sovereign chain = Samoa), off-chain data (Supabase Sydney or sovereign PostgreSQL), document storage (IPFS with Samoa-hosted primary pin) · Each data category has written legal sign-off on jurisdiction · CBS Governor sign-off on combined data residency declaration before production launch</div>
+      <div class="item-location">Legal review · MCIT · CBS</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'samoa-dpi-contracts-security-v1';
+  function saveState() {
+    const s = {};
+    document.querySelectorAll('.item').forEach(i => { s[i.getAttribute('data-id')] = i.classList.contains('done'); });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  }
+  function loadState() {
+    try {
+      const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      document.querySelectorAll('.item').forEach(i => { if (s[i.getAttribute('data-id')]) i.classList.add('done'); });
+    } catch(e) {}
+  }
+  function toggle(el) { el.classList.toggle('done'); saveState(); updateProgress(); updateSectionCounts(); }
+  function resetAll() {
+    if (!confirm('Reset all?')) return;
+    document.querySelectorAll('.item').forEach(el => el.classList.remove('done'));
+    saveState(); updateProgress(); updateSectionCounts();
+  }
+  function updateProgress() {
+    const total = document.querySelectorAll('.item').length;
+    const done  = document.querySelectorAll('.item.done').length;
+    const pct   = total ? Math.round((done/total)*100) : 0;
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-done').textContent = done;
+    document.getElementById('progress-total').textContent = total;
+  }
+  function updateSectionCounts() {
+    for (let i=1; i<=7; i++) {
+      const el = document.getElementById('count-s'+i);
+      if (!el) continue;
+      const sec = el.closest('.section');
+      if (!sec) continue;
+      el.textContent = sec.querySelectorAll('.item.done').length + ' / ' + sec.querySelectorAll('.item').length + ' done';
+    }
+  }
+  loadState(); updateProgress(); updateSectionCounts();
+</script>
+</body>
+</html>

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Samoa DPI — Master Project Roadmap v1</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#070910;--surface:#0c1222;--surface2:#111830;
+    --border:#1b2540;--border2:#253258;
+    --text:#e8edf8;--muted:#8c9ab8;--dim:#3a4a6a;
+    --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+    --red:#CE1126;--blue:#003087;--gold:#C9A227;
+    --green:#00c896;--amber:#f0b429;--critical:#ff3b4e;--purple:#8b5cf6;
+  }
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.7;padding:32px 20px;max-width:1080px;margin:0 auto}
+  .flag{width:100%;height:5px;background:linear-gradient(90deg,var(--red) 50%,var(--blue) 50%);border-radius:2px;margin-bottom:24px}
+  h1{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--text);letter-spacing:-0.5px}
+  h2{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin:36px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  h3{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:20px 0 8px}
+  p{margin-bottom:10px;color:var(--text)}
+  .meta{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px}
+  .meta strong{color:var(--gold)}
+
+  /* ── CALLOUT ── */
+  .callout{padding:12px 16px;border-radius:6px;margin:12px 0;font-size:13px;line-height:1.65}
+  .callout.gold{background:rgba(201,162,39,.07);border:1px solid rgba(201,162,39,.25);border-left:3px solid var(--gold)}
+  .callout.blue{background:rgba(0,48,135,.15);border:1px solid rgba(0,48,135,.35);border-left:3px solid var(--blue)}
+  .callout.critical{background:rgba(255,59,78,.07);border:1px solid rgba(255,59,78,.25);border-left:3px solid var(--critical)}
+  .callout-label{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;color:var(--gold)}
+
+  /* ── GRID CARDS ── */
+  .grid{display:grid;gap:8px}
+  .grid-2{grid-template-columns:1fr 1fr}
+  .grid-3{grid-template-columns:1fr 1fr 1fr}
+  .grid-4{grid-template-columns:1fr 1fr 1fr 1fr}
+  @media(max-width:700px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 16px}
+  .card-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+  .card-value{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text)}
+  .card-sub{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:3px}
+  .card.gold{border-left:3px solid var(--gold)}
+  .card.green{border-left:3px solid var(--green)}
+  .card.amber{border-left:3px solid var(--amber)}
+  .card.critical{border-left:3px solid var(--critical)}
+  .card.blocked{border-left:3px solid var(--purple)}
+  .card.blue{border-left:3px solid var(--blue)}
+
+  /* ── TABLE ── */
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12px}
+  th{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:8px 12px;border-bottom:1px solid var(--border);text-align:left;background:var(--surface)}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--surface)}
+
+  /* ── PHASE BANNER ── */
+  .phase-banner{padding:10px 16px;border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin:20px 0 10px;display:flex;align-items:center;gap:10px}
+  .ph1{background:rgba(0,200,150,.07);border:1px solid rgba(0,200,150,.25);color:var(--green)}
+  .ph2{background:rgba(56,189,248,.07);border:1px solid rgba(56,189,248,.25);color:#38bdf8}
+  .ph3{background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.25);color:var(--purple)}
+  .ph4{background:rgba(201,162,39,.07);border:1px solid rgba(201,162,39,.25);color:var(--gold)}
+
+  /* ── STATUS CHIPS ── */
+  .chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:3px;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+  .chip.done{background:rgba(0,200,150,.1);color:var(--green);border:1px solid rgba(0,200,150,.3)}
+  .chip.progress{background:rgba(240,180,41,.1);color:var(--amber);border:1px solid rgba(240,180,41,.3)}
+  .chip.blocked{background:rgba(139,92,246,.1);color:var(--purple);border:1px solid rgba(139,92,246,.3)}
+  .chip.phase2{background:rgba(56,189,248,.1);color:#38bdf8;border:1px solid rgba(56,189,248,.3)}
+  .chip.phase3{background:rgba(139,92,246,.1);color:var(--purple);border:1px solid rgba(139,92,246,.3)}
+
+  /* ── TECH DECISION BOX ── */
+  .decision{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 16px;margin:6px 0}
+  .decision-q{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:4px}
+  .decision-a{font-family:var(--mono);font-size:12px;color:var(--gold);font-weight:600}
+  .decision-why{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5}
+
+  /* ── FOOTER ── */
+  footer{margin-top:60px;padding:16px;background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:6px;font-family:var(--mono);font-size:10px;color:var(--dim);line-height:1.8}
+</style>
+</head>
+<body>
+
+<div class="flag"></div>
+
+<h1>SAMOA DPI — MASTER PROJECT ROADMAP</h1>
+<div class="meta">
+  <strong>Version:</strong> 1.0 · 2026-05-15 &nbsp;|&nbsp;
+  <strong>Organisation:</strong> Synergy Blockchain Pacific &nbsp;|&nbsp;
+  <strong>Research Partner:</strong> National University of Samoa &nbsp;|&nbsp;
+  <strong>Status:</strong> Phase 1 Complete · Phase 2 Infrastructure Ready
+</div>
+
+<div class="callout gold" style="margin-top:20px">
+  <div class="callout-label">⊕ Agent Reference Document</div>
+  This document is the single source of truth for all skill agents, Claude Code sessions, and build prompts. Read this before any technical decision. All architectural choices, CBS governance items, design constants, checklist state, and technology decisions are recorded here. Companion file: SAMOA_DPI_AGENT_CONTEXT.md (token-efficient version for session prepending).
+</div>
+
+<!-- ═══════════════════════════════ SECTION 1 ═══════════════════════════════ -->
+<h2>01 · Project Identity</h2>
+
+<div class="grid grid-2">
+  <div class="card gold">
+    <div class="card-label">Technical Principal</div>
+    <div class="card-value">Anthony George Williams</div>
+    <div class="card-sub">CEO · Blockchain Architect · SBP Founder</div>
+    <div class="card-sub">Falelauniu, Samoa · +685 759 3360</div>
+    <div class="card-sub">synergyblockchaintf@gmail.com</div>
+  </div>
+  <div class="card blue">
+    <div class="card-label">Operations Co-Founder</div>
+    <div class="card-value">Suetena Faatuala Loia</div>
+    <div class="card-sub">Operations Director · SBP Co-Founder</div>
+    <div class="card-sub">Falelauniu Tai (freehold)</div>
+    <div class="card-sub">Loan security: Tuaefu Heights ¼ acre</div>
+  </div>
+  <div class="card blue">
+    <div class="card-label">Academic Principal Investigator</div>
+    <div class="card-value">Dr. Edna Temese, PhD</div>
+    <div class="card-sub">IT Lecturer · Faculty of Science IT & Engineering</div>
+    <div class="card-sub">National University of Samoa (NUS)</div>
+    <div class="card-sub">Unambiguous PI — all research authority</div>
+  </div>
+  <div class="card">
+    <div class="card-label">International Research Advisor</div>
+    <div class="card-value">Prof. Stan Karanasios</div>
+    <div class="card-sub">University of Queensland Business School</div>
+    <div class="card-sub">Confirmed participant · Self-funded</div>
+  </div>
+</div>
+
+<h3>Regulatory Positions — Exact Language (DO NOT UPGRADE)</h3>
+<table>
+  <thead><tr><th>Body</th><th>Status</th><th>Correct Language</th></tr></thead>
+  <tbody>
+    <tr><td><strong>CBS</strong></td><td><span class="chip progress">Exploratory</span></td><td>"CBS engagement is at the exploratory stage. A formal sandbox application is being prepared, subject to CBS's guidance from an upcoming meeting."</td></tr>
+    <tr><td><strong>MCIT</strong></td><td><span class="chip progress">Aware</span></td><td>"MCIT has been briefed on the project. Formal endorsement is being sought."</td></tr>
+    <tr><td><strong>NUS / Dr. Temese</strong></td><td><span class="chip done">Confirmed PI</span></td><td>"NUS, led by Dr. Edna Temese as PI, is conducting independent academic research." SBP = Technical Partner only.</td></tr>
+    <tr><td><strong>UQ / Prof. Karanasios</strong></td><td><span class="chip done">Confirmed</span></td><td>"International Research Advisor — University of Queensland."</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════ SECTION 2 ═══════════════════════════════ -->
+<h2>02 · Constitutional Architecture</h2>
+
+<div class="grid grid-4" style="margin-bottom:12px">
+  <div class="card"><div class="card-label">Total Nodes</div><div class="card-value">55</div><div class="card-sub">25 operational + 30 observer</div></div>
+  <div class="card"><div class="card-label">Core Contracts</div><div class="card-value">4</div><div class="card-sub">+ AIAgentRegistry (Phase 2)</div></div>
+  <div class="card"><div class="card-label">Portals</div><div class="card-value">7</div><div class="card-sub">Landing · Citizens · Admin · Ministry · DBS · Donor · Verify</div></div>
+  <div class="card"><div class="card-label">Forge Tests</div><div class="card-value">29/29</div><div class="card-sub">Exit 0 · All passing</div></div>
+</div>
+
+<h3>Four Core Smart Contracts</h3>
+<table>
+  <thead><tr><th>Contract</th><th>File</th><th>Purpose</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td><strong>NDIDSRegistry.sol</strong></td><td>contracts/src/</td><td>National Digital Identity System — hash-only, no PII on-chain</td><td><span class="chip done">Deployed Amoy</span></td></tr>
+    <tr><td><strong>MinistryNode.sol</strong></td><td>contracts/src/</td><td>Per-ministry data store with cryptographic access control</td><td><span class="chip done">×6 Deployed</span></td></tr>
+    <tr><td><strong>InteroperabilityHub.sol</strong></td><td>contracts/src/</td><td>Cross-ministry workflow routing, consent enforcement</td><td><span class="chip done">Deployed Amoy</span></td></tr>
+    <tr><td><strong>AIDisbursementTracker.sol</strong></td><td>contracts/src/</td><td>Grant lifecycle, tranche management, WST-DPI integration</td><td><span class="chip done">Deployed Amoy</span></td></tr>
+  </tbody>
+</table>
+
+<h3>Government Branch Node Architecture</h3>
+<table>
+  <thead><tr><th>Branch</th><th>Ministries / Agencies</th><th>Node Count</th></tr></thead>
+  <tbody>
+    <tr><td>Financial</td><td>CBS, SIFA, Audit Office, OMBUDS, OOTR</td><td>5</td></tr>
+    <tr><td>ICT & Infrastructure</td><td>MCIT, MWTI</td><td>3</td></tr>
+    <tr><td>Finance</td><td>MOF, MOR</td><td>2</td></tr>
+    <tr><td>Justice</td><td>MOJ</td><td>2</td></tr>
+    <tr><td>Health & Social</td><td>MOH, MWCSD</td><td>3</td></tr>
+    <tr><td>Commerce</td><td>MCIL, Customs</td><td>2</td></tr>
+    <tr><td>Primary Industries</td><td>MAF, MNRE, MLS</td><td>3</td></tr>
+    <tr><td>Education & Culture</td><td>MESC</td><td>1</td></tr>
+    <tr><td>Statistics & Identity</td><td>SBS (NDIDS authority)</td><td>1</td></tr>
+    <tr><td>Executive</td><td>MPMC, MFAT, MPE</td><td>3</td></tr>
+    <tr><td><strong>Observer nodes</strong></td><td>Cross-ministry monitoring</td><td><strong>30</strong></td></tr>
+  </tbody>
+</table>
+
+<h3>Seven-Portal Architecture</h3>
+<table>
+  <thead><tr><th>Portal</th><th>Subdomain</th><th>Audience</th><th>Port</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>Landing</td><td>dpi.gov.ws</td><td>Public</td><td>5180</td><td><span class="chip done">Complete</span></td></tr>
+    <tr><td>Citizens</td><td>citizens.dpi.gov.ws</td><td>Samoan citizens</td><td>5181</td><td><span class="chip done">Complete · Demo data</span></td></tr>
+    <tr><td>CBS Admin</td><td>admin.dpi.gov.ws</td><td>CBS leadership, analysts, IT</td><td>5182</td><td><span class="chip done">Complete · 31 src files</span></td></tr>
+    <tr><td>Ministry ×8</td><td>[code].dpi.gov.ws</td><td>Ministry officials (per-ministry)</td><td>—</td><td><span class="chip blocked">Phase 3 · Auth required</span></td></tr>
+    <tr><td>DBS</td><td>dbs.dpi.gov.ws</td><td>DBS + retail banks</td><td>—</td><td><span class="chip phase2">Phase 2 · Ready to build</span></td></tr>
+    <tr><td>Donor</td><td>donor.dpi.gov.ws</td><td>World Bank, ADB, bilateral donors</td><td>—</td><td><span class="chip phase2">Phase 2 · Ready to build</span></td></tr>
+    <tr><td>Verify</td><td>verify.dpi.gov.ws</td><td>Employers, service providers</td><td>—</td><td><span class="chip phase2">Phase 2 · Ready to build</span></td></tr>
+  </tbody>
+</table>
+
+<h3>WST-DPI Tiered Retail Distribution</h3>
+<table>
+  <thead><tr><th>Tier</th><th>Role</th><th>Entities</th></tr></thead>
+  <tbody>
+    <tr><td>Tier 1</td><td>Issuer (CBS)</td><td>Central Bank of Samoa — mints, burns, governs</td></tr>
+    <tr><td>Tier 2</td><td>Licensed Retail Distributors</td><td>ANZ Bank Samoa · BSP Samoa · Samoa Commercial Bank · National Bank of Samoa · Development Bank of Samoa</td></tr>
+    <tr><td>Tier 3</td><td>Institutional Participants</td><td>SNPF · UTOS · WSTLAC — receive via Tier 2 banking partners</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════ SECTION 3 ═══════════════════════════════ -->
+<h2>03 · Current Build State</h2>
+
+<div class="phase-banner ph1">▸ PHASE 1 — COMPLETE · All 34 checklist items delivered · Builds exit 0</div>
+
+<div class="grid grid-3">
+  <div class="card green"><div class="card-label">Landing App</div><div class="card-value">✓ Complete</div><div class="card-sub">Three.js canvas · registry-driven · PWA · bilingual · committed</div></div>
+  <div class="card green"><div class="card-label">Citizens App</div><div class="card-value">✓ Complete</div><div class="card-sub">Demo data · 159KB bundle · service worker · offline · SM default</div></div>
+  <div class="card green"><div class="card-label">CBS Admin Portal</div><div class="card-value">✓ Complete</div><div class="card-sub">31 src files · CBS demo-ready · 6 governance items · node matrix</div></div>
+  <div class="card green"><div class="card-label">Shared UI Package</div><div class="card-value">✓ Complete</div><div class="card-sub">8 currency components · Tooltip · StatusBadge · ErrorPage · LanguageToggle · tokens.css</div></div>
+  <div class="card green"><div class="card-label">RPC Proxy (API)</div><div class="card-value">✓ Complete</div><div class="card-sub">Hono server · method allowlist · rate limiting · Phase 1 sim responses</div></div>
+  <div class="card green"><div class="card-label">Feature Flags</div><div class="card-value">✓ Complete</div><div class="card-sub">6 CBS governance flags · FeatureGate component · env-var driven</div></div>
+</div>
+
+<h3>Monorepo Structure</h3>
+<table>
+  <thead><tr><th>Path</th><th>Contents</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>packages/contracts-abi/</td><td>GOVERNMENT_NODES, nodesByBranch, OPERATIONAL_NODES exports</td><td><span class="chip done">Live</span></td></tr>
+    <tr><td>packages/shared-ui/src/currency/</td><td>AmountDisplay, SettlementChip, CurrencyBadge, PrecisionToggle, AmountColumn, ErrorAmount, TimestampDisplay, CurrencyAbstractionLayer</td><td><span class="chip done">Live</span></td></tr>
+    <tr><td>packages/shared-ui/src/</td><td>ResearchGate, Tooltip, StatusBadge, ErrorPage, LanguageToggle, feature-flags, tokens.css, acronyms</td><td><span class="chip done">Live</span></td></tr>
+    <tr><td>apps/landing/</td><td>Port 5180 · Three.js canvas · portal wayfinding · 30-day gate</td><td><span class="chip done">Built & committed</span></td></tr>
+    <tr><td>apps/citizens/</td><td>Port 5181 · SM default · demo data · service worker</td><td><span class="chip done">Built & committed</span></td></tr>
+    <tr><td>apps/admin/</td><td>Port 5182 · 31 src files · CBS demo-ready</td><td><span class="chip done">Built & committed</span></td></tr>
+    <tr><td>apps/ministry/ dbs/ donor/ verify/ trade/</td><td>Stubs — architecture ready</td><td><span class="chip phase2">Ready to build</span></td></tr>
+    <tr><td>api/</td><td>Hono RPC proxy · method allowlist · audit route</td><td><span class="chip done">Live</span></td></tr>
+    <tr><td>contracts/src/</td><td>4 contracts + DecimalMath + ICurrencyRegistry + ICBSCurrencyController</td><td><span class="chip done">29/29 tests</span></td></tr>
+    <tr><td>frontend/</td><td>Legacy monolith — DO NOT TOUCH</td><td><span class="chip progress">Preserved</span></td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════ SECTION 4 ═══════════════════════════════ -->
+<h2>04 · CBS Governance — 6 Blocked Items</h2>
+
+<div class="callout critical">
+  <div class="callout-label">✗ Critical — Cannot Proceed Without CBS Answers</div>
+  These six items are technically implemented. Only CBS policy decisions are missing. When each decision arrives, flip the corresponding feature flag and the functionality activates without a code change.
+</div>
+
+<table>
+  <thead><tr><th>ID</th><th>Item</th><th>Severity</th><th>Feature Flag</th><th>Awaiting</th></tr></thead>
+  <tbody>
+    <tr><td>AC-2-multisig</td><td>Gnosis Safe 2-of-3 — replace single admin EOA</td><td><span class="chip blocked">Critical</span></td><td>VITE_FLAG_MULTISIG</td><td>CBS: who are the 3 keyholders? Quorum threshold?</td></tr>
+    <tr><td>AC-1-consent</td><td>Citizen signature on grantReadAccess (EIP-712)</td><td><span class="chip progress">High</span></td><td>VITE_FLAG_CONSENT</td><td>CBS: can government mediate citizen consent administratively?</td></tr>
+    <tr><td>AC-3-timelock</td><td>TimelockController on releaseTranche()</td><td><span class="chip progress">High</span></td><td>VITE_FLAG_TIMELOCK</td><td>CBS: governance-mandated timelock delay window?</td></tr>
+    <tr><td>PAUSABLE</td><td>Circuit breaker / Pausable across all 4 contracts</td><td><span class="chip progress">High</span></td><td>VITE_FLAG_CIRCUIT_BREAKER</td><td>CBS: who has authority to trigger emergency pause?</td></tr>
+    <tr><td>SOV-1</td><td>Validator governance — which ministries operate nodes</td><td><span class="chip progress">High</span></td><td>VITE_FLAG_VALIDATOR_GOV</td><td>CBS: which ministries operate validator nodes?</td></tr>
+    <tr><td>FATF-1</td><td>AML flag capability / SAR reporting on-chain</td><td><span class="chip progress">High</span></td><td>VITE_FLAG_FATF</td><td>CBS: define FATF SAR reporting workflow and integration</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════ SECTION 5 ═══════════════════════════════ -->
+<h2>05 · Locked Technology Decisions</h2>
+
+<div class="decision">
+  <div class="decision-q">Oracle for WST exchange rates?</div>
+  <div class="decision-a">CBS Sovereign Oracle Model — CBS is the oracle, not Chainlink</div>
+  <div class="decision-why">CBS is Samoa's monetary authority. They already publish WST rates. Routing CBS's own exchange rates through a foreign private oracle network is architecturally backwards and creates a foreign infrastructure dependency on sovereign monetary infrastructure. CBSOracle.sol — governed by Gnosis Safe 2-of-3, rate updates subject to TimelockController. Chainlink used only as secondary verification for international commodity data.</div>
+</div>
+
+<div class="decision">
+  <div class="decision-q">Current and future blockchain platform?</div>
+  <div class="decision-a">Phase 1–2: Polygon Amoy → Polygon Mainnet · Phase 3: Sovereign Geth Clique PoA · Phase 4: Sovereign compute network (technology-neutral)</div>
+  <div class="decision-why">Polygon for battle-tested EVM, largest audited library ecosystem (OZ), fastest path to research prototype. Sovereign chain for data residency and CBS validator control. Phase 4 sovereign compute eliminates all foreign infrastructure dependencies including oracle intermediaries via native HTTPS outcalls.</div>
+</div>
+
+<div class="decision">
+  <div class="decision-q">ZK Proofs?</div>
+  <div class="decision-a">Phase 3 — additive, ZKVerifier.sol on existing chain</div>
+  <div class="decision-why">Current NDIDS hash scheme is already ZK-compatible (commitment scheme). ZK proofs for privacy-preserving identity verification (prove attribute without revealing data) in Phase 3. Does not require rewriting existing contracts — additive layer only.</div>
+</div>
+
+<div class="decision">
+  <div class="decision-q">Oasis Protocol / Confidential EVM?</div>
+  <div class="decision-a">Phase 3–4 assessment — EVM-compatible migration path confirmed</div>
+  <div class="decision-why">Oasis Sapphire provides genuine on-chain confidentiality (TEE — even node operators cannot read encrypted state). Valuable for health and welfare records where "access-controlled" is not sufficient. TEE (Intel SGX) side-channel risks acknowledged. Network maturity risk at current scale. Revisit in Phase 3.</div>
+</div>
+
+<div class="decision">
+  <div class="decision-q">AI governance on sovereign infrastructure?</div>
+  <div class="decision-a">On-chain AI agent registry — AIAgentRegistry.sol (Phase 2)</div>
+  <div class="decision-why">Every AI agent issued a wallet address, registered in AIAgentRegistry with capability bitmask and expiry. All AI actions emit AIAgentAction event — permanently logged, distinguishable from human actions. Human-in-the-loop for high-value actions via TimelockController. Kill switch: CBS Governor revokes wallet address from all authorisedReaders.</div>
+</div>
+
+<div class="decision">
+  <div class="decision-q">One Maritime Window (OMW)?</div>
+  <div class="decision-a">Phase 2 — executeOMWClearance() on InteroperabilityHub, WST-DPI harbour dues</div>
+  <div class="decision-why">Samoa's January 2024 WTO TFA Article 10.4 obligation is unmet. Blueprint exists. DPI platform IS the architectural solution — InteroperabilityHub routes declarations to 6 ministry nodes (Customs, Port, Biosecurity, Health, Immigration, Maritime Finance). WST-DPI handles harbour dues. OMW module is commercially licensable to other Pacific Island nations.</div>
+</div>
+
+<div class="decision">
+  <div class="decision-q">Technology-neutral language?</div>
+  <div class="decision-a">MANDATORY in all client-facing content — no ICP / DFINITY / Canister / NNS / Chain Fusion / Motoko / Cycles</div>
+  <div class="decision-why">Sovereign compute network is described using: "threshold cryptography", "sovereign Wasm compute", "canister-style services", "HTTPS outcalls", "sovereign subnet". This protects commercial flexibility and keeps the research framing platform-neutral.</div>
+</div>
+
+<!-- ═══════════════════════════════ SECTION 6 ═══════════════════════════════ -->
+<h2>06 · Locked Design System</h2>
+
+<div class="grid grid-3">
+  <div class="card"><div class="card-label">Background</div><div class="card-value" style="color:#e8edf8;background:#070910;padding:4px 8px;border-radius:3px;display:inline-block">#070910</div><div class="card-sub">NOT #07091\n0 — was a typo in v1 prompt</div></div>
+  <div class="card"><div class="card-label">Samoa Flag Red</div><div class="card-value" style="color:#CE1126">#CE1126</div></div>
+  <div class="card"><div class="card-label">Samoa Flag Blue</div><div class="card-value" style="color:#38bdf8">#003087</div></div>
+  <div class="card"><div class="card-label">Gold</div><div class="card-value" style="color:#C9A227">#C9A227</div></div>
+  <div class="card"><div class="card-label">WCAG AAA Muted</div><div class="card-value" style="color:#8c9ab8">#8c9ab8</div><div class="card-sub">Lightened in ADMIN-10 to pass 7:1</div></div>
+  <div class="card"><div class="card-label">Fonts</div><div class="card-value">IBM Plex Mono + Sans</div><div class="card-sub">Mono = authority/amounts · Sans = body</div></div>
+</div>
+
+<h3>Currency Display Spec v1.0 — Locked</h3>
+<table>
+  <thead><tr><th>Rule</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>WST decimals</td><td>Always 2dp (fiat standard: 1 Tālā = 100 sene) — never 18dp ERC-20 default</td></tr>
+    <tr><td>USDC decimals</td><td>6dp technical / 2dp native display</td></tr>
+    <tr><td>FX decimals</td><td>18dp technical / 2dp native display</td></tr>
+    <tr><td>Currency code</td><td>ALWAYS co-visible with amount — never a bare number</td></tr>
+    <tr><td>Amount font</td><td>IBM Plex Mono 13px right-aligned</td></tr>
+    <tr><td>Settlement chips</td><td>Initiated / Confirming / Final / Failed / CBS-Held</td></tr>
+    <tr><td>Timestamps</td><td>DD/MM/YYYY HH:MM WST (UTC+13) — IBM Plex Mono</td></tr>
+    <tr><td>Currency arithmetic</td><td>decimal.js or BigInt — NEVER native float</td></tr>
+    <tr><td>Status indicators</td><td>ALWAYS colour + icon + text — never colour alone (WCAG AAA)</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════ SECTION 7 ═══════════════════════════════ -->
+<h2>07 · Checklist State — 2026-05-15</h2>
+
+<div class="grid grid-3">
+  <div class="card green"><div class="card-label">Phase 1 Complete</div><div class="card-value">34 / 99</div><div class="card-sub">Sections 01–03, 09, 10 · All builds exit 0</div></div>
+  <div class="card amber"><div class="card-label">Next Session</div><div class="card-value">DBS + Donor + Verify</div><div class="card-sub">Sections 06–08 · Unblocked · Shared-ui ready</div></div>
+  <div class="card blocked"><div class="card-label">CBS-Blocked</div><div class="card-value">6 items</div><div class="card-sub">Auth, Ministry portals, Contract governance</div></div>
+</div>
+
+<table>
+  <thead><tr><th>Section</th><th>Items</th><th>Done</th><th>State</th></tr></thead>
+  <tbody>
+    <tr><td>01 — Admin Portal</td><td>ADMIN-1 through ADMIN-12</td><td>12/12</td><td><span class="chip done">Complete</span></td></tr>
+    <tr><td>02 — Landing App</td><td>LAND-1 through LAND-5</td><td>5/5</td><td><span class="chip done">Complete</span></td></tr>
+    <tr><td>03 — Citizens App</td><td>CIT-1 through CIT-8</td><td>8/8</td><td><span class="chip done">Complete · Demo data</span></td></tr>
+    <tr><td>04 — Auth Architecture</td><td>AUTH-1 through AUTH-5</td><td>0/5</td><td><span class="chip blocked">CBS-Blocked · Key mgmt authority</span></td></tr>
+    <tr><td>05 — Ministry Portals</td><td>MIN-1 through MIN-5</td><td>0/5</td><td><span class="chip blocked">Phase 3 · Requires AUTH</span></td></tr>
+    <tr><td>06 — DBS Portal</td><td>DBS-1 through DBS-4</td><td>0/4</td><td><span class="chip phase2">Ready · Next session</span></td></tr>
+    <tr><td>07 — Donor Portal</td><td>DONOR-1 through DONOR-2</td><td>0/2</td><td><span class="chip phase2">Ready · Next session</span></td></tr>
+    <tr><td>08 — Verify Portal</td><td>VER-1 through VER-2</td><td>0/2</td><td><span class="chip phase2">Ready · Next session</span></td></tr>
+    <tr><td>09 — Shared Components</td><td>SHARED-1 through SHARED-6</td><td>6/6</td><td><span class="chip done">Complete</span></td></tr>
+    <tr><td>10 — API Abstraction</td><td>API-1 through API-3</td><td>3/3</td><td><span class="chip done">Complete · Phase 1 sim</span></td></tr>
+    <tr><td>11 — Deployment</td><td>DEPLOY-1 through DEPLOY-3</td><td>0/3</td><td><span class="chip blocked">Phase 3 · .gov.ws domain · CBS sandbox</span></td></tr>
+    <tr><td>12 — Training</td><td>TRAIN-1 through TRAIN-5</td><td>0/5</td><td><span class="chip blocked">Phase 2 · Cold wallet auth required</span></td></tr>
+    <tr><td>13 — NUS/ISOC</td><td>NUS-1 through NUS-5</td><td>0/5</td><td><span class="chip progress">In progress · Deadline 22 May 2026</span></td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════ SECTION 8 ═══════════════════════════════ -->
+<h2>08 · Phase Sequencing</h2>
+
+<div class="phase-banner ph1">▸ PHASE 1 — COMPLETE · Research Prototype · Polygon Amoy · Simulated Data</div>
+<p>Landing, Citizens, CBS Admin portals complete. 29/29 tests. Shared-ui, RPC proxy, feature flags, service abstraction layer all built. ISOC support doc v3 submitted. UREC ethics form prepared. CBS demo-ready.</p>
+
+<div class="phase-banner ph2">▸ PHASE 2 — IN PROGRESS · CBS Sandbox Application · DBS/Donor/Verify portals · OMW · CBS Oracle</div>
+<p>DBS, Donor, Verify portals ready to build. CBS oracle model deployment pending CBS sandbox approval. Cold wallet authentication pending CBS/PSC Key Management Authority designation. AIAgentRegistry.sol Phase 2 contract. OMW executeOMWClearance() on InteroperabilityHub.</p>
+
+<div class="phase-banner ph3">▸ PHASE 3 — PLANNED · Sovereign Chain · Ministry Portals · ZK Identity · Production .gov.ws</div>
+<p>Sovereign Geth Clique PoA deployment. All 3 validator institutions (CBS, MOF, MCIT) with HSMs. Ministry per-subdomain portals with EIP-712 cold wallet authentication. ZK proof layer on NDIDS. Oasis Sapphire assessment for health/welfare record confidentiality. External security audit gate. Production .gov.ws domain migration.</p>
+
+<div class="phase-banner ph4">▸ PHASE 4 — RESEARCH VALIDATED · Sovereign Compute · Full-Stack Sovereignty · Pacific Expansion</div>
+<p>Sovereign compute network migration (technology-neutral). HTTPS outcalls replace CBS Oracle contract. Threshold cross-chain signing replaces bridges. OMW commercial licensing to Pacific Island nations. AI governance managed service. Full data residency on sovereign infrastructure.</p>
+
+<!-- ═══════════════════════════════ SECTION 9 ═══════════════════════════════ -->
+<h2>09 · IP &amp; Open Source Framework</h2>
+
+<div class="callout gold">
+  <div class="callout-label">⊕ Dual Licensing Decision — Locked</div>
+  Research deliverables (codebase, documentation, publications) released under MIT licence — satisfies ISOC Deliverable D9 and NUS academic requirements. Commercial production deployments subject to AGPL or separate commercial license. SBP retains trademark on "Samoa DPI", "WST-DPI Digital Tālā", "Synergy Blockchain Pacific". The commercial value is in services, relationships, and training — not in code. Open sourcing the research codebase is the marketing asset that drives Pacific expansion engagements.
+</div>
+
+<table>
+  <thead><tr><th>Layer</th><th>What</th><th>License</th><th>Who Controls</th></tr></thead>
+  <tbody>
+    <tr><td>Research deliverables</td><td>Codebase, documentation, architecture specs, research papers</td><td>MIT (end of programme)</td><td>NUS / Dr. Temese / SBP jointly</td></tr>
+    <tr><td>Production deployments</td><td>Government-specific configs, operational procedures, managed service</td><td>Commercial</td><td>SBP</td></tr>
+    <tr><td>Training programmes</td><td>Cold wallet training, ministry onboarding, CBS technical staff</td><td>Proprietary</td><td>SBP</td></tr>
+    <tr><td>Brand / Trademark</td><td>Samoa DPI, WST-DPI, Synergy Blockchain Pacific</td><td>Trademark</td><td>SBP</td></tr>
+    <tr><td>OMW Pacific product</td><td>Managed OMW service for Pacific Island nations</td><td>Commercial SaaS</td><td>SBP</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════ SECTION 10 ═══════════════════════════════ -->
+<h2>10 · Research &amp; Compliance Documents Produced</h2>
+
+<table>
+  <thead><tr><th>Document</th><th>File</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>ISOC Support Document v3</td><td>ISOC_NUS_SupportDoc_v3.docx</td><td><span class="chip done">Complete · WoG framing · Dr. Temese PI</span></td></tr>
+    <tr><td>UREC Ethics Checklist</td><td>UREC_Ethics_Checklist_FILLED_Samoa_DPI.docx</td><td><span class="chip progress">Needs Dr. Temese signature fields</span></td></tr>
+    <tr><td>Cybersecurity Framework v1</td><td>CYBERSECURITY_FRAMEWORK_v1.html</td><td><span class="chip done">Complete · 13 sections</span></td></tr>
+    <tr><td>Frontend UI Checklist v1</td><td>FRONTEND_UI_CHECKLIST_v1.html</td><td><span class="chip done">Complete · 99 items</span></td></tr>
+    <tr><td>Contracts Security Checklist v1</td><td>CONTRACTS_SECURITY_CHECKLIST_v1.html</td><td><span class="chip done">Complete · 7 sections</span></td></tr>
+    <tr><td>Audit Remediation Checklist</td><td>audit_remediation_checklist.html</td><td><span class="chip progress">6/50 items resolved</span></td></tr>
+    <tr><td>Claude Code Prompt — Phase 1</td><td>CLAUDE_CODE_PROMPT_PHASE1_FRONTEND.md</td><td><span class="chip done">Executed · All 25 items complete</span></td></tr>
+    <tr><td>Claude Code Prompt — Shared Infra</td><td>CLAUDE_CODE_PROMPT_SHARED_INFRA.md</td><td><span class="chip done">Executed · All 9 items complete</span></td></tr>
+    <tr><td>Project Roadmap v1 (this document)</td><td>SAMOA_DPI_PROJECT_ROADMAP_v1.html</td><td><span class="chip done">Current</span></td></tr>
+    <tr><td>Agent Context (markdown)</td><td>SAMOA_DPI_AGENT_CONTEXT.md</td><td><span class="chip done">Current · Token-efficient</span></td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════ SECTION 11 ═══════════════════════════════ -->
+<h2>11 · Agent Instructions — Mandatory Rules</h2>
+
+<div class="callout critical">
+  <div class="callout-label">✗ Hard Rules — Never Violate</div>
+  <strong>1. All node data from @samoa-dpi/contracts-abi — zero hardcoded arrays anywhere in any portal.</strong><br>
+  <strong>2. Technology-neutral language — no ICP / DFINITY / Canister / NNS / Chain Fusion in any client-facing string.</strong><br>
+  <strong>3. WST always 2dp — currency code always co-visible — never a bare number.</strong><br>
+  <strong>4. CBS_GOVERNANCE_ITEMS: exactly 6 items, resolved: false — never fabricate resolution.</strong><br>
+  <strong>5. Package manager: pnpm only — never npm or yarn.</strong><br>
+  <strong>6. Phase-gated features: hidden not disabled — use FeatureGate component from shared-ui.</strong><br>
+  <strong>7. Currency arithmetic: decimal.js or BigInt — NEVER native float.</strong><br>
+  <strong>8. Status indicators: colour + icon + text — never colour alone (WCAG AAA).</strong><br>
+  <strong>9. NUS as Lead Institution, Dr. Temese as PI — SBP is Technical Partner only in all research documents.</strong><br>
+  <strong>10. Do not touch frontend/ legacy monolith — ever.</strong>
+</div>
+
+<footer>
+  SAMOA DPI — Master Project Roadmap v1.0 · Synergy Blockchain Pacific · 2026-05-15<br>
+  Branch: feat/currency-architecture · Package manager: pnpm · Platform: Polygon Amoy testnet<br>
+  For token-efficient agent sessions use: SAMOA_DPI_AGENT_CONTEXT.md<br>
+  Next session builds: DBS Portal (DBS-1–4) · Donor Portal (DONOR-1–2) · Verify Portal (VER-1–2)
+</footer>
+
+</body>
+</html>

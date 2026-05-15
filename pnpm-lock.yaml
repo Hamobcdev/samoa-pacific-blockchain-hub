@@ -45,6 +45,9 @@ importers:
 
   apps/citizens:
     dependencies:
+      '@samoa-dpi/contracts-abi':
+        specifier: workspace:*
+        version: link:../../packages/contracts-abi
       '@samoa-dpi/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n

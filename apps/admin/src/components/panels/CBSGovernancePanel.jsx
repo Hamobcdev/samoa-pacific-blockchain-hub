@@ -68,6 +68,28 @@ function GovernanceCard({ item, lang, onView }) {
       <div style={{ color: COLORS.info, fontSize: 11, fontFamily: TYPOGRAPHY.mono }}>
         ↳ {item.unlocks}
       </div>
+
+      {(item.technicalStatus || item.awaitingCBS) && (
+        <div style={{
+          fontFamily:    'var(--font-mono)',
+          fontSize:      '10px',
+          marginTop:     '6px',
+          display:       'flex',
+          flexDirection: 'column',
+          gap:           '3px',
+        }}>
+          {item.technicalStatus && (
+            <span style={{ color: COLORS.operational }}>
+              ✓ Technical: {item.technicalStatus}
+            </span>
+          )}
+          {item.awaitingCBS && (
+            <span style={{ color: COLORS.blocked }}>
+              ⊘ Awaiting CBS: {item.awaitingCBS}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }

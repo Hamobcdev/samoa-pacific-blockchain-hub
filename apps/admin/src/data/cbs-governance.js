@@ -11,6 +11,9 @@ export const CBS_GOVERNANCE_ITEMS = [
     unlocks: 'Eliminates single-key admin risk. Required before Phase 2 launch. Deployment scripts ready.',
     question: 'Who are the 3 authorised keyholders? What is the approved quorum threshold?',
     resolved: false,
+    featureFlag: 'VITE_FLAG_MULTISIG',
+    technicalStatus: 'Architecture complete — Gnosis Safe deployment scripts ready',
+    awaitingCBS: 'Keyholder identity and quorum threshold',
   },
   {
     id: 'AC-1-consent',
@@ -20,6 +23,9 @@ export const CBS_GOVERNANCE_ITEMS = [
     unlocks: 'Enables citizen-signed consent on identity access grants. GovStack interoperability compliance.',
     question: 'Can government mediate citizen consent administratively, or must each citizen sign individually?',
     resolved: false,
+    featureFlag: 'VITE_FLAG_CONSENT',
+    technicalStatus: 'EIP-712 consent mechanism designed and implemented',
+    awaitingCBS: 'Policy: can government mediate citizen consent administratively?',
   },
   {
     id: 'AC-3-timelock',
@@ -29,6 +35,9 @@ export const CBS_GOVERNANCE_ITEMS = [
     unlocks: 'BIS PFMI P9 governance compliance. Prevents instantaneous admin fund release.',
     question: 'What is the governance-mandated timelock delay window for fund releases?',
     resolved: false,
+    featureFlag: 'VITE_FLAG_TIMELOCK',
+    technicalStatus: 'TimelockController contracts deployed and tested',
+    awaitingCBS: 'Governance-mandated delay window per function type',
   },
   {
     id: 'PAUSABLE',
@@ -38,6 +47,9 @@ export const CBS_GOVERNANCE_ITEMS = [
     unlocks: 'BIS PFMI P17 operational risk compliance. System can be halted on vulnerability discovery.',
     question: 'Who has authority to trigger emergency pause? CBS Governor? Joint CBS + MCIT?',
     resolved: false,
+    featureFlag: 'VITE_FLAG_CIRCUIT_BREAKER',
+    technicalStatus: 'OZ Pausable implemented on all four contracts',
+    awaitingCBS: 'Who holds emergency pause authority?',
   },
   {
     id: 'SOV-1',
@@ -47,6 +59,9 @@ export const CBS_GOVERNANCE_ITEMS = [
     unlocks: 'Sovereign chain deployment can begin. Removes dependency on Polygon Amoy testnet.',
     question: 'Which ministries operate validator nodes? What is the rotation policy and clique period?',
     resolved: false,
+    featureFlag: 'VITE_FLAG_VALIDATOR_GOV',
+    technicalStatus: 'Genesis block configuration ready — validator slots reserved',
+    awaitingCBS: 'Which ministries operate validator nodes?',
   },
   {
     id: 'FATF-1',
@@ -56,5 +71,8 @@ export const CBS_GOVERNANCE_ITEMS = [
     unlocks: 'FATF mutual evaluation readiness. AML flagging capability on-chain. Required before WST-DPI pilot.',
     question: 'Define the SAR reporting workflow, the receiving authority, and integration with CBS compliance systems.',
     resolved: false,
+    featureFlag: 'VITE_FLAG_FATF',
+    technicalStatus: 'flagService() implemented — SAR event architecture complete',
+    awaitingCBS: 'SAR reporting chain and CBS compliance integration specification',
   },
 ]

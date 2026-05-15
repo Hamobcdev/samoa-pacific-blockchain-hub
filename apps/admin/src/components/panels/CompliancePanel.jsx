@@ -53,9 +53,28 @@ const STATUS_STYLE = {
 
 export function CompliancePanel({ lang = 'EN' }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div style={{ color: COLORS.gold, fontFamily: TYPOGRAPHY.mono, fontSize: 10, letterSpacing: '2px' }}>
-        {lang === 'SM' ? 'USOGA TULAFONO' : 'REGULATORY COMPLIANCE STATUS'}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }} data-panel>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <div data-panel-heading style={{ color: COLORS.gold, fontFamily: TYPOGRAPHY.mono, fontSize: 10, letterSpacing: '2px' }}>
+          {lang === 'SM' ? 'USOGA TULAFONO' : 'REGULATORY COMPLIANCE STATUS'}
+        </div>
+        <button
+          onClick={() => window.print()}
+          data-print-hide
+          aria-label="Print or export this panel"
+          style={{
+            fontFamily:   TYPOGRAPHY.mono,
+            fontSize:     '11px',
+            color:        COLORS.textMuted,
+            background:   'none',
+            border:       `1px solid ${COLORS.border}`,
+            padding:      '4px 10px',
+            borderRadius: '4px',
+            cursor:       'pointer',
+          }}
+        >
+          Export / Print
+        </button>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

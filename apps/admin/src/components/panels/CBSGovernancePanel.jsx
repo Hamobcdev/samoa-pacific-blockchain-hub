@@ -75,13 +75,32 @@ export function CBSGovernancePanel({ governance, lang = 'EN' }) {
   const { items, pendingCount, critical } = governance
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ color: COLORS.gold, fontFamily: TYPOGRAPHY.mono, fontSize: 10, letterSpacing: '2px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }} data-panel>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <div data-panel-heading style={{ color: COLORS.gold, fontFamily: TYPOGRAPHY.mono, fontSize: 10, letterSpacing: '2px' }}>
           {lang === 'SM' ? 'PULEGA O LE CBS' : 'CBS GOVERNANCE DECISIONS'}
         </div>
-        <div style={{ color: COLORS.textMuted, fontFamily: TYPOGRAPHY.mono, fontSize: 10 }}>
-          {pendingCount} {lang === 'SM' ? 'faatalitali' : 'pending'} · {items.length - pendingCount} {lang === 'SM' ? "fa'amaeaina" : 'resolved'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ color: COLORS.textMuted, fontFamily: TYPOGRAPHY.mono, fontSize: 10 }}>
+            {pendingCount} {lang === 'SM' ? 'faatalitali' : 'pending'} · {items.length - pendingCount} {lang === 'SM' ? "fa'amaeaina" : 'resolved'}
+          </span>
+          <button
+            onClick={() => window.print()}
+            data-print-hide
+            aria-label="Print or export this panel"
+            style={{
+              fontFamily:   TYPOGRAPHY.mono,
+              fontSize:     '11px',
+              color:        COLORS.textMuted,
+              background:   'none',
+              border:       `1px solid ${COLORS.border}`,
+              padding:      '4px 10px',
+              borderRadius: '4px',
+              cursor:       'pointer',
+            }}
+          >
+            Export / Print
+          </button>
         </div>
       </div>
 

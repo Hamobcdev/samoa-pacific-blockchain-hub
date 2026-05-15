@@ -19,6 +19,7 @@ export function AdminSidebar({ activePanel, onNav, role, lang, onSignOut, govern
 
   return (
     <nav
+      data-print-hide
       aria-label="Administration navigation"
       style={{
         width:           220,

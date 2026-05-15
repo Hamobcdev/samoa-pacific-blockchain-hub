@@ -156,6 +156,16 @@ export const GLOBAL_STYLES = `
       transition-duration: 0.01ms !important;
     }
   }
+
+  /* Print stylesheet — ADMIN-6 */
+  @media print {
+    [data-print-hide] { display: none !important; }
+    body { background: white; color: black; font-size: 11pt; }
+    [data-panel] { page-break-after: always; }
+    [data-panel-heading] { color: #003087; border-color: #003087; }
+    table { width: 100%; border-collapse: collapse; }
+    td, th { border: 1px solid #ccc; padding: 6px; }
+  }
 `
 
 // WCAG AAA: every status carries icon + colour + text

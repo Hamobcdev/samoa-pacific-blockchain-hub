@@ -122,7 +122,7 @@ export default function App() {
         fontFamily:    TYPOGRAPHY.sans,
       }}>
         {/* Top bar */}
-        <header style={{
+        <header data-print-hide style={{
           display:         'flex',
           alignItems:      'center',
           justifyContent:  'space-between',

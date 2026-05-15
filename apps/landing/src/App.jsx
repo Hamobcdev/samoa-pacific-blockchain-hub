@@ -337,7 +337,7 @@ export default function App() {
   return (
     <>
       {/* z-9999 — first-visit gate */}
-      <ResearchGate />
+      <ResearchGate storageKey="sdpi_landing_acknowledged" />
 
       {/* toast notification */}
       <Toast visible={toastVisible} />

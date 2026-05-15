@@ -87,16 +87,13 @@ function AdminApp() {
 
   if (!hasRole) {
     return (
-      <ResearchGate storageKey="sdpi_admin_acknowledged">
-        <CurrencyProvider lang={lang}>
-          <RolePicker onSelect={handleRoleSelect} lang={lang} />
-        </CurrencyProvider>
-      </ResearchGate>
+      <CurrencyProvider lang={lang}>
+        <RolePicker onSelect={handleRoleSelect} lang={lang} />
+      </CurrencyProvider>
     )
   }
 
   return (
-    <ResearchGate storageKey="sdpi_admin_acknowledged">
     <CurrencyProvider lang={lang}>
       <a href="#main-content" className="skip-link">
         {lang === 'SM' ? 'Alu i le Amataga' : 'Skip to main content'}
@@ -191,14 +188,15 @@ function AdminApp() {
         </div>
       </div>
     </CurrencyProvider>
-    </ResearchGate>
   )
 }
 
 export default function App() {
   return (
-    <LanguageProvider defaultLang="EN">
-      <AdminApp />
-    </LanguageProvider>
+    <ResearchGate storageKey="sdpi_admin_acknowledged">
+      <LanguageProvider defaultLang="EN">
+        <AdminApp />
+      </LanguageProvider>
+    </ResearchGate>
   )
 }

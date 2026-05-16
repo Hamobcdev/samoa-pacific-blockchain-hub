@@ -16,6 +16,17 @@ All portals are live in production on Vercel.
 | Donor Oversight | https://samoa-dpi-donor.vercel.app | Development partners |
 | Verify | https://samoa-dpi-verify.vercel.app | Employers, service providers |
 
+## Latest Deployment Snapshot — DEMO-1/2/3 (2026-05-17)
+
+Specific deployment URLs corresponding to the DEMO-1, DEMO-2, DEMO-3 fixes
+committed on branch feat/currency-architecture:
+
+| Portal | Deployment URL |
+|--------|---------------|
+| Landing | https://landing-9ww284ikf-synergy-core-devs.vercel.app |
+| CBS Admin | https://samoa-dpi-admin-o8hjex7t2-synergy-core-devs.vercel.app |
+| Donor Oversight | https://samoa-dpi-donor-pkf1gr1ca-synergy-core-devs.vercel.app |
+
 ## Verified Commit
 
 Branch: feat/currency-architecture

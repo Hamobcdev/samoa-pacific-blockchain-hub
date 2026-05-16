@@ -30,7 +30,7 @@ const PORTALS = [
   {
     id:        'ministry',
     label:     'CBS Administration',
-    href:      'https://samoa-dpi-admin-eg204vsol-synergy-core-devs.vercel.app',
+    href:      'https://samoa-dpi-admin-o8hjex7t2-synergy-core-devs.vercel.app',
     icon:      '⬡',
     desc:      'CBS oversight, governance decisions, node health',
     audience:  'For CBS and ministry officials',
@@ -41,10 +41,10 @@ const PORTALS = [
   {
     id:        'donor',
     label:     'Development Partners',
-    href:      'https://samoa-dpi-abido9w07-synergy-core-devs.vercel.app',
+    href:      'https://samoa-dpi-donor-8h822jg1h-synergy-core-devs.vercel.app',
     icon:      '◈',
-    desc:      'Grant lifecycle transparency and disbursement verification',
-    audience:  'For World Bank, ADB, bilateral donors',
+    desc:      'Grant lifecycle transparency and disbursement verification for international development partners',
+    audience:  'For World Bank, ADB, ISOC, bilateral donors',
     showLive:  true,
     badge:     null,
     legacyUrl: null,
@@ -52,10 +52,11 @@ const PORTALS = [
   {
     id:        'verify',
     label:     'Verify a Credential',
-    href:      'https://samoa-dpi-verify-1bvp02jkq-synergy-core-devs.vercel.app',
+    href:      'https://samoa-dpi-verify-clqfc53lj-synergy-core-devs.vercel.app',
     icon:      '✦',
     desc:      'Confirm a government-issued record is authentic',
     audience:  'For employers, service providers, verification bodies',
+    note:      'Also accessible from the Citizens Portal',
     showLive:  true,
     badge:     null,
     legacyUrl: null,
@@ -64,7 +65,7 @@ const PORTALS = [
 
 // ─── Portal Card ────────────────────────────────────────────────────────────
 
-function PortalCard({ label, href, icon, desc, audience, showLive, isLive, badge, legacyUrl, hoverCard, clickCard, onShowToast }) {
+function PortalCard({ label, href, icon, desc, audience, note, showLive, isLive, badge, legacyUrl, hoverCard, clickCard, onShowToast }) {
   const [hovered, setHovered] = React.useState(false)
 
   const handleClick = (e) => {
@@ -119,6 +120,12 @@ function PortalCard({ label, href, icon, desc, audience, showLive, isLive, badge
       {audience && (
         <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: '10px', color: C.gold, opacity: 0.75, letterSpacing: '0.3px' }}>
           {audience}
+        </span>
+      )}
+
+      {note && (
+        <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: '10px', color: C.silver, opacity: 0.55, letterSpacing: '0.2px' }}>
+          {note}
         </span>
       )}
 

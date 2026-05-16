@@ -1,4 +1,5 @@
-// Currency Display Spec v1.0 — WST 2dp, USDC 6dp, FX 18dp (tech precision)
+// Currency Display Spec v1.1 — fiat only: WST 2dp, USD 2dp, FX 4dp
+// Platform policy: no stablecoin or crypto tickers in user-facing UI.
 // Do not use native float for arithmetic — always pass through Decimal.js
 export const CURRENCY_CONFIGS = {
   WST: {
@@ -7,31 +8,53 @@ export const CURRENCY_CONFIGS = {
     nameSM:         'Tālā Samoa',
     decimals:       2,
     nativeDecimals: 2,
-    techDecimals:   6,
+    techDecimals:   2,
     symbol:         'T',
     color:          'var(--color-currency-wst)',
     description:    'Sovereign currency — always 2 decimal places (fiat standard)',
   },
-  USDC: {
-    code:           'USDC',
-    name:           'USD Coin',
-    nameSM:         'Tupe USD',
-    decimals:       6,
+  USD: {
+    code:           'USD',
+    name:           'US Dollar',
+    nameSM:         'Tupe Amerika',
+    decimals:       2,
     nativeDecimals: 2,
-    techDecimals:   6,
+    techDecimals:   2,
     symbol:         '$',
-    color:          'var(--color-currency-usdc)',
-    description:    'Stablecoin — 6 decimal places (ERC-20 standard)',
+    color:          'var(--color-currency-usd, var(--color-gold))',
+    description:    'Fiat US Dollar — always 2 decimal places',
+  },
+  NZD: {
+    code:           'NZD',
+    name:           'New Zealand Dollar',
+    nameSM:         'Tupe Niu Sila',
+    decimals:       2,
+    nativeDecimals: 2,
+    techDecimals:   2,
+    symbol:         'NZ$',
+    color:          'var(--color-currency-usd, var(--color-gold))',
+    description:    'Fiat NZD — remittance reference',
+  },
+  AUD: {
+    code:           'AUD',
+    name:           'Australian Dollar',
+    nameSM:         'Tupe Ausetalia',
+    decimals:       2,
+    nativeDecimals: 2,
+    techDecimals:   2,
+    symbol:         'A$',
+    color:          'var(--color-currency-usd, var(--color-gold))',
+    description:    'Fiat AUD — remittance reference',
   },
   FX: {
     code:           'FX',
     name:           'Foreign Exchange',
     nameSM:         'Tupe Malo',
-    decimals:       6,
+    decimals:       4,
     nativeDecimals: 4,
-    techDecimals:   18,
+    techDecimals:   4,
     symbol:         '¥',
     color:          'var(--color-currency-fx)',
-    description:    'Cross-border settlement — precision varies by instrument',
+    description:    'Cross-border settlement rate reference',
   },
 }

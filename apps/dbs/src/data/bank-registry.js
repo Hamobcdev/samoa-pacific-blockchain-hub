@@ -7,6 +7,10 @@
  * Phase 2: read from on-chain DBS registry contract.
  *
  * CRITICAL: Westpac is NOT in this list — no longer operating in Samoa.
+ *
+ * AMOUNTS: dailyLimitRaw stores human-readable display values.
+ * decimals = decimal places to show, NOT a scaling factor.
+ * Phase 1 pilot daily limits for WST-DPI distribution.
  */
 
 import Decimal from 'decimal.js';
@@ -20,8 +24,9 @@ export const TIER_2_BANKS = [
     tier:             2,
     status:           'Active',
     statusNote:       'CBS-authorised retail distributor',
-    dailyLimitRaw:    '500000000',   // 5,000,000.00 WST in sene (2dp)
+    dailyLimitRaw:    '500000',      // 500,000.00 WST
     decimals:         2,
+    displayDecimals:  2,
     currency:         'WST',
     settlementBank:   'ANZ Group Pacific',
     swiftCode:        'ANZBNPPA',
@@ -35,8 +40,9 @@ export const TIER_2_BANKS = [
     tier:             2,
     status:           'Active',
     statusNote:       'CBS-authorised retail distributor',
-    dailyLimitRaw:    '300000000',
+    dailyLimitRaw:    '300000',      // 300,000.00 WST
     decimals:         2,
+    displayDecimals:  2,
     currency:         'WST',
     settlementBank:   'BSP Financial Group PNG',
     swiftCode:        'BOSPNPPA',
@@ -50,8 +56,9 @@ export const TIER_2_BANKS = [
     tier:             2,
     status:           'Active',
     statusNote:       'CBS-authorised retail distributor',
-    dailyLimitRaw:    '200000000',
+    dailyLimitRaw:    '200000',      // 200,000.00 WST
     decimals:         2,
+    displayDecimals:  2,
     currency:         'WST',
     settlementBank:   'National Bank of Samoa',
     swiftCode:        'SCBLWSAS',
@@ -65,10 +72,11 @@ export const TIER_2_BANKS = [
     tier:             2,
     status:           'Active',
     statusNote:       'CBS-authorised retail distributor',
-    dailyLimitRaw:    '200000000',
+    dailyLimitRaw:    '200000',      // 200,000.00 WST
     decimals:         2,
+    displayDecimals:  2,
     currency:         'WST',
-    settlementBank:   'Reserve Bank of Australia',
+    settlementBank:   'Central Bank of Samoa',
     swiftCode:        'NBSAWSAS',
     lastSettlement:   null,
     complianceStatus: 'Compliant',
@@ -80,8 +88,9 @@ export const TIER_2_BANKS = [
     tier:             2,
     status:           'Active',
     statusNote:       'CBS-authorised retail distributor — government development bank',
-    dailyLimitRaw:    '150000000',
+    dailyLimitRaw:    '150000',      // 150,000.00 WST
     decimals:         2,
+    displayDecimals:  2,
     currency:         'WST',
     settlementBank:   'Ministry of Finance',
     swiftCode:        'DBSAWSAS',
@@ -160,8 +169,7 @@ export const CORRESPONDENT_BANKS = [
 
 // ── UTILITY ─────────────────────────────────────────────────────────────────
 export function formatDailyLimit(bank) {
-  // Uses decimal.js — never native float
+  // dailyLimitRaw is a human-readable display value — no scaling applied
   const d = new Decimal(bank.dailyLimitRaw);
-  const divisor = new Decimal(10).pow(bank.decimals);
-  return d.div(divisor).toFixed(bank.decimals);
+  return d.toFixed(bank.decimals ?? 2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }

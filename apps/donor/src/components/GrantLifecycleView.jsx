@@ -32,8 +32,19 @@ export function GrantLifecycleView({ grant, lang }) {
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
           {[
-            { label: 'Total Grant',      value: <AmountDisplay amount={grant.totalAmountRaw} currencyCode="WST" decimals={2} size="lg" /> },
-            { label: 'Released to Date', value: <AmountDisplay amount={releasedTotal}         currencyCode="WST" decimals={2} size="lg" /> },
+            { label: 'Total Grant',      value: (
+                <div>
+                  <AmountDisplay amount={grant.totalAmountRaw} currencyCode={grant.currency} size="lg" />
+                  {grant.confirmed === false && (
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px',
+                                  color: '#f0b429', marginTop: '4px' }}>
+                      Indicative — Application Pending
+                    </div>
+                  )}
+                </div>
+              )
+            },
+            { label: 'Released to Date', value: <AmountDisplay amount={releasedTotal} currencyCode={grant.currency} size="lg" /> },
             { label: 'Recipient',        value: grant.recipient },
           ].map(item => (
             <div key={item.label}>
@@ -99,8 +110,7 @@ export function GrantLifecycleView({ grant, lang }) {
               </div>
               <AmountDisplay
                 amount={tranche.amountRaw}
-                currencyCode="WST"
-                decimals={2}
+                currencyCode={grant.currency}
               />
               <SettlementChip status={tranche.status} />
             </div>

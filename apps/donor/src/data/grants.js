@@ -5,8 +5,11 @@
  * Phase 2: read from on-chain via /api/rpc + eth_getLogs on
  * AIDisbursementTracker GrantCreated and TrancheReleased events.
  *
- * IMPORTANT: amounts use raw integer strings (sene for WST, 2dp).
+ * AMOUNTS: human-readable display values (no blockchain scaling).
+ * decimals = number of decimal places to show, NOT a scaling factor.
  * Always display via AmountDisplay — never format inline.
+ *
+ * CURRENCY POLICY: WST and USD fiat only. No crypto tickers in UI.
  */
 
 export const DEMO_GRANTS = [
@@ -103,18 +106,20 @@ export const DEMO_GRANTS = [
     grantorType:    'Research Foundation',
     recipient:      'National University of Samoa',
     recipientCode:  'NUS',
-    totalAmountRaw: '500000000000',  // 500,000.000000 USDC
-    decimals:        6,
+    totalAmountRaw: '500000',        // 500,000.00 USD
+    decimals:        2,
     displayDecimals: 2,
-    currency:       'USDC',
+    currency:       'USD',
     status:         'ACTIVE',
+    confirmed:       false,
+    confirmedNote:  'Indicative grant amount — application pending ISOC Foundation',
     createdAt:       1746144000000,  // 2 May 2026
-    purpose:        'NUS/ISOC research grant supporting the Samoa DPI sovereignty and digital infrastructure programme. Principal Investigator: Dr. Edna Temese, NUS.',
-    description:    'NUS/ISOC research grant supporting the Samoa DPI sovereignty and digital infrastructure programme. Principal Investigator: Dr. Edna Temese, NUS.',
+    purpose:        'Research grant supporting the Samoa DPI sovereignty and digital infrastructure programme. Principal Investigator: Dr. Edna Temese, NUS.',
+    description:    'Research grant supporting the Samoa DPI sovereignty and digital infrastructure programme. Principal Investigator: Dr. Edna Temese, NUS.',
     tranches: [
       {
         id:          1,
-        amountRaw:   '150000000000',  // 150,000.000000 USDC
+        amountRaw:   '150000',       // 150,000.00 USD
         description: 'Milestone 1 — Research Design & Protocol',
         status:      'Confirming',
         verifier:    null,
@@ -123,7 +128,7 @@ export const DEMO_GRANTS = [
       },
       {
         id:          2,
-        amountRaw:   '200000000000',  // 200,000.000000 USDC
+        amountRaw:   '200000',       // 200,000.00 USD
         description: 'Milestone 2 — Platform Prototype Deployment',
         status:      'Initiated',
         verifier:    null,
@@ -132,7 +137,7 @@ export const DEMO_GRANTS = [
       },
       {
         id:          3,
-        amountRaw:   '150000000000',  // 150,000.000000 USDC
+        amountRaw:   '150000',       // 150,000.00 USD
         description: 'Milestone 3 — Final Report & Dissemination',
         status:      'Initiated',
         verifier:    null,

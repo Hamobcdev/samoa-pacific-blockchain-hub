@@ -151,6 +151,25 @@ function AdminApp() {
             <span style={{ color: COLORS.textDim, fontFamily: TYPOGRAPHY.mono, fontSize: 10 }}>
               {role?.id}
             </span>
+            <button
+              onClick={handleSignOut}
+              aria-label="Sign out of current session"
+              style={{
+                background:    'transparent',
+                border:        `1px solid ${COLORS.border2}`,
+                borderRadius:  3,
+                color:         COLORS.textDim,
+                cursor:        'pointer',
+                fontFamily:    TYPOGRAPHY.mono,
+                fontSize:      10,
+                letterSpacing: '1px',
+                padding:       '3px 8px',
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = COLORS.critical}
+              onMouseLeave={e => e.currentTarget.style.color = COLORS.textDim}
+            >
+              Sign Out
+            </button>
           </div>
         </header>
 

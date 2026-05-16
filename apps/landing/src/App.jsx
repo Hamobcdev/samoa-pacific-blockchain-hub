@@ -15,51 +15,49 @@ if (typeof document !== 'undefined' && !document.getElementById('sdpi-fonts')) {
   document.head.appendChild(l)
 }
 
-const LEGACY_URL = 'https://samoa-pacific-blockchain-hub.vercel.app'
-
 const PORTALS = [
   {
     id:        'citizens',
     label:     'Citizens Portal',
-    href:      '#',
+    href:      'https://samoa-dpi-citizens-1wey8yrye-synergy-core-devs.vercel.app',
     icon:      '◉',
     desc:      'View your government records and Digital Tālā',
     audience:  'For Samoan citizens',
-    showLive:  false,
+    showLive:  true,
     badge:     null,
     legacyUrl: null,
   },
   {
     id:        'ministry',
     label:     'CBS Administration',
-    href:      '#',
+    href:      'https://samoa-dpi-admin-eg204vsol-synergy-core-devs.vercel.app',
     icon:      '⬡',
     desc:      'CBS oversight, governance decisions, node health',
     audience:  'For CBS and ministry officials',
     showLive:  true,
     badge:     null,
-    legacyUrl: LEGACY_URL,
+    legacyUrl: null,
   },
   {
     id:        'donor',
     label:     'Development Partners',
-    href:      '#',
+    href:      'https://samoa-dpi-abido9w07-synergy-core-devs.vercel.app',
     icon:      '◈',
     desc:      'Grant lifecycle transparency and disbursement verification',
     audience:  'For World Bank, ADB, bilateral donors',
-    showLive:  false,
-    badge:     'Coming Phase 2',
+    showLive:  true,
+    badge:     null,
     legacyUrl: null,
   },
   {
     id:        'verify',
     label:     'Verify a Credential',
-    href:      '#',
+    href:      'https://samoa-dpi-verify-1bvp02jkq-synergy-core-devs.vercel.app',
     icon:      '✦',
     desc:      'Confirm a government-issued record is authentic',
     audience:  'For employers, service providers, verification bodies',
-    showLive:  false,
-    badge:     'Coming Phase 2',
+    showLive:  true,
+    badge:     null,
     legacyUrl: null,
   },
 ]
@@ -70,14 +68,18 @@ function PortalCard({ label, href, icon, desc, audience, showLive, isLive, badge
   const [hovered, setHovered] = React.useState(false)
 
   const handleClick = (e) => {
-    e.preventDefault()
     clickCard?.()
-    onShowToast?.()
+    if (href === '#') {
+      e.preventDefault()
+      onShowToast?.()
+    }
   }
 
   return (
     <a
       href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       style={{
         display:       'flex',
         flexDirection: 'column',
@@ -290,6 +292,9 @@ function StatsStrip({ isLive }) {
 function GovFooter() {
   return (
     <div style={{ width:'100%', padding:'20px 24px', background:'#0A1628', borderTop:'1px solid #1E2E50', display:'flex', flexDirection:'column', gap:'8px', alignItems:'center', boxSizing:'border-box' }}>
+      <div style={{ fontFamily:'IBM Plex Mono, monospace', fontSize:'10px', color:'#6b7a99', textAlign:'center', lineHeight:1.7, maxWidth:'640px' }}>
+        Secure blockchain service layer for mygov.gov.ws — Samoa DPI Research Programme 2026
+      </div>
       <div style={{ fontFamily:'IBM Plex Mono, monospace', fontSize:'10px', color:'#6b7a99', textAlign:'center', lineHeight:1.7, maxWidth:'640px' }}>
         This is a research prototype operated under the NUS/ISOC Research Programme 2026.
         No real citizen data is held. This platform is not officially sanctioned by the

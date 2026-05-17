@@ -1,4 +1,5 @@
 {
-  "installCommand": "pnpm install",
-  "ignoreCommand": "git diff HEAD^ HEAD --quiet ."
+  "buildCommand": "pnpm --filter @samoa-dpi/landing build",
+  "outputDirectory": "apps/landing/dist",
+  "installCommand": "pnpm install"
 }

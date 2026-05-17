@@ -19,7 +19,7 @@ const PORTALS = [
   {
     id:        'citizens',
     label:     'Citizens Portal',
-    href:      'https://samoa-dpi-citizens-1wey8yrye-synergy-core-devs.vercel.app',
+    href:      'https://samoa-dpi-citizens.vercel.app',
     icon:      '◉',
     desc:      'View your government records and Digital Tālā',
     audience:  'For Samoan citizens',

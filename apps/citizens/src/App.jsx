@@ -108,6 +108,21 @@ const translations = {
     applyRefNote: "Lau numera talosaga",
     applyFeeNote: "Totogi e fa'aalu",
     applyFormNote: "O le fa'afesoʻotaʻiga o fomu o loʻo faʻagaioiina — Vaega 1",
+    verifyAnother: "Fa'amaonia se isi pepa",
+    verifyDocType: "Ituaiga Pepa",
+    verifyIssuedBy: "Na Fa'ailoa e",
+    verifyIssueDate: "Aso Na Fa'ailoa",
+    verifyHolder: "Toʻo",
+    verifyReference: "Numera Faʻailoga",
+    verifyAuthentic: "O lenei pepa ua fa'amaonia — ua faamauina i le DPI Samoa",
+    ministryAccessTitle: "Avanoa i Faamaumauga",
+    ministryAccessPhase2SM: "O lo'o fa'atali le fa'afesoota'i ma le Matagaluega. O le a avanoa i le Vaega 2.",
+    ministryAccessPhase2EN: "Connection to [ministry] is being established. Available in Phase 2.",
+    ministryAccessGranted: "Na fa'atagaina lou avanoa i le",
+    officeApia: "Ofisi Autu Apia — Beach Road, Apia",
+    officeSavaii: "Ofisi Salelologa — Salelologa, Savaii",
+    officeMore: "Ofisi isi — Vaega 2",
+    requestAccess: "Talosaga Avanoa →",
   },
   EN: {
     portalName: "Samoa Citizen Services",
@@ -206,6 +221,21 @@ const translations = {
     applyRefNote: "Your application reference",
     applyFeeNote: "Fee payable",
     applyFormNote: "Form connection in progress — Phase 1",
+    verifyAnother: "Verify another record",
+    verifyDocType: "Document Type",
+    verifyIssuedBy: "Issued By",
+    verifyIssueDate: "Issue Date",
+    verifyHolder: "Holder",
+    verifyReference: "Reference",
+    verifyAuthentic: "This document is authentic — recorded on Samoa DPI",
+    ministryAccessTitle: "Record Access",
+    ministryAccessPhase2SM: "Connection to [ministry] is being established. Available in Phase 2.",
+    ministryAccessPhase2EN: "Connection to [ministry] is being established. Available in Phase 2.",
+    ministryAccessGranted: "Your access was granted on",
+    officeApia: "Apia Main Office — Beach Road, Apia",
+    officeSavaii: "Salelologa Office — Salelologa, Savaii",
+    officeMore: "More offices — Phase 2",
+    requestAccess: "Request Access →",
   }
 }
 
@@ -666,27 +696,37 @@ function VerifyTab({ t }) {
           <div role="status" style={{ marginTop: 20, background: '#e6f4ec', border: `1px solid #00793D`, borderRadius: 8, padding: 16 }}>
             <div style={{ fontFamily: FL.mono, fontSize: 14, fontWeight: 700, color: '#00793D', marginBottom: 12 }}>{t.verifiedStatus}</div>
             {[
-              ['Document Type', result.docType],
-              ['Issued By', result.issuedBy],
-              ['Issue Date', result.issueDate],
-              ['Holder', result.holder],
-              ['Reference', result.ref],
+              [t.verifyDocType, result.docType],
+              [t.verifyIssuedBy, result.issuedBy],
+              [t.verifyIssueDate, result.issueDate],
+              [t.verifyHolder, result.holder],
+              [t.verifyReference, result.ref],
             ].map(([label, val]) => (
               <div key={label} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${CL.border}`, padding: '6px 0', gap: 8 }}>
                 <span style={{ fontFamily: FL.mono, fontSize: 10, color: CL.muted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</span>
                 <span style={{ fontFamily: FL.ui, fontSize: 13, fontWeight: 600, color: CL.text }}>{val}</span>
               </div>
             ))}
-            <p style={{ fontFamily: FL.mono, fontSize: 11, color: '#00793D', marginTop: 12, marginBottom: 0 }}>
-              This document is authentic — recorded on Samoa DPI
-            </p>
+            <p style={{ fontFamily: FL.mono, fontSize: 11, color: '#00793D', marginTop: 12, marginBottom: 12 }}>{t.verifyAuthentic}</p>
+            <button
+              onClick={() => { setResult(null); setInput('') }}
+              style={styles.btnSecondary}
+            >
+              {t.verifyAnother}
+            </button>
           </div>
         )}
 
         {result?.status === 'not-found' && (
           <div role="alert" style={{ marginTop: 20, background: CL.errorLight, border: `1px solid ${CL.error}`, borderRadius: 8, padding: 16 }}>
             <p style={{ fontFamily: FL.ui, fontSize: 14, fontWeight: 600, color: CL.error, margin: '0 0 8px' }}>{t.notFoundStatus}</p>
-            <p style={{ fontFamily: FL.mono, fontSize: 11, color: CL.muted, margin: 0 }}>{t.notFoundNote}</p>
+            <p style={{ fontFamily: FL.mono, fontSize: 11, color: CL.muted, margin: '0 0 12px' }}>{t.notFoundNote}</p>
+            <button
+              onClick={() => { setResult(null); setInput('') }}
+              style={styles.btnSecondary}
+            >
+              {t.verifyAnother}
+            </button>
           </div>
         )}
 
@@ -712,10 +752,31 @@ const MOCK_RECORDS = {
   },
 }
 
+function MinistryAccessPopup({ ministry, date, t, lang, onClose }) {
+  const msg = lang === 'SM'
+    ? t.ministryAccessPhase2SM
+    : t.ministryAccessPhase2EN.replace('[ministry]', ministry)
+  return (
+    <PopupCard onClose={onClose}>
+      <div style={{ fontFamily: FL.mono, fontSize: 10, color: CL.primary, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 8 }}>
+        ◉ {ministry} — {t.ministryAccessTitle}
+      </div>
+      <p style={{ fontFamily: FL.ui, fontSize: 14, color: CL.textSoft, lineHeight: 1.6, margin: '0 0 12px' }}>{msg}</p>
+      {date && (
+        <p style={{ fontFamily: FL.mono, fontSize: 11, color: CL.muted, margin: '0 0 20px' }}>
+          {t.ministryAccessGranted} {date}
+        </p>
+      )}
+      <button onClick={onClose} style={styles.btnPrimary}>{t.close}</button>
+    </PopupCard>
+  )
+}
+
 function RecordsTab({ t, lang, identityState, onOpenIdentity }) {
   const [ref, setRef] = useState('')
   const [result, setResult] = useState(null)
   const [searched, setSearched] = useState(false)
+  const [ministryPopup, setMinistryPopup] = useState(null)
 
   function handleSearch(e) {
     e.preventDefault()
@@ -771,11 +832,30 @@ function RecordsTab({ t, lang, identityState, onOpenIdentity }) {
             </p>
             {result.ministryServices.map((s, i) => (
               <div key={i} style={{ marginBottom: 10, borderBottom: i < result.ministryServices.length - 1 ? `1px solid ${CL.border}` : 'none', paddingBottom: 10 }}>
-                <div style={{ fontFamily: FL.ui, fontSize: 14, fontWeight: 600, color: CL.text }}>{s.ministry}</div>
-                <div style={{ fontFamily: FL.mono, fontSize: 11, color: CL.muted }}>{s.date}</div>
-                <div style={{ fontFamily: FL.ui, fontSize: 13, color: CL.textSoft }}>{s.service}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                  <div>
+                    <div style={{ fontFamily: FL.ui, fontSize: 14, fontWeight: 600, color: CL.text }}>{s.ministry}</div>
+                    <div style={{ fontFamily: FL.mono, fontSize: 11, color: CL.muted }}>{s.date}</div>
+                    <div style={{ fontFamily: FL.ui, fontSize: 13, color: CL.textSoft }}>{s.service}</div>
+                  </div>
+                  <button
+                    onClick={() => setMinistryPopup({ ministry: s.ministry, date: s.date })}
+                    style={{ ...styles.btnSecondary, fontSize: 12, padding: '6px 10px', minHeight: 36, whiteSpace: 'nowrap', flexShrink: 0 }}
+                  >
+                    {t.requestAccess}
+                  </button>
+                </div>
               </div>
             ))}
+            {ministryPopup && (
+              <MinistryAccessPopup
+                ministry={ministryPopup.ministry}
+                date={ministryPopup.date}
+                t={t}
+                lang={lang}
+                onClose={() => setMinistryPopup(null)}
+              />
+            )}
           </div>
         )}
 
@@ -809,19 +889,32 @@ function HelpTab({ t }) {
       title: t.helpContact,
       content: (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div style={{ fontFamily: FL.mono, fontSize: 13, color: CL.text }}>synergyblockchaintf@gmail.com</div>
-          <div style={{ fontFamily: FL.ui, fontSize: 13, color: CL.textSoft }}>Research enquiries: NUS, Dr. Edna Temese</div>
+          <a
+            href="mailto:synergyblockchaintf@gmail.com"
+            style={{ fontFamily: FL.mono, fontSize: 13, color: CL.primary, textDecoration: 'none' }}
+          >
+            synergyblockchaintf@gmail.com
+          </a>
+          <div style={{ fontFamily: FL.ui, fontSize: 13, color: CL.textSoft }}>
+            {lang === 'SM' ? 'Fesili su\'esu\'e: NUS, Dr. Edna Temese' : 'Research enquiries: NUS, Dr. Edna Temese'}
+          </div>
         </div>
       )
     },
     {
       title: t.helpOffice,
       content: (
-        <div>
-          <div style={{ fontFamily: FL.mono, fontSize: 13, color: CL.muted, marginBottom: 6 }}>
-            Office locator — Phase 2
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ fontFamily: FL.ui, fontSize: 13, color: CL.textSoft }}>{t.helpOfficeNote}</div>
+          <ul style={{ margin: '8px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {[t.officeApia, t.officeSavaii].map(office => (
+              <li key={office} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ color: CL.primary, fontSize: 12 }}>●</span>
+                <span style={{ fontFamily: FL.ui, fontSize: 13, color: CL.text }}>{office}</span>
+              </li>
+            ))}
+            <li style={{ fontFamily: FL.mono, fontSize: 11, color: CL.muted, paddingLeft: 20 }}>{t.officeMore}</li>
+          </ul>
         </div>
       )
     },

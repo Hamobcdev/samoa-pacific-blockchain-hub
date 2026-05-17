@@ -82,6 +82,37 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, Pausable, Reentr
     }
     WorkflowEvent[] public workflowLog;
 
+    // ── OMW Maritime Clearance ────────────────────────────────────────────────
+    struct OMWClearanceRecord {
+        bytes32 vesselId;
+        bytes32 declarationHash;
+        uint8   ministryCount;
+        uint8   clearedCount;
+        bool    allCleared;
+        uint256 submittedAt;
+        uint256 finalClearedAt;
+    }
+
+    // ── Aviation Arrival Clearance (ICAO Annex 9 / WCO SAFE Framework) ────────
+    struct ArrivalFlags {
+        bool customsFlag;      // goods over limit or suspicious
+        bool biosecurityFlag;  // food, plants, animals declared
+        bool healthFlag;       // illness or health concern declared
+        bool immigrationFlag;  // visa or permit concern
+        bool currencyFlag;     // WST 20,000+ equivalent declared
+        bool watchlistFlag;    // name match (always human review only)
+        uint8 overallRisk;     // 0=GREEN 1=AMBER 2=RED (derived from flags)
+    }
+
+    struct ArrivalClearanceRecord {
+        bytes32      passportHash;
+        bytes32      declarationHash;
+        ArrivalFlags flags;
+        bool         cleared;
+        uint256      submittedAt;
+        uint256      clearedAt;
+    }
+
     // ── Events ───────────────────────────────────────────────────
 
     event PauseAuthoritySet(address indexed authority);
@@ -93,6 +124,58 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, Pausable, Reentr
     event AIDTrackerSet(address tracker);
     event ObserverRegistered(address indexed observer, string name, GovBranch branch);
 
+    // ── OMW Events ────────────────────────────────────────────────────────────
+    event OMWSubmissionAcknowledged(
+        uint256 indexed clearanceId,
+        bytes32 vesselId,
+        uint256 submittedAt,
+        uint8   ministryCount
+    );
+    event OMWClearanceInitiated(
+        uint256 indexed clearanceId,
+        bytes32 vesselId,
+        bytes32 declarationHash,
+        uint8   ministryCount,
+        uint256 timestamp
+    );
+    event MinistryStatusUpdated(
+        uint256 indexed clearanceId,
+        bytes32 indexed ministryHash,
+        uint8   status,
+        bytes32 officerCredential,
+        uint256 timestamp
+    );
+    event MinistryOMWRejected(
+        uint256 indexed clearanceId,
+        bytes32 indexed ministryHash,
+        bytes32 rejectionCode,
+        uint256 timestamp
+    );
+    event OMWAllCleared(
+        uint256 indexed clearanceId,
+        bytes32 vesselId,
+        uint256 finalClearedAt
+    );
+
+    // ── Arrival Events ────────────────────────────────────────────────────────
+    event ArrivalSubmissionAcknowledged(
+        uint256 indexed clearanceId,
+        bytes32 passportHash,
+        uint256 submittedAt,
+        uint8   overallRisk
+    );
+    event ArrivalWorkflowInitiated(
+        uint256 indexed clearanceId,
+        bytes32 passportHash,
+        uint8   overallRisk,
+        uint256 timestamp
+    );
+    event ArrivalCleared(
+        uint256 indexed clearanceId,
+        bytes32 passportHash,
+        uint256 clearedAt
+    );
+
     // ── Errors ───────────────────────────────────────────────────
 
     error Unauthorised();
@@ -103,6 +186,12 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, Pausable, Reentr
     error EnrolmentStepFailed(string step);
     error UnregisteredMinistryNode(address node);   // FIX 3: node validation
     error VerificationExpired(bytes32 citizenHash); // CISA-1: expired NDIDS verification
+    error InvalidClearance();
+    error AlreadyComplete();
+    error InvalidStatus();
+    error InvalidRejectionCode();
+    error AlreadyCleared();
+    error InvalidMinistryCount();
 
     // ── Constructor / Initializer ────────────────────────────────
 
@@ -370,8 +459,228 @@ contract InteroperabilityHub is Initializable, UUPSUpgradeable, Pausable, Reentr
     function _authorizeUpgrade(address newImplementation)
         internal override onlyAdmin {}
 
+    // ── Standardised OMW Rejection Codes ─────────────────────────────────────
+    bytes32 public constant REJECT_BIOSECURITY_HOLD      = keccak256("BIOSECURITY_HOLD");
+    bytes32 public constant REJECT_CUSTOMS_DUTY_UNPAID   = keccak256("CUSTOMS_DUTY_UNPAID");
+    bytes32 public constant REJECT_DOCS_INCOMPLETE       = keccak256("DOCUMENTATION_INCOMPLETE");
+    bytes32 public constant REJECT_HEALTH_INSPECTION     = keccak256("HEALTH_INSPECTION_REQUIRED");
+    bytes32 public constant REJECT_IMMIGRATION_CLEARANCE = keccak256("IMMIGRATION_CLEARANCE_REQUIRED");
+    bytes32 public constant REJECT_DANGEROUS_GOODS       = keccak256("DANGEROUS_GOODS_VIOLATION");
+    bytes32 public constant REJECT_WATCHLIST_MATCH       = keccak256("WATCHLIST_MATCH_REVIEW");
+    bytes32 public constant REJECT_PAYMENT_OUTSTANDING   = keccak256("PORT_DUES_OUTSTANDING");
+
+    // ── OMW + Arrival Storage ─────────────────────────────────────────────────
+
+    mapping(uint256 => OMWClearanceRecord)          public  omwClearances;       // slot 1
+    mapping(uint256 => mapping(bytes32 => uint8))   private _ministryStatus;     // slot 2
+    // 0=PENDING 1=IN_REVIEW 2=CLEARED 3=FLAGGED 4=REJECTED
+    mapping(uint256 => mapping(bytes32 => bytes32)) private _officerCredential;  // slot 3
+    mapping(uint256 => mapping(bytes32 => uint256)) private _ministryClearedAt;  // slot 4
+    uint256 public totalOMWClearances;                                            // slot 5
+    mapping(uint256 => ArrivalClearanceRecord)      public  arrivalClearances;   // slot 6
+    uint256 public totalArrivalClearances;                                        // slot 7
+
+    // ── OMW Maritime Functions ────────────────────────────────────────────────
+
+    /// @notice Initiate an OMW maritime clearance workflow.
+    ///         Routes vessel declaration to all required ministry nodes.
+    ///         Emits acknowledgement event for shipping agent receipt.
+    function executeOMWClearance(
+        bytes32            vesselId,
+        bytes32            declarationHash,
+        bytes32[] calldata ministryHashes
+    ) external onlyAdmin returns (uint256 clearanceId) {
+        if (vesselId        == bytes32(0)) revert ZeroAddress();
+        if (declarationHash == bytes32(0)) revert ZeroAddress();
+        if (ministryHashes.length == 0)   revert InvalidMinistryCount();
+        if (ministryHashes.length > 10)   revert InvalidMinistryCount();
+
+        clearanceId = totalOMWClearances++;
+
+        omwClearances[clearanceId] = OMWClearanceRecord({
+            vesselId:        vesselId,
+            declarationHash: declarationHash,
+            ministryCount:   uint8(ministryHashes.length),
+            clearedCount:    0,
+            allCleared:      false,
+            submittedAt:     block.timestamp,
+            finalClearedAt:  0
+        });
+
+        for (uint256 i = 0; i < ministryHashes.length; i++) {
+            _ministryStatus[clearanceId][ministryHashes[i]] = 0;
+        }
+
+        emit OMWSubmissionAcknowledged(
+            clearanceId, vesselId, block.timestamp, uint8(ministryHashes.length)
+        );
+        emit OMWClearanceInitiated(
+            clearanceId, vesselId, declarationHash,
+            uint8(ministryHashes.length), block.timestamp
+        );
+    }
+
+    /// @notice Update a ministry's clearance status for an OMW workflow.
+    ///         Status: 0=PENDING 1=IN_REVIEW 2=CLEARED 3=FLAGGED
+    ///         Use rejectMinistryOMWStatus() for status 4 (REJECTED).
+    function updateMinistryOMWStatus(
+        uint256 clearanceId,
+        bytes32 ministryHash,
+        uint8   status,
+        bytes32 officerCredential
+    ) external onlyAdmin {
+        if (clearanceId >= totalOMWClearances)     revert InvalidClearance();
+        if (status > 3)                            revert InvalidStatus();
+        if (omwClearances[clearanceId].allCleared) revert AlreadyComplete();
+
+        uint8 previousStatus = _ministryStatus[clearanceId][ministryHash];
+        _ministryStatus[clearanceId][ministryHash]    = status;
+        _officerCredential[clearanceId][ministryHash] = officerCredential;
+
+        if (status == 2 && previousStatus != 2) {
+            _ministryClearedAt[clearanceId][ministryHash] = block.timestamp;
+            omwClearances[clearanceId].clearedCount++;
+
+            if (omwClearances[clearanceId].clearedCount
+                == omwClearances[clearanceId].ministryCount)
+            {
+                omwClearances[clearanceId].allCleared     = true;
+                omwClearances[clearanceId].finalClearedAt = block.timestamp;
+                emit OMWAllCleared(
+                    clearanceId,
+                    omwClearances[clearanceId].vesselId,
+                    block.timestamp
+                );
+            }
+        }
+
+        emit MinistryStatusUpdated(
+            clearanceId, ministryHash, status, officerCredential, block.timestamp
+        );
+    }
+
+    /// @notice Formally reject an OMW ministry clearance with a reason code.
+    ///         Uses standardised rejection code constants defined above.
+    function rejectMinistryOMWStatus(
+        uint256 clearanceId,
+        bytes32 ministryHash,
+        bytes32 rejectionCode
+    ) external onlyAdmin {
+        if (clearanceId >= totalOMWClearances)     revert InvalidClearance();
+        if (omwClearances[clearanceId].allCleared) revert AlreadyComplete();
+        if (rejectionCode == bytes32(0))           revert InvalidRejectionCode();
+
+        _ministryStatus[clearanceId][ministryHash]    = 4;
+        _officerCredential[clearanceId][ministryHash] = rejectionCode;
+
+        emit MinistryOMWRejected(
+            clearanceId, ministryHash, rejectionCode, block.timestamp
+        );
+        emit MinistryStatusUpdated(
+            clearanceId, ministryHash, 4, rejectionCode, block.timestamp
+        );
+    }
+
+    /// @notice Return an OMW clearance record as a struct (public mapping returns tuple).
+    function getOMWRecord(uint256 id) external view returns (OMWClearanceRecord memory) {
+        return omwClearances[id];
+    }
+
+    /// @notice Return an arrival clearance record as a struct (public mapping returns tuple).
+    function getArrivalRecord(uint256 id) external view returns (ArrivalClearanceRecord memory) {
+        return arrivalClearances[id];
+    }
+
+    /// @notice Get a ministry's current status in an OMW clearance.
+    function getMinistryOMWStatus(
+        uint256 clearanceId,
+        bytes32 ministryHash
+    )
+        external view
+        returns (uint8 status, bytes32 officerCred, uint256 clearedAt)
+    {
+        return (
+            _ministryStatus[clearanceId][ministryHash],
+            _officerCredential[clearanceId][ministryHash],
+            _ministryClearedAt[clearanceId][ministryHash]
+        );
+    }
+
+    // ── Aviation Arrival Functions ────────────────────────────────────────────
+
+    /// @notice Initiate aviation passenger arrival clearance.
+    ///         Implements ICAO Annex 9 / WCO SAFE Framework per-authority flags.
+    ///         GREEN (no flags) auto-clears on submission.
+    ///         AMBER/RED require officer review and manual clearArrival() call.
+    function executeArrivalWorkflow(
+        bytes32 passportHash,
+        bytes32 declarationHash,
+        bool    customsFlag,
+        bool    biosecurityFlag,
+        bool    healthFlag,
+        bool    immigrationFlag,
+        bool    currencyFlag,
+        bool    watchlistFlag
+    ) external onlyAdmin returns (uint256 clearanceId) {
+        if (passportHash    == bytes32(0)) revert ZeroAddress();
+        if (declarationHash == bytes32(0)) revert ZeroAddress();
+
+        uint8 overallRisk = 0;
+        if (watchlistFlag || (biosecurityFlag && customsFlag)) {
+            overallRisk = 2;
+        } else if (customsFlag || biosecurityFlag || healthFlag ||
+                   immigrationFlag || currencyFlag) {
+            overallRisk = 1;
+        }
+
+        ArrivalFlags memory flags = ArrivalFlags({
+            customsFlag:     customsFlag,
+            biosecurityFlag: biosecurityFlag,
+            healthFlag:      healthFlag,
+            immigrationFlag: immigrationFlag,
+            currencyFlag:    currencyFlag,
+            watchlistFlag:   watchlistFlag,
+            overallRisk:     overallRisk
+        });
+
+        bool autoCleared = (overallRisk == 0);
+        clearanceId = totalArrivalClearances++;
+
+        arrivalClearances[clearanceId] = ArrivalClearanceRecord({
+            passportHash:    passportHash,
+            declarationHash: declarationHash,
+            flags:           flags,
+            cleared:         autoCleared,
+            submittedAt:     block.timestamp,
+            clearedAt:       autoCleared ? block.timestamp : 0
+        });
+
+        emit ArrivalSubmissionAcknowledged(
+            clearanceId, passportHash, block.timestamp, overallRisk
+        );
+        emit ArrivalWorkflowInitiated(
+            clearanceId, passportHash, overallRisk, block.timestamp
+        );
+
+        if (autoCleared) {
+            emit ArrivalCleared(clearanceId, passportHash, block.timestamp);
+        }
+    }
+
+    /// @notice Manually clear an arrival after officer inspection (AMBER/RED).
+    function clearArrival(uint256 clearanceId) external onlyAdmin {
+        if (clearanceId >= totalArrivalClearances)  revert InvalidClearance();
+        if (arrivalClearances[clearanceId].cleared) revert AlreadyCleared();
+        arrivalClearances[clearanceId].cleared   = true;
+        arrivalClearances[clearanceId].clearedAt = block.timestamp;
+        emit ArrivalCleared(
+            clearanceId,
+            arrivalClearances[clearanceId].passportHash,
+            block.timestamp
+        );
+    }
+
     /// @dev Storage gap for UUPS upgrade safety.
-    /// Reserves 50 slots to prevent storage
-    /// collision in future upgrades.
-    uint256[50] private __gap;
+    /// Reserves 43 slots (reduced from 50 by 7 new storage slots).
+    uint256[43] private __gap;
 }

@@ -72,6 +72,8 @@ contract NDIDSRegistry is Initializable, UUPSUpgradeable, Pausable {
     event ReadAccessRevoked(bytes32 indexed citizenHash, address indexed ministry);
     event IdentityVerified(bytes32 indexed citizenHash, address indexed verifier, uint256 timestamp);
     event VerificationRenewed(bytes32 indexed citizenHash);
+    event VisitorRegistered(bytes32 indexed vrn, uint8 tier, uint256 expiry);
+    event EntityRegistered(bytes32 indexed eri, bytes32 signatoryHash);
 
     // ── Errors ───────────────────────────────────────────────────
 
@@ -80,6 +82,10 @@ contract NDIDSRegistry is Initializable, UUPSUpgradeable, Pausable {
     error NotRegistered(bytes32 citizenHash);
     error AccessDenied();
     error ZeroAddress();
+    error InvalidTier();
+    error InvalidExpiry();
+    error SignatoryNotRegistered();
+    error InvalidReference();
 
     // ── Constructor / Initializer ────────────────────────────────
 
@@ -262,8 +268,72 @@ contract NDIDSRegistry is Initializable, UUPSUpgradeable, Pausable {
     // Requires: OpenZeppelin EIP712 + ECDSA, a citizenHash => wallet mapping,
     // and a citizen wallet registration flow (separate SBS process).
 
+    // ── Non-NDIDS Reference Registry (Tiers 4-8) ────────────────────────
+
+    struct VisitorReference {
+        uint8   tier;    // 4=Pacific resident 5=visitor/tourist 6=vessel crew
+        uint256 expiry;  // block.timestamp at which reference expires
+        bool    active;
+    }
+
+    struct EntityReference {
+        bytes32 signatoryHash; // NDIDS hash of the authorised signing officer
+        bool    active;
+    }
+
+    mapping(bytes32 => VisitorReference) private _visitors;  // slot 1
+    mapping(bytes32 => EntityReference)  private _entities;  // slot 2
+
+    /// @notice Register a visitor, tourist, or crew reference (Tiers 4-6).
+    ///         Called by admin when visitor submits arrival declaration.
+    function registerVisitor(
+        bytes32 vrn,
+        uint8   tier,
+        uint256 expiry
+    ) external onlyAdmin {
+        if (vrn == bytes32(0))         revert ZeroAddress();
+        if (tier < 4 || tier > 6)     revert InvalidTier();
+        if (expiry <= block.timestamp) revert InvalidExpiry();
+        _visitors[vrn] = VisitorReference({ tier: tier, expiry: expiry, active: true });
+        emit VisitorRegistered(vrn, tier, expiry);
+    }
+
+    /// @notice Register a business or organisation reference (Tiers 7-8).
+    ///         The authorised signatory MUST be an NDIDS-registered citizen.
+    function registerEntity(
+        bytes32 eri,
+        bytes32 signatoryHash
+    ) external onlyAdmin {
+        if (eri           == bytes32(0)) revert ZeroAddress();
+        if (signatoryHash == bytes32(0)) revert ZeroAddress();
+        if (!_registered[signatoryHash]) revert SignatoryNotRegistered();
+        _entities[eri] = EntityReference({ signatoryHash: signatoryHash, active: true });
+        emit EntityRegistered(eri, signatoryHash);
+    }
+
+    /// @notice Check whether any reference hash is valid across all 9 tiers.
+    ///         No access restriction — any system component may call this.
+    /// @return valid True if the reference is active and not expired
+    /// @return tier  The identity tier (1=NDIDS, 4-6=visitor/crew, 7=entity)
+    function isValidReference(bytes32 ref)
+        external view
+        returns (bool valid, uint8 tier)
+    {
+        // Tier 1 — NDIDS registered citizen
+        if (_registered[ref]) return (true, 1);
+
+        // Tiers 4-6 — visitor, resident, or crew (time-limited)
+        VisitorReference memory v = _visitors[ref];
+        if (v.active && v.expiry > block.timestamp) return (true, v.tier);
+
+        // Tiers 7-8 — business or organisation entity
+        EntityReference memory e = _entities[ref];
+        if (e.active && e.signatoryHash != bytes32(0)) return (true, 7);
+
+        return (false, 0);
+    }
+
     /// @dev Storage gap for UUPS upgrade safety.
-    /// Reserves 50 slots to prevent storage
-    /// collision in future upgrades.
-    uint256[50] private __gap;
+    /// Reserves 48 slots (reduced from 50 by 2 new storage slots).
+    uint256[48] private __gap;
 }

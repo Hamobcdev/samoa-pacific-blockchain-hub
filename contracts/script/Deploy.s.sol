@@ -6,6 +6,7 @@ import "../src/NDIDSRegistry.sol";
 import "../src/MinistryNode.sol";
 import "../src/AIDisbursementTracker.sol";
 import "../src/InteroperabilityHub.sol";
+import {CulturalWitnessRegistry} from "../src/CulturalWitnessRegistry.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /**
@@ -284,6 +285,15 @@ contract DeploySamoaHub is Script {
 
         aid.releaseTranche(grantId, 1);
 
+        // ── 10. Deploy CulturalWitnessRegistry ───────────────────────────────
+        CulturalWitnessRegistry witnessImpl = new CulturalWitnessRegistry();
+        bytes memory witnessInitData = abi.encodeCall(
+            witnessImpl.initialize, (admin)
+        );
+        address witnessProxy = address(
+            new ERC1967Proxy(address(witnessImpl), witnessInitData)
+        );
+
         vm.stopBroadcast();
 
         console.log("=== DEPLOYMENT COMPLETE ===");
@@ -297,6 +307,7 @@ contract DeploySamoaHub is Script {
         console.log("EDUCATION:            ", address(education));
         console.log("CUSTOMS:              ", address(customs));
         console.log("SBS:                  ", address(sbs));
+        console.log("CulturalWitnessRegistry:", witnessProxy);
         console.log("");
         console.log("Citizens registered:  25");
         console.log("Permissions granted:  5");

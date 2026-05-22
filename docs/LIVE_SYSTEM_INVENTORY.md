@@ -1,5 +1,5 @@
 # Samoa DPI — Live System Inventory
-## Date: 20 May 2026 · Branch: feat/currency-architecture · Commit: 36b8150
+## Date: 22 May 2026 · Branch: feat/currency-architecture · Prompt 07B
 
 ---
 
@@ -26,13 +26,13 @@ Deployed addresses: `contracts/broadcast/Deploy.s.sol/80002/run-latest.json`
 | Landing | https://landing-alpha-seven-82.vercel.app | 200 | Public |
 | Citizens | https://samoa-dpi-citizens.vercel.app | 200 | Citizens |
 | CBS Admin | https://samoa-dpi-admin.vercel.app | 200 | CBS — Monetary policy |
-| MOF Oversight | apps/ministry/mof (local port 5187) | local | MOF — Fiscal policy |
+| MOF Oversight | https://samoa-dpi-mof.vercel.app | 200 | MOF — Fiscal policy |
 | DBS | https://samoa-dpi-dbs.vercel.app | 200 | DBS |
 | Donor | https://samoa-dpi-donor.vercel.app | 200 | Donors |
 | Verify | https://samoa-dpi-verify.vercel.app | 200 | Public — third-party |
 | Trade/OMW | https://samoa-dpi-trade.vercel.app | 200 | Trade |
 
-HTTP checks run: 20 May 2026. All 7 live Vercel portals returned 200.
+HTTP checks run: 22 May 2026. All 8 live Vercel portals returned 200.
 
 ---
 
@@ -98,4 +98,4 @@ constitutional mandate. This separation is reflected in the portal architecture.
 
 ---
 
-*Generated: Prompt 07 · feat/currency-architecture · Synergy Blockchain Pacific*
+*Updated: Prompt 07B · 22 May 2026 · MOF portal live — samoa-dpi-mof.vercel.app · Synergy Blockchain Pacific*

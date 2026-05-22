@@ -15,10 +15,12 @@ async function sha256hex(input: string): Promise<string> {
     .join('')
 }
 
+const GOV_AUTH_URL = import.meta.env.VITE_GOV_AUTH_URL as string
+
 export async function authenticateCredential(rawCredential: string): Promise<AuthResult | null> {
   const hash = await sha256hex(rawCredential)
   try {
-    const response = await fetch('/api/gov-auth', {
+    const response = await fetch(GOV_AUTH_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ credential: hash }),

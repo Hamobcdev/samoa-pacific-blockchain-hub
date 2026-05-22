@@ -3,9 +3,6 @@
   "outputDirectory": "apps/landing/dist",
   "installCommand": "pnpm install",
   "framework": null,
-  "rewrites": [
-    { "source": "/government", "destination": "/index.html" }
-  ],
   "headers": [
     {
       "source": "/(.*)",

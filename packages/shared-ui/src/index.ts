@@ -18,6 +18,11 @@ export { LanguageProvider, useLang, useLanguage, LanguageToggle } from './Langua
 // @ts-ignore — feature flags, resolved by Vite (import.meta.env)
 export { FLAGS, useFlag, FeatureGate } from './feature-flags.js';
 
+// Research Context Panel — ISOC programme deliverables and issues log
+export { ResearchContextPanel } from './components/ResearchGate/index.tsx';
+export { ISOC_DELIVERABLES, EXTERNAL_ISSUES, RESEARCH_GATE_PROPS } from './components/ResearchGate/data.ts';
+export type { ResearchGateProps, ResearchDeliverable, ExternalIssue } from './components/ResearchGate/types.ts';
+
 // @ts-ignore — JSX/JS currency components, resolved by Vite
 export {
   CURRENCY_CONFIGS,

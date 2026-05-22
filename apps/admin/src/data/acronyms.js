@@ -17,7 +17,7 @@ export const ACRONYMS = {
   CFT:    'Counter-Financing of Terrorism',
   DPI:    'Digital Public Infrastructure — foundational government digital systems',
   WST:    "Western Samoan Tālā — Samoa's national currency (ISO 4217: WST)",
-  CBDC:   'Central Bank Digital Currency — digital form of the Tālā issued by CBS',
+  CBDC:   'Digital payment research instrument — fiat-rail research prototype (research phase; no CBDC on SBP timeline)',
   UUPS:   'Universal Upgradeable Proxy Standard — smart contract upgrade pattern',
   EIP712: 'Ethereum signed data standard for secure off-chain message signing',
 }

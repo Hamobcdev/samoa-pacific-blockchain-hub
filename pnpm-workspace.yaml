@@ -1,5 +1,6 @@
 packages:
   - 'apps/*'
+  - 'apps/ministry/*'
   - 'packages/*'
   - 'api'
   - 'frontend' # legacy monolith — preserved

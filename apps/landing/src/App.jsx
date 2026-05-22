@@ -17,56 +17,74 @@ if (typeof document !== 'undefined' && !document.getElementById('sdpi-fonts')) {
 
 const PORTALS = [
   {
-    id:        'citizens',
-    label:     'Citizens Portal',
-    href:      'https://samoa-dpi-citizens.vercel.app',
-    icon:      '◉',
-    desc:      'View your government records and Digital Tālā',
-    audience:  'For Samoan citizens',
-    showLive:  true,
-    badge:     null,
-    legacyUrl: null,
+    id:          'citizens',
+    label:       'Citizens Portal',
+    href:        'https://samoa-dpi-citizens.vercel.app',
+    icon:        '◉',
+    desc:        'View your government records and Digital Tālā',
+    audience:    'For Samoan citizens',
+    showLive:    true,
+    badge:       null,
+    legacyUrl:   null,
+    accentColor: null,
   },
   {
-    id:        'ministry',
-    label:     'CBS Administration',
-    href:      'https://samoa-dpi-admin-o8hjex7t2-synergy-core-devs.vercel.app',
-    icon:      '⬡',
-    desc:      'CBS oversight, governance decisions, node health',
-    audience:  'For CBS and ministry officials',
-    showLive:  true,
-    badge:     null,
-    legacyUrl: null,
+    id:          'cbs',
+    label:       'CBS — Monetary Policy',
+    href:        'https://samoa-dpi-admin.vercel.app',
+    icon:        '⬡',
+    desc:        'Monetary instruments · WST-DPI · Governance decisions · Node health',
+    audience:    'Central Bank of Samoa',
+    showLive:    true,
+    badge:       'Central Bank of Samoa',
+    legacyUrl:   null,
+    accentColor: '#C9A227',
   },
   {
-    id:        'donor',
-    label:     'Development Partners',
-    href:      'https://samoa-dpi-donor-8h822jg1h-synergy-core-devs.vercel.app',
-    icon:      '◈',
-    desc:      'Grant lifecycle transparency and disbursement verification for international development partners',
-    audience:  'For World Bank, ADB, ISOC, bilateral donors',
-    showLive:  true,
-    badge:     null,
-    legacyUrl: null,
+    id:          'mof',
+    label:       'MOF — Fiscal Oversight',
+    href:        'https://samoa-dpi-mof.vercel.app',
+    icon:        '📊',
+    desc:        'Government grants · Disbursements · Budget execution',
+    audience:    'Ministry of Finance',
+    showLive:    false,
+    badge:       'Ministry of Finance',
+    legacyUrl:   null,
+    accentColor: '#00A651',
+    isNew:       true,
   },
   {
-    id:        'verify',
-    label:     'Verify a Credential',
-    href:      'https://samoa-dpi-verify-clqfc53lj-synergy-core-devs.vercel.app',
-    icon:      '✦',
-    desc:      'Confirm a government-issued record is authentic',
-    audience:  'For employers, service providers, verification bodies',
-    note:      'Also accessible from the Citizens Portal',
-    showLive:  true,
-    badge:     null,
-    legacyUrl: null,
+    id:          'donor',
+    label:       'Development Partners',
+    href:        'https://samoa-dpi-donor.vercel.app',
+    icon:        '◈',
+    desc:        'Grant lifecycle transparency and disbursement verification for international development partners',
+    audience:    'For World Bank, ADB, ISOC, bilateral donors',
+    showLive:    true,
+    badge:       null,
+    legacyUrl:   null,
+    accentColor: null,
+  },
+  {
+    id:          'verify',
+    label:       'Verify a Credential',
+    href:        'https://samoa-dpi-verify.vercel.app',
+    icon:        '✦',
+    desc:        'Confirm a government-issued record is authentic',
+    audience:    'For employers, service providers, verification bodies',
+    note:        'Also accessible from the Citizens Portal',
+    showLive:    true,
+    badge:       null,
+    legacyUrl:   null,
+    accentColor: null,
   },
 ]
 
 // ─── Portal Card ────────────────────────────────────────────────────────────
 
-function PortalCard({ label, href, icon, desc, audience, note, showLive, isLive, badge, legacyUrl, hoverCard, clickCard, onShowToast }) {
+function PortalCard({ label, href, icon, desc, audience, note, showLive, isLive, badge, legacyUrl, hoverCard, clickCard, onShowToast, accentColor, isNew }) {
   const [hovered, setHovered] = React.useState(false)
+  const accent = accentColor ?? C.gold
 
   const handleClick = (e) => {
     clickCard?.()
@@ -87,7 +105,7 @@ function PortalCard({ label, href, icon, desc, audience, note, showLive, isLive,
         gap:           '10px',
         background:    C.surface,
         border:        `1px solid ${hovered ? C.border2 : C.border}`,
-        borderLeft:    `3px solid ${hovered ? C.gold : 'transparent'}`,
+        borderLeft:    `3px solid ${hovered ? accent : accentColor ? `${accentColor}55` : 'transparent'}`,
         borderRadius:  '16px',
         padding:       '28px 24px',
         color:         C.white,
@@ -150,34 +168,51 @@ function PortalCard({ label, href, icon, desc, audience, note, showLive, isLive,
         </a>
       )}
 
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'4px' }}>
-        <span style={{ flex: 1 }} />
-        {badge && (
-          <span style={{
-            display:       'inline-flex',
-            alignItems:    'center',
-            background:    'rgba(201,162,39,0.08)',
-            border:        `1px solid ${C.gold}33`,
-            borderRadius:  '12px',
-            padding:       '2px 10px',
-            fontFamily:    F.mono,
-            fontSize:      '9px',
-            color:         C.gold,
-            letterSpacing: '0.8px',
-            textTransform: 'uppercase',
-            marginRight:   '8px',
-          }}>
-            {badge}
-          </span>
-        )}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'4px', gap: '8px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {badge && (
+            <span style={{
+              display:       'inline-flex',
+              alignItems:    'center',
+              background:    `${accent}12`,
+              border:        `1px solid ${accent}33`,
+              borderRadius:  '12px',
+              padding:       '2px 10px',
+              fontFamily:    F.mono,
+              fontSize:      '9px',
+              color:         accent,
+              letterSpacing: '0.8px',
+              textTransform: 'uppercase',
+            }}>
+              {badge}
+            </span>
+          )}
+          {isNew && (
+            <span style={{
+              display:       'inline-flex',
+              alignItems:    'center',
+              background:    'rgba(0,166,81,0.08)',
+              border:        '1px solid rgba(0,166,81,0.3)',
+              borderRadius:  '12px',
+              padding:       '2px 8px',
+              fontFamily:    F.mono,
+              fontSize:      '9px',
+              color:         '#00A651',
+              letterSpacing: '0.8px',
+            }}>
+              NEW
+            </span>
+          )}
+        </div>
         <span style={{
           fontFamily:  F.ui,
           fontSize:    '13px',
-          color:       C.gold,
+          color:       accent,
           fontWeight:  600,
           display:     'inline-block',
           transform:   hovered ? 'translateX(2px)' : 'translateX(0)',
           transition:  'transform 0.2s',
+          marginLeft:  'auto',
         }}>
           →
         </span>
@@ -419,10 +454,10 @@ export default function App() {
           {/* Portal cards */}
           <div style={{
             display:             'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
             gap:                 '16px',
             width:               '100%',
-            maxWidth:            '960px',
+            maxWidth:            '1100px',
             marginTop:           '8px',
           }}>
             {PORTALS.map(p => (

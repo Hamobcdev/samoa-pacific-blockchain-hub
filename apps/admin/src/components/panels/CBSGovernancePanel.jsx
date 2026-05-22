@@ -120,6 +120,44 @@ function GovernanceCard({ item, lang, onView }) {
           )}
         </div>
       )}
+
+      {item.meetingNote && (
+        <div style={{
+          background:    COLORS.surface3,
+          border:        `1px solid ${COLORS.border}`,
+          borderLeft:    '3px solid #8b5cf6',
+          borderRadius:  4,
+          padding:       '8px 12px',
+          marginTop:     4,
+        }}>
+          <div style={{
+            fontFamily:    TYPOGRAPHY.mono,
+            fontSize:      9,
+            color:         '#8b5cf6',
+            letterSpacing: '1px',
+            marginBottom:  4,
+          }}>
+            MEETING NOTE · {item.meetingNote.date}
+          </div>
+          <div style={{
+            fontFamily: TYPOGRAPHY.mono,
+            fontSize:   10,
+            color:      COLORS.textMuted,
+            lineHeight: 1.6,
+          }}>
+            {item.meetingNote.summary}
+          </div>
+          <div style={{
+            fontFamily:  TYPOGRAPHY.mono,
+            fontSize:    9,
+            color:       COLORS.textDim,
+            marginTop:   4,
+            fontStyle:   'italic',
+          }}>
+            Follow-up: {item.meetingNote.followUp}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

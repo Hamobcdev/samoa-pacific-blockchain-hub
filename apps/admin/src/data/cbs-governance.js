@@ -18,6 +18,11 @@ export const CBS_GOVERNANCE_ITEMS = [
     whatItDoes: 'Replaces the single admin key across all 4 smart contracts with a 2-of-3 Gnosis Safe multisig wallet. No single person can unilaterally execute high-value operations.',
     whyPending: 'CBS must designate 3 named keyholders and confirm the required quorum (recommended: 2-of-3). The technical implementation is complete and deployment-ready. Awaiting CBS confirmation of keyholder identities.',
     whatHappensWhen: 'SBP deploys the Gnosis Safe, transfers admin rights from the single deployer key, and confirms with CBS within 24 hours of receiving keyholder names.',
+    meetingNote: {
+      date: '20/05/2026',
+      summary: 'CBS meeting 20 May 2026 — keyholder confirmation not discussed. CBS following their protocols. Production pilot requires this decision before go-live.',
+      followUp: 'NUS to make official contact with CBS. SBP monitoring.',
+    },
   },
   {
     id: 'PAUSABLE',
@@ -34,6 +39,11 @@ export const CBS_GOVERNANCE_ITEMS = [
     whatItDoes: 'Allows an authorised officer to instantly halt all system operations in an emergency. Prevents any further transactions while a security incident is investigated. Unpause requires 2-of-3 multisig approval.',
     whyPending: 'CBS must formally designate who holds pause authority. BIS PFMI Principle 17 requires this designation to be documented in the governance framework before the circuit breaker can be activated. The technical implementation is complete.',
     whatHappensWhen: 'SBP activates the circuit breaker function and assigns pause authority to the designated CBS role within 24 hours of receiving the designation in writing.',
+    meetingNote: {
+      date: '20/05/2026',
+      summary: 'CBS meeting 20 May 2026 — circuit breaker authority not confirmed. CBS following their protocols before committing to governance roles.',
+      followUp: 'NUS to make official contact with CBS. SBP monitoring.',
+    },
   },
   {
     id: 'AC-3-timelock',
@@ -50,6 +60,11 @@ export const CBS_GOVERNANCE_ITEMS = [
     whatItDoes: 'Enforces a mandatory waiting period between when a fund release is approved and when it executes. Provides a veto window for catching errors or unauthorised releases before funds move.',
     whyPending: 'CBS must specify the governance-approved timelock delay window. Options range from 1 hour (routine operations) to 24 hours (significant operations). Different delays can apply to different transaction sizes.',
     whatHappensWhen: 'SBP configures the TimelockController with the CBS-specified delay periods and deploys within 24 hours of receiving the approved delay schedule.',
+    meetingNote: {
+      date: '20/05/2026',
+      summary: 'CBS meeting 20 May 2026 — CBS confirmed full authority over fund release processes. Timelock delay policy to be defined by CBS when ready to engage on pilot.',
+      followUp: 'NUS to make official contact with CBS. SBP monitoring.',
+    },
   },
   {
     id: 'SOV-1',
@@ -66,6 +81,11 @@ export const CBS_GOVERNANCE_ITEMS = [
     whatItDoes: 'Defines which government ministries or institutions operate the validator nodes on the sovereign chain. Validators are responsible for confirming all transactions — they are the backbone of the network\'s security and integrity.',
     whyPending: 'CBS must confirm which ministries co-govern the network as validator node operators. The recommended structure is: CBS, MOF, and MCIT as the initial 3 validators, expandable to 5. Genesis configuration is ready pending confirmation.',
     whatHappensWhen: 'SBP generates validator keys for each designated ministry, configures the genesis block, and launches the sovereign chain within 48 hours of receiving confirmation.',
+    meetingNote: {
+      date: '20/05/2026',
+      summary: 'CBS meeting 20 May 2026 — CBS confirmed they want to be in the driver\'s seat for any sovereign chain work. No CBDC on SBP timeline. Research proceeds on fiat rails (Polygon Amoy).',
+      followUp: 'NUS to make official contact with CBS. SBP monitoring.',
+    },
   },
   {
     id: 'AC-1-consent',
@@ -82,6 +102,11 @@ export const CBS_GOVERNANCE_ITEMS = [
     whatItDoes: 'Determines how a citizen\'s consent is recorded when a ministry requests access to their records held by another ministry. Currently: admin-mediated (officer acts on behalf of citizen). Alternative: citizen cryptographic signature required (EIP-712 standard).',
     whyPending: 'CBS and the Attorney General must confirm whether the government can legally mediate citizen consent administratively, or whether citizen digital signature is required under the CBS Act and Privacy Act.',
     whatHappensWhen: 'SBP implements the legally approved consent model within 48 hours of receiving the legal determination. The EIP-712 citizen signature draft is already prepared.',
+    meetingNote: {
+      date: '20/05/2026',
+      summary: 'CBS meeting 20 May 2026 — citizen consent model not discussed. Awaiting formal CBS engagement process.',
+      followUp: 'NUS to make official contact with CBS. SBP monitoring.',
+    },
   },
   {
     id: 'FATF-1',
@@ -98,5 +123,10 @@ export const CBS_GOVERNANCE_ITEMS = [
     whatItDoes: 'Enables an authorised officer to flag a transaction or service record as potentially suspicious, triggering the FATF Recommendation 15 Suspicious Activity Report (SAR) workflow. Required for FATF compliance on all virtual asset systems.',
     whyPending: 'CBS must define the SAR reporting chain: who can flag, who reviews, who files with the FATF reporting authority, and what the escalation timeline is. The on-chain flagging mechanism is technically complete.',
     whatHappensWhen: 'SBP activates the flagService() function and connects it to the CBS-defined reporting workflow within 48 hours of receiving the workflow definition.',
+    meetingNote: {
+      date: '20/05/2026',
+      summary: 'CBS meeting 20 May 2026 — AML/SAR workflow not discussed. Awaiting formal CBS engagement on regulatory compliance requirements.',
+      followUp: 'NUS to make official contact with CBS. SBP monitoring.',
+    },
   },
 ]

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { C, F } from '@samoa-dpi/shared-ui'
 import { OPERATIONAL_NODES, GOVERNMENT_NODES } from '@samoa-dpi/contracts-abi'
-import { ResearchGate }  from '@samoa-dpi/shared-ui'
+import { ResearchGate, ResearchContextPanel, RESEARCH_GATE_PROPS } from '@samoa-dpi/shared-ui'
 import AuthorityBar      from './AuthorityBar.jsx'
 import BlockchainCanvas  from './BlockchainCanvas.jsx'
 import TapaPattern       from './TapaPattern.jsx'
@@ -29,29 +29,17 @@ const PORTALS = [
     accentColor: null,
   },
   {
-    id:          'cbs',
-    label:       'CBS — Monetary Policy',
-    href:        'https://samoa-dpi-admin.vercel.app',
-    icon:        '⬡',
-    desc:        'Monetary instruments · WST-DPI · Governance decisions · Node health',
-    audience:    'Central Bank of Samoa',
-    showLive:    true,
-    badge:       'Central Bank of Samoa',
-    legacyUrl:   null,
-    accentColor: '#C9A227',
-  },
-  {
-    id:          'mof',
-    label:       'MOF — Fiscal Oversight',
-    href:        'https://samoa-dpi-mof.vercel.app',
-    icon:        '📊',
-    desc:        'Government grants · Disbursements · Budget execution',
-    audience:    'Ministry of Finance',
+    id:          'government',
+    label:       'Government Portal',
+    href:        '/government',
+    icon:        '⬛',
+    desc:        'CBS monetary policy · MOF fiscal oversight · Ministry and regulatory access',
+    audience:    'Authorised officials — credential required',
     showLive:    false,
-    badge:       'Ministry of Finance',
+    badge:       'Restricted Access',
     legacyUrl:   null,
-    accentColor: '#00A651',
-    isNew:       true,
+    accentColor: '#4a6a8a',
+    isExternal:  false,
   },
   {
     id:          'donor',
@@ -82,7 +70,7 @@ const PORTALS = [
 
 // ─── Portal Card ────────────────────────────────────────────────────────────
 
-function PortalCard({ label, href, icon, desc, audience, note, showLive, isLive, badge, legacyUrl, hoverCard, clickCard, onShowToast, accentColor, isNew }) {
+function PortalCard({ label, href, icon, desc, audience, note, showLive, isLive, badge, legacyUrl, hoverCard, clickCard, onShowToast, accentColor, isNew, isExternal = true }) {
   const [hovered, setHovered] = React.useState(false)
   const accent = accentColor ?? C.gold
 
@@ -97,8 +85,8 @@ function PortalCard({ label, href, icon, desc, audience, note, showLive, isLive,
   return (
     <a
       href={href}
-      target="_blank"
-      rel="noopener noreferrer"
+      target={isExternal ? '_blank' : undefined}
+      rel={isExternal ? 'noopener noreferrer' : undefined}
       style={{
         display:       'flex',
         flexDirection: 'column',
@@ -471,6 +459,11 @@ export default function App() {
               />
             ))}
           </div>
+
+          {/* Public research panel — visible to all including ISOC reviewers */}
+          <section id="research" style={{ width: '100%', maxWidth: '1100px', marginTop: '3rem' }}>
+            <ResearchContextPanel {...RESEARCH_GATE_PROPS} />
+          </section>
         </main>
 
         <GovFooter />

@@ -1,5 +1,6 @@
-import React from 'react'
-import { ResearchGate } from '@samoa-dpi/shared-ui'
+import React, { useEffect, useState } from 'react'
+import { ResearchGate, ClassificationBand } from '@samoa-dpi/shared-ui'
+import { getSession, parseZoneFromToken, parseRoleFromToken } from './lib/gov-auth'
 
 const MONO = "'IBM Plex Mono', monospace"
 const SANS = "'DM Sans', sans-serif"
@@ -68,8 +69,41 @@ function SectionCard({
 }
 
 export default function App() {
+  const [gatewaySession, setGatewaySession] = useState<{ zone: 1|2|3; role: string } | null>(null)
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlToken = urlParams.get('token')
+
+    if (urlToken) {
+      const zone = parseZoneFromToken(urlToken) as 1|2|3
+      const role = parseRoleFromToken(urlToken)
+      sessionStorage.setItem('gov_session', JSON.stringify({
+        sessionToken: urlToken,
+        zone,
+        role,
+        storedAt: Date.now(),
+        portalUrl: '',
+      }))
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+
+    if (import.meta.env.DEV) return
+
+    const session = getSession()
+    if (!session) {
+      window.location.href = 'https://landing-alpha-seven-82.vercel.app/government'
+      return
+    }
+
+    setGatewaySession({ zone: session.zone, role: session.role })
+  }, [])
+
   return (
     <ResearchGate storageKey="sdpi_mof_acknowledged">
+      {gatewaySession && (
+        <ClassificationBand zone={gatewaySession.zone} role={gatewaySession.role} />
+      )}
       <div style={{ minHeight: '100vh', background: C.bg, fontFamily: SANS }}>
 
         {/* Header */}

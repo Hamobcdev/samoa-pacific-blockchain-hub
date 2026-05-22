@@ -20,6 +20,9 @@ export { FLAGS, useFlag, FeatureGate } from './feature-flags.js';
 
 // Research Context Panel — ISOC programme deliverables and issues log
 export { ResearchContextPanel } from './components/ResearchGate/index.tsx';
+
+// Government classification band — zone-based security indicator
+export { ClassificationBand } from './components/gov/ClassificationBand';
 export { ISOC_DELIVERABLES, EXTERNAL_ISSUES, RESEARCH_GATE_PROPS } from './components/ResearchGate/data.ts';
 export type { ResearchGateProps, ResearchDeliverable, ExternalIssue } from './components/ResearchGate/types.ts';
 

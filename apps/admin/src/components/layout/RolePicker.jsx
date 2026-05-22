@@ -47,7 +47,7 @@ export function RolePicker({ onSelect, lang = 'EN' }) {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 400 }}>
-        {Object.values(ROLES).map(role => (
+        {Object.values(ROLES).filter(r => !['MOF_ADMIN', 'MCIT_ADMIN'].includes(r.id)).map(role => (
           <button
             key={role.id}
             onClick={() => onSelect(role.id)}

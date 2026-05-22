@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { GLOBAL_STYLES, COLORS, TYPOGRAPHY } from './theme.js'
 import { t } from './i18n.js'
-import { ResearchGate, CurrencyProvider, LanguageProvider, useLang } from '@samoa-dpi/shared-ui'
+import { ResearchGate, CurrencyProvider, LanguageProvider, useLang, ClassificationBand } from '@samoa-dpi/shared-ui'
+import { getSession, parseZoneFromToken, parseRoleFromToken } from './lib/gov-auth'
 import { useRole }            from './hooks/useRole.js'
 import { useSession }         from './hooks/useSession.js'
 import { useAuditLog }        from './hooks/useAuditLog.js'
@@ -58,11 +59,45 @@ function AdminApp() {
   const { lang, toggle: toggleLang } = useLang()
   const [hasRole, setHasRole]         = useState(false)
   const [activePanel, setActivePanel] = useState('overview')
+  const [gatewaySession, setGatewaySession] = useState(null)
 
   const { roleId, role, setRole, can } = useRole()
   const auditLog    = useAuditLog()
   const nodeHealth  = useNodeHealth()
   const governance  = useGovernanceStatus()
+
+  // Gateway token gate — runs once on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlToken = urlParams.get('token')
+
+    if (urlToken) {
+      const zone = parseZoneFromToken(urlToken)
+      const roleName = parseRoleFromToken(urlToken)
+      sessionStorage.setItem('gov_session', JSON.stringify({
+        sessionToken: urlToken,
+        zone,
+        role: roleName,
+        storedAt: Date.now(),
+        portalUrl: '',
+      }))
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+
+    // DEV mode: skip redirect, allow role picker as normal
+    if (import.meta.env.DEV) return
+
+    const session = getSession()
+    if (!session) {
+      window.location.href = 'https://landing-alpha-seven-82.vercel.app/government'
+      return
+    }
+
+    setGatewaySession(session)
+    const mappedRole = session.zone >= 3 ? 'CBS_GOVERNOR' : 'CBS_ANALYST'
+    setRole(mappedRole)
+    setHasRole(true)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleTimeout = useCallback(() => {
     auditLog.log('SESSION_TIMEOUT', 'Inactivity timeout', roleId)
@@ -116,6 +151,11 @@ function AdminApp() {
         color:         COLORS.text,
         fontFamily:    TYPOGRAPHY.sans,
       }}>
+        {/* Classification band — shown when authenticated via gateway */}
+        {gatewaySession && (
+          <ClassificationBand zone={gatewaySession.zone} role={gatewaySession.role} />
+        )}
+
         {/* Top bar */}
         <header data-print-hide style={{
           display:         'flex',

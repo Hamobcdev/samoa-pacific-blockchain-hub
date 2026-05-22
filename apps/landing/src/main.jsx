@@ -1,10 +1,14 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
+import GovernmentGateway from './pages/GovernmentGateway'
 import './index.css'
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+const root = ReactDOM.createRoot(document.getElementById('root'))
+const isGovRoute = window.location.pathname === '/government'
+
+root.render(
   <React.StrictMode>
-    <App />
+    {isGovRoute ? <GovernmentGateway /> : <App />}
   </React.StrictMode>
 )

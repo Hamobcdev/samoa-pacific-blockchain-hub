@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { GLOBAL_STYLES, COLORS, TYPOGRAPHY } from './theme.js'
 import { t } from './i18n.js'
-import { ResearchGate, CurrencyProvider, LanguageProvider, useLang, ClassificationBand } from '@samoa-dpi/shared-ui'
+import { CurrencyProvider, LanguageProvider, useLang, ClassificationBand } from '@samoa-dpi/shared-ui'
 import { getSession, parseZoneFromToken, parseRoleFromToken } from './lib/gov-auth'
 import { useRole }            from './hooks/useRole.js'
 import { useSession }         from './hooks/useSession.js'
@@ -279,10 +279,8 @@ function AdminApp() {
 
 export default function App() {
   return (
-    <ResearchGate storageKey="sdpi_admin_acknowledged">
-      <LanguageProvider defaultLang="EN">
-        <AdminApp />
-      </LanguageProvider>
-    </ResearchGate>
+    <LanguageProvider defaultLang="EN">
+      <AdminApp />
+    </LanguageProvider>
   )
 }

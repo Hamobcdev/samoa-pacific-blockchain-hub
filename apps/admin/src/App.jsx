@@ -68,12 +68,20 @@ function AdminApp() {
 
   // Gateway token gate — runs once on mount
   useEffect(() => {
+    const path = window.location.pathname
+
+    // /governor → full CBS Admin view (zone 3); /analyst → read-only view (zone 2)
+    const routeCtx =
+      path === '/governor' ? { zone: 3, role: 'CBS Governor', roleId: 'CBS_GOVERNOR' }
+      : path === '/analyst' ? { zone: 2, role: 'CBS Analyst',  roleId: 'CBS_ANALYST'  }
+      : null
+
     const urlParams = new URLSearchParams(window.location.search)
     const urlToken = urlParams.get('token')
 
     if (urlToken) {
-      const zone = parseZoneFromToken(urlToken)
-      const roleName = parseRoleFromToken(urlToken)
+      const zone     = routeCtx ? routeCtx.zone : parseZoneFromToken(urlToken)
+      const roleName = routeCtx ? routeCtx.role : parseRoleFromToken(urlToken)
       sessionStorage.setItem('gov_session', JSON.stringify({
         sessionToken: urlToken,
         zone,
@@ -81,11 +89,18 @@ function AdminApp() {
         storedAt: Date.now(),
         portalUrl: '',
       }))
-      window.history.replaceState({}, '', window.location.pathname)
+      window.history.replaceState({}, '', path)
     }
 
-    // DEV mode: skip redirect, allow role picker as normal
-    if (import.meta.env.DEV) return
+    // DEV mode: skip redirect; auto-apply routeCtx if on a named route
+    if (import.meta.env.DEV) {
+      if (routeCtx) {
+        setGatewaySession({ zone: routeCtx.zone, role: routeCtx.role })
+        setRole(routeCtx.roleId)
+        setHasRole(true)
+      }
+      return
+    }
 
     const session = getSession()
     if (!session) {
@@ -93,9 +108,19 @@ function AdminApp() {
       return
     }
 
-    setGatewaySession(session)
-    const mappedRole = session.zone >= 3 ? 'CBS_GOVERNOR' : 'CBS_ANALYST'
-    setRole(mappedRole)
+    // Zone floor check: a zone-2 session must not access a zone-3 path via manual navigation
+    if (routeCtx && session.zone < routeCtx.zone) {
+      window.location.href = 'https://landing-alpha-seven-82.vercel.app/government'
+      return
+    }
+
+    const effectiveZone   = routeCtx ? routeCtx.zone   : session.zone
+    const effectiveRole   = routeCtx ? routeCtx.role   : session.role
+    const effectiveRoleId = routeCtx ? routeCtx.roleId
+      : session.zone >= 3 ? 'CBS_GOVERNOR' : 'CBS_ANALYST'
+
+    setGatewaySession({ ...session, zone: effectiveZone, role: effectiveRole })
+    setRole(effectiveRoleId)
     setHasRole(true)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 

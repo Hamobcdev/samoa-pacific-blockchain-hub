@@ -3,6 +3,9 @@
   "outputDirectory": "apps/donor/dist",
   "installCommand": "pnpm install",
   "framework": null,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",

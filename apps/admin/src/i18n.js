@@ -7,7 +7,7 @@ export const STRINGS = {
   'nav.audit':        { EN: 'Audit Remediation',             SM: 'Toe Iloilo' },
   'nav.ministry':     { EN: 'Ministry Portals',              SM: 'Matagaluega' },
   'nav.donor':        { EN: 'Donor Oversight',               SM: 'Mataala Foakina' },
-  'nav.dbs':          { EN: 'DBS Distribution',              SM: 'DBS Tufatufa' },
+  'nav.dbs':          { EN: 'CBS Distribution',              SM: 'CBS Tufatufa' },
   'nav.research':     { EN: 'Research Context',              SM: "Su'esu'ega" },
   'status.active':    { EN: 'Active',                        SM: "Ati'ae" },
   'status.health':    { EN: 'Health',                        SM: 'Soifua' },

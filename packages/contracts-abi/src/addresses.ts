@@ -1,18 +1,18 @@
-// Copied from frontend/src/App.jsx (line 250) — DO NOT modify the monolith.
-// Polygon Amoy Testnet — deployed 18 March 2026, verified on Polygonscan.
+// Polygon Amoy Testnet — redeployed 26 May 2026, currency architecture 06B.
+// Proxy addresses (UUPS ERC1967). TimestampTooSoon in seed data is expected
+// behaviour — TS-1 audit fix (AIDisbursementTracker timestamp guard) working.
 
 export const ADDR = {
-  NDIDS:     "0x0E832d0C324Cd70ca58Dd1B0965151167853cE42",
-  AID:       "0x3fD12fe1400BD9B8cd7ebE59C47EA27ab6bF5EdB",
-  HUB:       "0x6c213b53b41c325317dF0443442b0eae9c7618Cc",
-  CBS:       "0xeC404FB5564da6f6c77DD7C8A694B1A3fFCe99c1",
-  MCIT:      "0x4F117fdC9BB2b781d52731E5674f669Bfe1E6402",
-  MOF:       "0x8c26B5E477d6feFf2a75C0Fbd7f3667c4dB07FC4",
-  MCIL:      "0xe9b67Df4a062C20167D963DD74fc436c1B83EceD",
-  EDUCATION: "0xa3Cb3B9A6DF26cd550A6D8A49EF693c78750F27d",
-  CUSTOMS:   "0x6462197ff41c7EbA925e0F9EB980e61454e40366",
-  // SBS uses NDIDSRegistry for MVP — dedicated SBSRegistry contract in Phase 2
-  SBS:       "0x0E832d0C324Cd70ca58Dd1B0965151167853cE42",
+  NDIDS:     "0x4396A85356e41ef5435BE7F24F533625BE27762c",
+  AID:       "0xbD7E00ECeE7A8d45D4720B54BbfD3295CF63455C",
+  HUB:       "0xB4D3D4Ac59f0976Ee6b5A7d118df955c8E075bfd",
+  CBS:       "0xE932E59dAAB4d403e011c4aB0554171BC5eb35B8",
+  MCIT:      "0xb43C35d1771E95978c6dbF1C22258c677E2809B2",
+  MOF:       "0xEcd8Af2929FaDC86aA5Bb85E05C95695df39F0Cf",
+  MCIL:      "0xe9D040295Db7579070EA570F7E7D7dB020032Ea0",
+  EDUCATION: "0x976A09cB084aAF41028D241313D3a23A472901aF",
+  CUSTOMS:   "0x5AcFdAD651b344CdDC805b45BF1Ecf3e262d56FA",
+  SBS:       "0xa2D95Aef98606e6016Ba7937A2578C04043525C1",
 } as const;
 
 export type ContractKey = keyof typeof ADDR;

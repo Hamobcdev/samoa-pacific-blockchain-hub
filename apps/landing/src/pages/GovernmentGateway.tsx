@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { authenticateCredential, storeSession } from '../lib/gov-auth'
+import { storeSession } from '../lib/gov-auth'
 
 export default function GovernmentGateway() {
   const [credential, setCredential] = useState('')
@@ -26,25 +26,43 @@ export default function GovernmentGateway() {
     setStatus('loading')
     setAttempts(a => a + 1)
 
-    const result = await authenticateCredential(credential)
+    try {
+      const response = await fetch('/api/gov-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: credential.trim() }),
+      })
 
-    if (!result) {
+      if (!response.ok) {
+        setStatus('denied')
+        setCredential('')
+        setTimeout(() => setStatus('idle'), 3000)
+        return
+      }
+
+      const data = await response.json()
+      const result = {
+        role: data.role as string,
+        zone: data.zone as 1 | 2 | 3,
+        portalUrl: (data.redirect as string) ?? '',
+        sessionToken: btoa(JSON.stringify({ role: data.role, zone: data.zone, issued: Date.now() })),
+      }
+
+      storeSession(result)
+      setStatus('granted')
+
+      setTimeout(() => {
+        if (result.portalUrl.startsWith('http')) {
+          window.location.href = result.portalUrl + '?token=' + encodeURIComponent(result.sessionToken)
+        } else {
+          window.location.href = result.portalUrl
+        }
+      }, 800)
+    } catch {
       setStatus('denied')
       setCredential('')
       setTimeout(() => setStatus('idle'), 3000)
-      return
     }
-
-    storeSession(result)
-    setStatus('granted')
-
-    setTimeout(() => {
-      if (result.portalUrl.startsWith('http')) {
-        window.location.href = result.portalUrl + '?token=' + encodeURIComponent(result.sessionToken)
-      } else {
-        window.location.href = result.portalUrl
-      }
-    }, 800)
   }
 
   return (

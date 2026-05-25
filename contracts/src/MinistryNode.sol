@@ -66,6 +66,20 @@ contract MinistryNode is Initializable, UUPSUpgradeable, Pausable, ReentrancyGua
         bool    ndidsVerified;    // was identity confirmed via NDIDS?
     }
 
+    // ── Form Submission Storage ──────────────────────────────────────────
+    struct FormSubmission {
+        bytes32 citizenHash;   // NDIDS or non-NDIDS reference hash
+        bytes32 formHash;      // keccak256 of all form fields (tamper detection)
+        string  formType;      // "ARRIVAL_DECLARATION" | "BIRTH_CERT" etc.
+        bytes32 witnessHash;   // cultural witness hash (bytes32(0) if none)
+        uint256 feeAmount;     // in sene (WST × 100, 2 decimal places always)
+        bytes32 paymentRef;    // payment transaction reference hash
+        uint256 submittedAt;
+        bool    autoApproved;
+        uint8   flagType;      // 0=none 1=identity 2=watchlist 3=crossref 4=compliance
+        uint8   priority;      // 0=low 1=medium 2=high 3=critical
+    }
+
     ServiceRecord[] private _records;
     mapping(bytes32 => uint256[]) public citizenRecordIds; // citizenHash => record indices
 
@@ -96,6 +110,24 @@ contract MinistryNode is Initializable, UUPSUpgradeable, Pausable, ReentrancyGua
     event HubMigrationProposed(address indexed proposedHub, uint256 executeAfter);
     event HubMigrationConfirmed(address indexed previousHub, address indexed newHub);
     event HubMigrationCancelled(address indexed cancelledHub);
+    event FormSubmitted(
+        uint256 indexed submissionId,
+        bytes32 indexed formHash,
+        string  formType,
+        uint8   tier,
+        uint256 timestamp
+    );
+    event FormAutoApproved(
+        uint256 indexed submissionId,
+        bytes32 criteriaHash,
+        uint256 timestamp
+    );
+    event FormRequiresReview(
+        uint256 indexed submissionId,
+        uint8   flagType,
+        uint8   priority,
+        uint256 timestamp
+    );
 
     // ── Errors ───────────────────────────────────────────────────
 
@@ -107,6 +139,11 @@ contract MinistryNode is Initializable, UUPSUpgradeable, Pausable, ReentrancyGua
     error MigrationNotPending();
     error TimelockNotExpired();
     error InvalidServiceType();
+    error DuplicateSubmission();
+    error InvalidFormType();
+    error InvalidSubmission();
+    error InvalidFlagType();
+    error InvalidPriority();
 
     // ── Constructor / Initializer ────────────────────────────────
 
@@ -328,4 +365,99 @@ contract MinistryNode is Initializable, UUPSUpgradeable, Pausable, ReentrancyGua
 
     function _authorizeUpgrade(address newImplementation)
         internal override onlyAdmin {}
+
+    // ── Form Submission Mappings ─────────────────────────────────────────
+
+    mapping(uint256 => FormSubmission) private _submissions;    // slot 1
+    mapping(bytes32 => bool)           private _formHashExists; // slot 2
+    mapping(bytes32 => uint256)        private _formHashToId;   // slot 3
+    uint256 public totalSubmissions;                            // slot 4
+
+    // ── Form Submission Functions ────────────────────────────────────────
+
+    /// @notice Record a form submission on-chain for tamper detection.
+    ///         Stores form hash — any alteration of form data is detectable.
+    ///         Returns unique submission ID for tracking.
+    /// @dev    Uses onlyAdminOrHub — hub submits on behalf of citizens.
+    ///         onlyAuthorised is read-only and must NOT be used here.
+    function recordFormSubmission(
+        bytes32         citizenHash,
+        bytes32         formHash,
+        string calldata formType,
+        bytes32         witnessHash,
+        uint256         feeAmount,
+        bytes32         paymentRef
+    ) external onlyAdminOrHub returns (uint256 submissionId) {
+        if (citizenHash == bytes32(0))       revert ZeroAddress();
+        if (formHash    == bytes32(0))       revert ZeroAddress();
+        if (_formHashExists[formHash])       revert DuplicateSubmission();
+        if (bytes(formType).length == 0)     revert InvalidFormType();
+
+        submissionId = totalSubmissions++;
+
+        _submissions[submissionId] = FormSubmission({
+            citizenHash:  citizenHash,
+            formHash:     formHash,
+            formType:     formType,
+            witnessHash:  witnessHash,
+            feeAmount:    feeAmount,
+            paymentRef:   paymentRef,
+            submittedAt:  block.timestamp,
+            autoApproved: false,
+            flagType:     0,
+            priority:     0
+        });
+
+        _formHashExists[formHash] = true;
+        _formHashToId[formHash]   = submissionId;
+
+        emit FormSubmitted(submissionId, formHash, formType, 0, block.timestamp);
+    }
+
+    /// @notice Mark a submission as auto-approved (all automation gates passed).
+    function approveSubmission(
+        uint256 submissionId,
+        bytes32 criteriaHash
+    ) external onlyAdminOrHub {
+        if (submissionId >= totalSubmissions) revert InvalidSubmission();
+        _submissions[submissionId].autoApproved = true;
+        emit FormAutoApproved(submissionId, criteriaHash, block.timestamp);
+    }
+
+    /// @notice Flag a submission for officer review queue.
+    function flagSubmissionForReview(
+        uint256 submissionId,
+        uint8   flagType,
+        uint8   priority
+    ) external onlyAdminOrHub {
+        if (submissionId >= totalSubmissions) revert InvalidSubmission();
+        if (flagType == 0 || flagType > 4)   revert InvalidFlagType();
+        if (priority > 3)                    revert InvalidPriority();
+        _submissions[submissionId].flagType = flagType;
+        _submissions[submissionId].priority = priority;
+        emit FormRequiresReview(submissionId, flagType, priority, block.timestamp);
+    }
+
+    /// @notice Verify a form hash exists on-chain.
+    ///         No access restriction — used by public verify portal.
+    function verifyFormSubmission(bytes32 formHash)
+        external view
+        returns (bool exists, uint256 submissionId)
+    {
+        exists       = _formHashExists[formHash];
+        submissionId = exists ? _formHashToId[formHash] : 0;
+    }
+
+    /// @notice Get full submission record. Restricted to authorised readers.
+    function getSubmission(uint256 submissionId)
+        external view onlyAuthorised
+        returns (FormSubmission memory)
+    {
+        if (submissionId >= totalSubmissions) revert InvalidSubmission();
+        return _submissions[submissionId];
+    }
+
+    /// @dev Storage gap for UUPS upgrade safety.
+    /// Reserves 46 slots (reduced from 50 by 4 new storage slots).
+    uint256[46] private __gap;
 }

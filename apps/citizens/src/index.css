@@ -1,0 +1,45 @@
+@import '@samoa-dpi/shared-ui/src/tokens.css';
+
+/* Citizens portal — light theme overrides */
+:root {
+  --color-bg:       #f8f9fc;
+  --color-surface:  #ffffff;
+  --color-border:   #e2e6f0;
+  --color-text:     #1a2035;
+  --color-muted:    #5a6475;   /* 7.2:1 on #f8f9fc — WCAG AAA */
+  --color-dim:      #8c9ab8;
+
+  /* Legacy aliases for citizens app components */
+  --bg:        #f8f9fc;
+  --surface:   #ffffff;
+  --border:    #e2e6f0;
+  --text:      #1a2035;
+  --muted:     #5a6475;
+  --primary:   #003087;
+  --accent:    #CE1126;
+  --gold:      #C9A227;
+  --success:   #007a4d;
+  --font-sans: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: 2px;
+}

@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Samoa DPI — Frontend UI/UX Build Checklist v1</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0d0f14;
+    --surface:  #141720;
+    --surface2: #1c2030;
+    --border:   #2a2f3e;
+    --border2:  #363d52;
+    --text:     #e2e6f0;
+    --muted:    #6b7280;
+    --mono:     'IBM Plex Mono', monospace;
+    --sans:     'IBM Plex Sans', sans-serif;
+
+    /* Severity */
+    --critical:        #ff4757;
+    --critical-bg:     #1a0a0d;
+    --critical-border: #3d1217;
+    --high:            #ff8c00;
+    --high-bg:         #150e00;
+    --high-border:     #3d2800;
+    --medium:          #f4c430;
+    --medium-bg:       #141000;
+    --medium-border:   #3a2f00;
+    --low:             #4fc3f7;
+    --low-bg:          #020d12;
+    --low-border:      #0a2535;
+    --done:            #00c896;
+    --done-bg:         #021a12;
+    --done-border:     #054030;
+    --blocked:         #9c6bda;
+    --blocked-bg:      #0f0818;
+    --blocked-border:  #2a1550;
+    --phase2:          #38bdf8;
+    --phase2-bg:       #010d14;
+    --phase2-border:   #082030;
+    --phase3:          #a78bfa;
+    --phase3-bg:       #0d0814;
+    --phase3-border:   #2a1a50;
+    --training:        #34d399;
+    --training-bg:     #011a12;
+    --training-border: #064030;
+
+    /* Samoa flag */
+    --flag-red:  #CE1126;
+    --flag-blue: #003087;
+    --gold:      #C9A227;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 32px 20px;
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+
+  /* ── HEADER ─────────────────────────────────────────────── */
+  header { border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 32px; }
+
+  .header-flag {
+    width: 100%; height: 4px;
+    background: linear-gradient(90deg, var(--flag-red) 50%, var(--flag-blue) 50%);
+    border-radius: 2px; margin-bottom: 20px;
+  }
+
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+  .title-block h1 { font-family: var(--mono); font-size: 17px; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
+  .title-block p  { font-size: 11px; color: var(--muted); margin-top: 4px; font-family: var(--mono); }
+
+  .vision-block {
+    margin-top: 16px; padding: 14px 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--gold); border-radius: 5px;
+    font-family: var(--sans); font-size: 12px; color: var(--muted); line-height: 1.7;
+  }
+  .vision-block strong { color: var(--gold); }
+
+  .progress-block { text-align: right; }
+  .progress-bar-wrap { width: 240px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+  .progress-bar-fill { height: 100%; background: var(--done); border-radius: 3px; transition: width 0.4s ease; }
+  .progress-label { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .progress-label span { color: var(--done); font-weight: 600; }
+
+  /* ── LEGEND ──────────────────────────────────────────────── */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); align-items: center; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .reset-btn {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    background: none; border: 1px solid var(--border); padding: 4px 10px;
+    border-radius: 4px; cursor: pointer; transition: all 0.15s; margin-left: auto;
+  }
+  .reset-btn:hover { border-color: var(--border2); color: var(--text); }
+
+  /* ── PHASE BANNER ────────────────────────────────────────── */
+  .phase-banner {
+    margin: 28px 0 16px;
+    padding: 10px 16px;
+    border-radius: 5px;
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .phase-banner.p1  { background: var(--done-bg);    border: 1px solid var(--done-border);   color: var(--done);    }
+  .phase-banner.p2  { background: var(--phase2-bg);  border: 1px solid var(--phase2-border); color: var(--phase2);  }
+  .phase-banner.p3  { background: var(--phase3-bg);  border: 1px solid var(--phase3-border); color: var(--phase3);  }
+  .phase-banner.p4  { background: var(--blocked-bg); border: 1px solid var(--blocked-border);color: var(--blocked); }
+
+  /* ── SECTION ─────────────────────────────────────────────── */
+  .section { margin-bottom: 32px; }
+
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 10px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-title { font-family: var(--mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); }
+  .section-count { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-left: auto; }
+  .section-desc  { font-family: var(--sans); font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.6; padding-left: 2px; }
+
+  /* ── ITEM ────────────────────────────────────────────────── */
+  .item {
+    display: grid; grid-template-columns: 20px 1fr;
+    gap: 12px; padding: 11px 14px;
+    border: 1px solid var(--border); border-radius: 6px;
+    margin-bottom: 5px; background: var(--surface);
+    cursor: pointer; transition: all 0.15s ease; user-select: none;
+  }
+  .item:hover { border-color: var(--border2); background: var(--surface2); }
+  .item.done  { background: var(--done-bg); border-color: var(--done-border); opacity: 0.65; }
+  .item.done .item-title { text-decoration: line-through; color: var(--muted); }
+  .item.cbs-blocked { border-left: 3px solid var(--blocked); }
+  .item.phase2-item { border-left: 3px solid var(--phase2); }
+  .item.phase3-item { border-left: 3px solid var(--phase3); }
+  .item.training-item { border-left: 3px solid var(--training); }
+
+  .checkbox {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--border2); border-radius: 3px;
+    flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .item.done .checkbox { background: var(--done); border-color: var(--done); }
+  .checkmark { display: none; color: #000; font-size: 10px; font-weight: 700; line-height: 1; }
+  .item.done .checkmark { display: block; }
+
+  .item-top { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
+  .item-id   { font-family: var(--mono); font-size: 10px; color: var(--muted); flex-shrink: 0; margin-top: 2px; }
+  .item-title { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; min-width: 0; }
+  .item-fix  { font-size: 12px; color: var(--muted); margin-top: 4px; font-family: var(--mono); line-height: 1.55; }
+  .item-location { font-size: 11px; color: #3d5a80; margin-top: 3px; font-family: var(--mono); }
+  .item-blocked  { font-size: 11px; color: var(--blocked); margin-top: 4px; font-family: var(--mono); }
+  .item-note     { font-size: 11px; color: var(--gold); margin-top: 4px; font-family: var(--mono); }
+
+  /* ── BADGES ──────────────────────────────────────────────── */
+  .badge {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.8px; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 3px; flex-shrink: 0; white-space: nowrap;
+  }
+  .badge-critical { background: var(--critical-bg); color: var(--critical); border: 1px solid var(--critical-border); }
+  .badge-high     { background: var(--high-bg);     color: var(--high);     border: 1px solid var(--high-border); }
+  .badge-medium   { background: var(--medium-bg);   color: var(--medium);   border: 1px solid var(--medium-border); }
+  .badge-low      { background: var(--low-bg);       color: var(--low);      border: 1px solid var(--low-border); }
+  .badge-blocked  { background: var(--blocked-bg);  color: var(--blocked);  border: 1px solid var(--blocked-border); }
+  .badge-phase2   { background: var(--phase2-bg);   color: var(--phase2);   border: 1px solid var(--phase2-border); }
+  .badge-phase3   { background: var(--phase3-bg);   color: var(--phase3);   border: 1px solid var(--phase3-border); }
+  .badge-training { background: var(--training-bg); color: var(--training); border: 1px solid var(--training-border); }
+  .badge-portal {
+    background: #0a1020; color: var(--gold);
+    border: 1px solid #2a2010; font-size: 8px; letter-spacing: 1px;
+  }
+
+  /* ── FOOTNOTE ────────────────────────────────────────────── */
+  .checklist-footer {
+    margin-top: 48px; padding: 20px 20px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-top: 3px solid var(--gold); border-radius: 6px;
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+    line-height: 1.8;
+  }
+  .checklist-footer h3 { color: var(--gold); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-flag"></div>
+  <div class="header-top">
+    <div class="title-block">
+      <h1>SAMOA DPI — FRONTEND UI/UX BUILD CHECKLIST</h1>
+      <p>Full Platform · All Portals · Constitutional Edition · v1.0 · 2026-05-15</p>
+    </div>
+    <div class="progress-block">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+      <div class="progress-label"><span id="progress-done">0</span> / <span id="progress-total">0</span> items complete</div>
+    </div>
+  </div>
+
+  <div class="vision-block">
+    <strong>Project Vision:</strong> Build the Pacific's first sovereign digital public infrastructure — CBDC, identity, interoperability, and government service records — on a single cryptographically-verified, immutably-audited, bilingual, mobile-first platform. Benchmarked against Estonia's X-Road and India's Aadhaar. Designed for Samoa first, Pacific expansion second. Every portal must pass the <strong>new car test</strong>: a government official opening it for the first time should understand what it is, where they are, and what to do — within three seconds, without reading a manual.
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--critical)"></div> Critical</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--high)"></div> High</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--medium)"></div> Medium</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--low)"></div> Low</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--blocked)"></div> CBS-Blocked</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--phase2)"></div> Phase 2</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--phase3)"></div> Phase 3</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--training)"></div> Training</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--done)"></div> Done</div>
+    <button class="reset-btn" onclick="resetAll()">Reset all</button>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="phase-banner p1">▸ PHASE 1 — Research Submission Sprint · Current · All items in this phase required for CBS Demo &amp; NUS/ISOC Submission</div>
+
+<!-- SECTION 1 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">01 · Admin Portal — Immediate Fixes</div>
+    <div class="section-count" id="count-s1"></div>
+  </div>
+  <div class="section-desc">All items required before the CBS leadership demonstration. These are the fixes identified after the first full smoke test of the deployed admin portal.</div>
+
+  <div class="item" data-id="ADMIN-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">ADMIN-1</span><span class="item-title">Node Health Matrix — replace table with branch-grouped card grid</span><span class="badge badge-critical">Critical</span><span class="badge badge-portal">ADMIN</span></div>
+      <div class="item-fix">→ Group 25 operational nodes by government branch (Financial, ICT, Justice, Health, Social, Commerce, Infrastructure, Statistical) · Each branch shows branch health score (e.g. "4/4 ✓") · Individual node cards: name prominent, status icon+colour+text, latency · Click card to expand: block height, peers, address (truncated + copy) · Observer nodes collapsed at bottom "▸ Observer Nodes (30)" · Filter strip: [All 56] [✓ Operational 33] [⚠ Degraded 14] [✗ Offline 9]</div>
+      <div class="item-location">apps/admin/src/components/panels/NodeHealthMatrix.jsx</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="ADMIN-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">ADMIN-2</span><span class="item-title">Tooltip layer — all acronyms explained on hover across every panel</span><span class="badge badge-critical">Critical</span><span class="badge badge-portal">ADMIN</span></div>
+      <div class="item-fix">→ Create shared Tooltip component in packages/shared-ui · Wrap all acronyms: NDIDS, MCIL, MPMC, MWCSD, PFMI, FATF, BIS, SAR, CISA, ZTMM, EIP-712, UUPS, PoA, EOA, AML, CFT, DPI, GovStack, WST, CBDC, DBS, SIFA, OOTR, NBS, SCB, BSP · Tooltip shows full name + one-line plain-language description · Keyboard accessible (focus shows tooltip)</div>
+      <div class="item-location">packages/shared-ui/src/Tooltip.jsx · All panel files</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="ADMIN-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">ADMIN-3</span><span class="item-title">Research environment data source label on every panel</span><span class="badge badge-critical">Critical</span><span class="badge badge-portal">ADMIN</span></div>
+      <div class="item-fix">→ Every panel must display: "Data: Simulated · Phase 1 Research Environment · Not production data" · Subtle but visible — IBM Plex Mono 9px, muted colour, bottom-left of each panel · Prevents CBS officials from treating simulation data as live production data · Must be honest and transparent per NUS/ISOC research ethics</div>
+      <div class="item-location">apps/admin/src/components/panels/ — all 6 panel files</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="ADMIN-4" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">ADMIN-4</span><span class="item-title">ResearchGate → packages/shared-ui → wired to admin portal</span><span class="badge badge-high">High</span><span class="badge badge-portal">ADMIN</span></div>
+      <div class="item-fix">→ Move apps/landing/src/ResearchGate.jsx to packages/shared-ui/src/ResearchGate.jsx · Export from shared-ui index · Update landing import · Add to admin App.jsx before RolePicker with storageKey="sdpi_admin_acknowledged" · Both apps use same component, different sessionStorage keys · One source of truth for the disclaimer text</div>
+      <div class="item-location">packages/shared-ui/src/ResearchGate.jsx · apps/admin/src/App.jsx · apps/landing/src/App.jsx</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="ADMIN-5" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">ADMIN-5</span><span class="item-title">pnpm-lock.yaml — commit the lockfile left unstaged after admin build</span><span class="badge badge-high">High</span></div>
+      <div class="item-fix">→ git add pnpm-lock.yaml && git commit -m "chore: update lockfile after admin portal dependency additions" · Required for reproducible installs · Blocks team collaboration and CI/CD until done</div>
+      <div class="item-location">pnpm-lock.yaml · root of monorepo</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="ADMIN-6" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">ADMIN-6</span><span class="item-title">Print stylesheet — dark theme prints as black on near-black without it</span><span class="badge badge-high">High</span><span class="badge badge-portal">ADMIN</span></div>
+      <div class="item-fix">→ Add @media print rules to GLOBAL_STYLES in theme.js · Light theme for print: white background, black text, remove sidebar, remove status bar · Print-optimised typography: IBM Plex Sans 11pt · Each panel prints on its own page with section header · CBS officials will print governance and compliance panels for board meetings</div>
+      <div class="item-location">apps/admin/src/theme.js · GLOBAL_STYLES</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="ADMIN-7" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">ADMIN-7</span><span class="item-title">Export PDF/print button — Compliance and Governance panels</span><span class="badge badge-high">High</span><span class="badge badge-portal">ADMIN</span></div>
+      <div class="item-fix">→ Add "Export / Print" button to CBSGovernancePanel and CompliancePanel · window.print() with print stylesheet active · Future: react-pdf for proper PDF generation · CBS and MOF officials need printable records for board submissions and regulatory filings</div>
+      <div class="item-location">apps/admin/src/components/panels/CBSGovernancePanel.jsx · CompliancePanel.jsx</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="ADMIN-8" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">ADMIN-8</span><span class="item-title">SM/EN completeness audit — all 31 source files checked against i18n.js</span><span class="badge badge-medium">Medium</span><span class="badge badge-portal">ADMIN</span></div>
+      <div class="item-fix">→ Audit every hardcoded English string in all 31 admin src files · Add missing keys to src/i18n.js · Replace hardcoded strings with t(lang, 'key') calls · Samoan strings must be accurate — verify with a native speaker if possible · Bilingual completeness is a stated NUS/ISOC research deliverable</div>
+      <div class="item-location">apps/admin/src/ — all 31 files · src/i18n.js</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="ADMIN-9" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">ADMIN-9</span><span class="item-title">Overview panel — node health trend chart (Recharts)</span><span class="badge badge-medium">Medium</span><span class="badge badge-portal">ADMIN</span></div>
+      <div class="item-fix">→ Add a simple line chart below the metric cards showing operational node count over the last 20 polls (240 seconds) · Use Recharts (available in monorepo) · Gold line for operational, amber for degraded, red for offline · Accessible data table alternative (hidden, screen-reader visible) · Makes the real-time nature of the system visually compelling for the CBS demo</div>
+      <div class="item-location">apps/admin/src/components/panels/OverviewPanel.jsx</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="ADMIN-10" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">ADMIN-10</span><span class="item-title">Colour contrast WCAG AAA audit — verify 7:1 ratio at smallest text sizes</span><span class="badge badge-high">High</span><span class="badge badge-portal">ADMIN</span></div>
+      <div class="item-fix">→ Run contrast checker on: IBM Plex Mono 9px on #0c1222 (labels), flag red #CE1126 on #070910 (alerts), gold #C9A227 on #070910 (currency codes), muted #6b7a99 on #0c1222 (secondary text) · WCAG AAA requires 7:1 for normal text, 4.5:1 for large · Fix any failures before CBS demo · Tool: webaim.org/resources/contrastchecker</div>
+      <div class="item-location">apps/admin/src/theme.js · All colour values</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="ADMIN-11" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">ADMIN-11</span><span class="item-title">Copy-to-clipboard on all truncated wallet addresses</span><span class="badge badge-medium">Medium</span><span class="badge badge-portal">ADMIN</span></div>
+      <div class="item-fix">→ Node health expanded view shows full address: 0x1234...5678 with copy icon · Click copies full address to clipboard · Show "Copied!" confirmation for 2 seconds · Keyboard accessible · Never show raw full addresses inline — always truncate to first 6 + last 4 chars</div>
+      <div class="item-location">apps/admin/src/components/panels/NodeHealthMatrix.jsx</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="ADMIN-12" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">ADMIN-12</span><span class="item-title">Session timeout — test at real intervals before CBS demo</span><span class="badge badge-medium">Medium</span><span class="badge badge-portal">ADMIN</span></div>
+      <div class="item-fix">→ Temporarily set SESSION.WARNING_MS = 30000 (30s) and SESSION.TIMEOUT_MS = 60000 (60s) · Verify: warning dialog appears at 30s, auto-logout fires at 60s, session state clears completely, role picker reappears · Reset to 5min/10min before demo · Document test results as NIST 800-53 AC-12 verification</div>
+      <div class="item-location">apps/admin/src/theme.js · SESSION constants</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 2 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">02 · Landing App — Refinements</div>
+    <div class="section-count" id="count-s2"></div>
+  </div>
+  <div class="section-desc">apps/landing/ is built and committed. These are refinements required for the research submission and to ensure first-time visitors understand the platform immediately.</div>
+
+  <div class="item" data-id="LAND-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">LAND-1</span><span class="item-title">Verify ResearchGate is still rendering after landing app refactors</span><span class="badge badge-critical">Critical</span><span class="badge badge-portal">LANDING</span></div>
+      <div class="item-fix">→ Open localhost:5180 in a fresh browser (no sessionStorage) · Research gate must appear full-screen before any content · Check apps/landing/src/App.jsx still imports and renders ResearchGate · If missing after the registry-driven refactor, re-add import before the main app render · NB: This will be simplified after ResearchGate moves to shared-ui (ADMIN-4)</div>
+      <div class="item-location">apps/landing/src/App.jsx · ResearchGate import</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="LAND-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">LAND-2</span><span class="item-title">Mobile fallback — Three.js canvas replaced with static SVG on screens &lt;768px</span><span class="badge badge-high">High</span><span class="badge badge-portal">LANDING</span></div>
+      <div class="item-fix">→ Three.js + Tone.js + ethers = ~1.2MB bundle. On 3G mobile this is slow and CPU-intensive · Add: if (window.innerWidth &lt; 768) render static SVG node network instead of Three.js canvas · Static SVG: same 8 nodes, Samoa flag colours, no animation · Mobile users (majority of Samoa) get a fast, beautiful experience · Three.js reserved for desktop / demo environments</div>
+      <div class="item-location">apps/landing/src/BlockchainCanvas.jsx · App.jsx</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="LAND-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">LAND-3</span><span class="item-title">Portal card wayfinding — clarify who each card is for</span><span class="badge badge-high">High</span><span class="badge badge-portal">LANDING</span></div>
+      <div class="item-fix">→ "I am a Citizen" → add sub-label "View your government records and Digital Tālā" · "I am a Government Officer" → split into "CBS / Ministry Staff" (→ admin/ministry) vs other · "I am a Development Partner" → add "World Bank, ADB, bilateral donors" · "Verify a Document" → add "Employers, service providers, verification bodies" · Each card should tell a first-time visitor exactly whether they belong here</div>
+      <div class="item-location">apps/landing/src/App.jsx · PortalCard component</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="LAND-4" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">LAND-4</span><span class="item-title">Research gate — extend to 30-day cookie (not per-session only)</span><span class="badge badge-medium">Medium</span><span class="badge badge-portal">LANDING</span></div>
+      <div class="item-fix">→ Change sessionStorage to localStorage with 30-day expiry · A returning visitor should not see the full disclaimer on every session · Still shows on first visit and after 30 days · Research gate should feel like a one-time onboarding, not an obstacle</div>
+      <div class="item-location">packages/shared-ui/src/ResearchGate.jsx · After ADMIN-4 is complete</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="LAND-5" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">LAND-5</span><span class="item-title">Footer disclaimer — legally precise language for NUS/ISOC submission</span><span class="badge badge-medium">Medium</span><span class="badge badge-portal">LANDING</span></div>
+      <div class="item-fix">→ Footer must clearly state: (1) this is a research prototype, (2) no real citizen data is held, (3) not officially sanctioned by Government of Samoa, (4) operated under NUS/ISOC research programme, (5) contact information for Synergy Blockchain Pacific · Current footer may be vague — verify and strengthen language</div>
+      <div class="item-location">apps/landing/src/App.jsx · GovFooter component</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 3 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">03 · Citizens App — Full Build</div>
+    <div class="section-count" id="count-s3"></div>
+  </div>
+  <div class="section-desc">apps/citizens/ is currently a shell. This is the highest-volume user-facing portal and the most critical for public trust. Every design decision must prioritise the ordinary Samoan citizen: mobile-first, zero jargon, bilingual by default, low-bandwidth resilient. Samoan language is the primary language here, English is the toggle.</div>
+
+  <div class="item" data-id="CIT-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">CIT-1</span><span class="item-title">Architecture decision — mobile-first, Samoan-first, zero-blockchain-jargon</span><span class="badge badge-critical">Critical</span><span class="badge badge-portal">CITIZENS</span></div>
+      <div class="item-fix">→ Design brief locked before any code: (1) Mobile-first layout, 360px minimum viewport · (2) Samoan is the default language, EN is the toggle · (3) No term "blockchain", "hash", "NDIDS", "smart contract", "wallet" in any citizen-facing string · Approved terms: "your government ID", "your service history", "your Digital Tālā balance", "verified by government" · (4) Maximum bundle size target: 200KB for first load on 4G · (5) Offline shell — last-loaded data visible if connectivity drops</div>
+      <div class="item-location">apps/citizens/ — design decision before first file created</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="CIT-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">CIT-2</span><span class="item-title">Citizens theme — warm Pacific identity, not dark government aesthetic</span><span class="badge badge-critical">Critical</span><span class="badge badge-portal">CITIZENS</span></div>
+      <div class="item-fix">→ Citizens app uses a different theme from admin: lighter, warmer, more accessible · Background: soft off-white or light Pacific blue — not dark · Samoa flag colours retained but applied more warmly · Typography: larger base size (16px), high line height (1.8) for readability · Touch targets: minimum 48px (not 44px) · The citizens app should feel like a trusted government service, not a dark tech platform</div>
+      <div class="item-location">apps/citizens/src/theme.js — new file</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="CIT-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">CIT-3</span><span class="item-title">Citizen identity view — "Your Government Record" (read-only Phase 1)</span><span class="badge badge-high">High</span><span class="badge badge-portal">CITIZENS</span></div>
+      <div class="item-fix">→ Phase 1: citizen enters their reference number (NHI equivalent) → portal shows their NDIDS hash status (registered / not registered) → shows list of ministries that have service records for them → each record shows: ministry name, service type (plain language), date, verified status · No PII displayed (only hashes exist on-chain) · Plain language: "Ministry of Health recorded your service on 15/05/2026"</div>
+      <div class="item-location">apps/citizens/src/components/IdentityView.jsx — new file</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="CIT-4" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">CIT-4</span><span class="item-title">Consent transparency — citizen sees who has accessed their record</span><span class="badge badge-high">High</span><span class="badge badge-portal">CITIZENS</span></div>
+      <div class="item-fix">→ Show citizen which ministries have been granted read access to their identity · Each consent grant shows: grantor ministry, date granted, purpose (plain language) · "Ministry of Finance was given access to your identity record on 15/05/2026 to verify your benefit eligibility" · This is the transparency layer that makes the system trustworthy to citizens · Reads from NDIDSRegistry.sol grantReadAccess events</div>
+      <div class="item-location">apps/citizens/src/components/ConsentView.jsx — new file</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="CIT-5" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">CIT-5</span><span class="item-title">WST-DPI balance display — Phase 1 placeholder, Phase 2 live</span><span class="badge badge-medium">Medium</span><span class="badge badge-portal">CITIZENS</span></div>
+      <div class="item-fix">→ Phase 1: show a clear "Coming in Phase 2" card where balance will appear · Plain language: "Your Digital Tālā balance will appear here once the system is officially launched" · Phase 2: live balance from on-chain, formatted as "T 1,234.56 WST" never bare numbers · No wallet connection required — read from NDIDS-linked address · WST always shown with 2 decimal places (Currency Display Spec v1.0)</div>
+      <div class="item-location">apps/citizens/src/components/BalanceView.jsx — new file</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="CIT-6" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">CIT-6</span><span class="item-title">Onboarding coach marks — three-step first-visit overlay</span><span class="badge badge-medium">Medium</span><span class="badge badge-portal">CITIZENS</span></div>
+      <div class="item-fix">→ First-time citizen visitor gets a three-step guided overlay: (1) "This is your government digital record — it is secure and only you can see it" · (2) "These are the government services recorded against your name" · (3) "Your Digital Tālā balance will appear here when the system launches" · Bilingual SM/EN · Dismissible · SessionStorage gated (only once) · Large text, large touch targets</div>
+      <div class="item-location">apps/citizens/src/components/OnboardingOverlay.jsx — new file</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="CIT-7" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">CIT-7</span><span class="item-title">Offline-first architecture — service worker + last-loaded data cache</span><span class="badge badge-high">High</span><span class="badge badge-portal">CITIZENS</span></div>
+      <div class="item-fix">→ Citizens may have intermittent connectivity · Service worker caches last successful data response · If offline: show cached data with "Last updated: DD/MM/YYYY HH:MM WST" label · Clear offline indicator banner · On reconnect: silently refresh data · This is the constitutional accessibility standard: offline-first resilience</div>
+      <div class="item-location">apps/citizens/public/sw.js · src/hooks/useOfflineData.js — new files</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="CIT-8" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">CIT-8</span><span class="item-title">@samoa-dpi/contracts-abi linked, ResearchGate wired, pnpm install</span><span class="badge badge-high">High</span><span class="badge badge-portal">CITIZENS</span></div>
+      <div class="item-fix">→ Update apps/citizens/package.json: add @samoa-dpi/contracts-abi workspace:* and @samoa-dpi/shared-ui workspace:* · Run pnpm install from monorepo root · Wire ResearchGate (from shared-ui after ADMIN-4) with storageKey="sdpi_citizens_acknowledged" · Build must exit 0</div>
+      <div class="item-location">apps/citizens/package.json · apps/citizens/src/App.jsx</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="phase-banner p2">▸ PHASE 2 — Authentication Architecture · Post-NUS/ISOC · Requires CBS governance decisions to proceed</div>
+
+<!-- SECTION 4 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">04 · Authentication Architecture — Cold Wallet + On-Chain Access</div>
+    <div class="section-count" id="count-s4"></div>
+  </div>
+  <div class="section-desc">This section defines the architecture that replaces the current session-scoped role picker with cryptographically verified, on-chain-logged, cold-wallet-authenticated access. This is what separates Samoa DPI from a government-themed web app and makes it sovereign infrastructure. Requires CBS policy decisions before implementation can begin.</div>
+
+  <div class="item cbs-blocked" data-id="AUTH-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">AUTH-1</span><span class="item-title">Cold wallet issuance authority — CBS or Public Services Commission designated</span><span class="badge badge-critical">Critical</span><span class="badge badge-blocked">CBS-Blocked</span></div>
+      <div class="item-fix">→ A designated authority (CBS or PSC) must be responsible for: (1) Issuing Ledger/Trezor cold wallet devices to authorised ministry officials · (2) Registering each official's wallet address in the correct MinistryNode.sol authorisedReaders mapping · (3) Key revocation procedure when an official leaves their role · (4) Backup recovery procedures · This is an entirely new operational role — may warrant a dedicated position within CBS IT or PSC · Training programme must accompany device issuance</div>
+      <div class="item-location">Policy decision — CBS / Public Services Commission</div>
+      <div class="item-blocked">⊘ Awaiting CBS: which authority manages cold wallet issuance and official address registration?</div>
+    </div>
+  </div>
+
+  <div class="item cbs-blocked" data-id="AUTH-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">AUTH-2</span><span class="item-title">On-chain access log event — add PortalAccess to MinistryNode.sol</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Add event to MinistryNode.sol: PortalAccess(address indexed official, bytes32 indexed ministryCode, uint256 timestamp, string action) · Emit on every successful wallet authentication · Emit on every cross-ministry read via InteroperabilityHub · Creates immutable, on-chain, tamper-evident audit trail of official access · This is the blockchain timestamp the architecture requires · forge test must still pass after addition</div>
+      <div class="item-location">contracts/src/MinistryNode.sol · contracts/test/ — update tests</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="AUTH-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">AUTH-3</span><span class="item-title">EIP-712 ministry access token — structured signature for portal authentication</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Design the signed message structure: { ministry: "MOF", portalDomain: "mof.dpi.gov.ws", timestamp: uint256, nonce: bytes32, version: "1" } · EIP-712 domain separator includes chain ID and contract address · Prevents replay attacks across portals and chains · On signature: verify recovered address is in MinistryNode.authorisedReaders · On success: emit PortalAccess event · Implementation: useWalletAuth.js hook</div>
+      <div class="item-location">apps/ministry/src/hooks/useWalletAuth.js — new file</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="AUTH-4" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">AUTH-4</span><span class="item-title">WalletConnect v2 integration — hardware wallet (Ledger/Trezor) support</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Integrate WalletConnect v2 SDK into admin portal first as proof of concept · Test with Ledger Nano S/X and Trezor Model T · Cold wallet signs the EIP-712 message without the private key ever leaving the device · This is the cryptographic guarantee that authentication is unforgeable · Fallback: MetaMask for development environments · Production: cold wallet mandatory for ministry officials</div>
+      <div class="item-location">apps/admin/src/hooks/useWalletConnect.js — new file · package.json</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="AUTH-5" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">AUTH-5</span><span class="item-title">Nonce management — on-chain nonces prevent replay attacks</span><span class="badge badge-high">High</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Each signature must include a nonce that is consumed on-chain after use · mapping(address => uint256) public nonces in MinistryNode.sol · After successful authentication, nonce increments on-chain · Prevents an intercepted signature from being replayed by an attacker · Standard pattern: ERC-2612 permit nonce system</div>
+      <div class="item-location">contracts/src/MinistryNode.sol · nonces mapping</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="phase-banner p3">▸ PHASE 3 — Ministry Portal Infrastructure · Post-CBS Sanction · Requires cold wallet issuance and government authorisation</div>
+
+<!-- SECTION 5 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">05 · Ministry Portal — Subdomain-Per-Ministry Architecture</div>
+    <div class="section-count" id="count-s5"></div>
+  </div>
+  <div class="section-desc">The ministry portal is NOT a single URL with filtering. Each ministry gets its own authenticated subdomain. Data isolation is enforced at the smart contract level, not the UI level. A MOF official on mof.dpi.gov.ws sees only MOF data because the MinistryNode(MOF) contract rejects any wallet address not on its authorisedReaders list. The browser URL is the first trust signal; the contract is the enforcement layer.</div>
+
+  <div class="item phase3-item" data-id="MIN-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">MIN-1</span><span class="item-title">Subdomain registry — one deployment per ministry, mapped to MinistryNode contract</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ Define subdomain → contract address → ministry colour mapping: mof.dpi.gov.ws (gold #C9A227) → MOF MinistryNode · mesc.dpi.gov.ws (education blue #1e90ff) → MESC Node · mcit.dpi.gov.ws (tech teal #00bcd4) → MCIT Node · mwcsd.dpi.gov.ws (social green #4caf50) → MWCSD Node · moh.dpi.gov.ws (health red #f44336) → MOH Node · mcil.dpi.gov.ws (commerce orange #ff9800) → MCIL Node · sbs.dpi.gov.ws (statistics purple #9c27b0) → SBS/NDIDS Node · mpmc.dpi.gov.ws (PM gold #C9A227 darker) → MPMC Node</div>
+      <div class="item-location">packages/contracts-abi/src/ministry-registry.ts — new file</div>
+    </div>
+  </div>
+
+  <div class="item phase3-item" data-id="MIN-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">MIN-2</span><span class="item-title">Ministry context injection — app knows its ministry at build time via env variable</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ VITE_MINISTRY_CODE=MOF injected at Vercel build time · App reads this to: display correct ministry name and colour theme · Point to correct MinistryNode contract address · Filter all data to this ministry exclusively · Single codebase, eight deployments with different env vars · Ministry code is prominently displayed in every UI surface — officials should never be uncertain which ministry context they are in</div>
+      <div class="item-location">apps/ministry/vite.config.js · .env.mof, .env.mesc, etc.</div>
+    </div>
+  </div>
+
+  <div class="item phase3-item" data-id="MIN-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">MIN-3</span><span class="item-title">Wallet-gated entry — cold wallet signature required, session recorded on-chain</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ Ministry portal entry flow: (1) Connect wallet (WalletConnect v2 / MetaMask dev) · (2) Sign EIP-712 ministry access token (see AUTH-3) · (3) Portal verifies recovered address is in MinistryNode(MINISTRY_CODE).authorisedReaders · (4) PortalAccess event emitted on-chain (see AUTH-2) · (5) Session begins — role derived from on-chain data, not session storage · If wallet not authorised: clear denial with contact information for CBS IT</div>
+      <div class="item-location">apps/ministry/src/components/WalletGate.jsx — new file</div>
+    </div>
+  </div>
+
+  <div class="item phase3-item" data-id="MIN-4" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">MIN-4</span><span class="item-title">Cross-ministry read UI — explicit consent confirmation before InteroperabilityHub call</span><span class="badge badge-high">High</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ When MOF needs to read a citizen record from MOH: UI shows confirmation dialog: "Accessing Ministry of Health records for citizen [hash]. This access will be permanently recorded on-chain. Confirm?" · Official must explicitly approve · InteroperabilityHub.executeEnrollmentWorkflow() is called only after confirmation · The on-chain record of this cross-ministry access is shown to the citizen in the Citizens Portal (CIT-4) · This is the consent transparency layer of the interoperability protocol</div>
+      <div class="item-location">apps/ministry/src/components/CrossMinistryConsent.jsx — new file</div>
+    </div>
+  </div>
+
+  <div class="item phase3-item" data-id="MIN-5" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">MIN-5</span><span class="item-title">Service record entry form — ministry officials write service records on-chain</span><span class="badge badge-high">High</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ Ministry officials with write access (MINISTRY_ADMIN role) can create service records · Form: Citizen reference → NDIDS hash lookup → serviceType (from contract allowlist, not free text) → dataHash (computed from off-chain data) → ndidsVerified checkbox · All inputs validated before submission · Confirmation dialog with summary before signing · On submit: wallet signs the recordService() transaction · MinistryNode.sol enforces onlyAdmin access</div>
+      <div class="item-location">apps/ministry/src/components/ServiceRecordForm.jsx — new file</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 6 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">06 · DBS Portal — Retail Distribution Layer</div>
+    <div class="section-count" id="count-s6"></div>
+  </div>
+  <div class="section-desc">The DBS portal manages the tiered retail distribution of WST-DPI Digital Tālā. Tier 2 are the licensed retail banks. Tier 3 are institutional participants (non-bank financial institutions). DBS staff see all distributors. Individual bank officers see only their own institution's data.</div>
+
+  <div class="item phase2-item" data-id="DBS-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">DBS-1</span><span class="item-title">Tier 2 retail distributor registry — licensed banks with full management interface</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Retail distributors: ANZ Bank Samoa (ANZ-WS) · Bank of South Pacific Samoa (BSP-WS) · Samoa Commercial Bank (SCB) · National Bank of Samoa (NBS) · Development Bank of Samoa (DBS) · Each bank card shows: name, code, tier, status (Active / Pending CBS Authorisation), daily WST-DPI limit, settlement bank, last settlement timestamp · DBS sees all · ANZ/BSP/SCB/NBS see only their own institution</div>
+      <div class="item-location">apps/dbs/src/data/bank-registry.js — new file</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="DBS-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">DBS-2</span><span class="item-title">Tier 3 institutional participants registry — SNPF, UTOS, WSTLAC (read-only, compliance)</span><span class="badge badge-high">High</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Institutional participants are NOT retail distributors. They receive WST-DPI via their Tier 2 banking partner · SNPF (pension fund) — receives via BSP or ANZ · UTOS (unit trust) — receives via banking partner · WSTLAC (life insurance) — receives via banking partner · These entities appear in a separate read-only registry for AML/CFT compliance and transparency · Shows: institution name, type, banking partner, approximate WST-DPI volume, compliance status · No management interface — read-only for DBS oversight</div>
+      <div class="item-location">apps/dbs/src/data/institutional-registry.js — new file</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="DBS-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">DBS-3</span><span class="item-title">Pacific correspondent and settlement bank registry</span><span class="badge badge-medium">Medium</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Correspondent/settlement layer: BSP Financial Group PNG · ANZ Group Pacific · Reserve Bank of Australia (settlement) · Reserve Bank of New Zealand (settlement) · These are the international clearing relationships that make WST-DPI redeemable at international value · Shown in CBS Admin portal and DBS portal for system completeness · Read-only registry — updated by CBS policy, not DBS</div>
+      <div class="item-location">packages/contracts-abi/src/correspondent-registry.ts — new file</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="DBS-4" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">DBS-4</span><span class="item-title">Currency abstraction layer — same DecimalMath, same Currency Display Spec v1.0 as admin</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ DBS portal imports the same 8 currency components from packages/shared-ui (after they are moved there) · WST always 2dp · USDC always 6dp technical / 2dp native · All amounts show currency code · All timestamps in DD/MM/YYYY HH:MM WST · Settlement finality chips: Initiated/Confirming/Final/Failed/CBS-Held · Technical precision toggle available for DBS technical staff · CBS-controlled precision settings via ICBSCurrencyController</div>
+      <div class="item-location">apps/dbs/src/ — all components import from @samoa-dpi/shared-ui</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 7 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">07 · Donor Portal — Radical Transparency</div>
+    <div class="section-count" id="count-s7"></div>
+  </div>
+  <div class="section-desc">International development organisations (World Bank, ADB, UN, bilateral donors) need one thing: proof that their funds went where approved. The donor portal is a radical transparency interface — every grant is traceable from approval to disbursement on-chain. Export to PDF is mandatory. Amounts displayed in both WST and donor home currency.</div>
+
+  <div class="item phase3-item" data-id="DONOR-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">DONOR-1</span><span class="item-title">Grant lifecycle view — full tranche history from creation to final disbursement</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ Each grant shows: approved amount · approved recipient ministry · tranche schedule · each tranche: amount, status chip (Initiated/Confirming/Final), verifier address, on-chain transaction reference · Timeline view preferred over table · Both WST and USD amounts (CBS-controlled exchange rate) · On-chain reference link: "View on sovereign chain →" · This is the accountability proof that international donors require for reporting to their own boards</div>
+      <div class="item-location">apps/donor/src/components/GrantLifecycle.jsx — new file</div>
+    </div>
+  </div>
+
+  <div class="item phase3-item" data-id="DONOR-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">DONOR-2</span><span class="item-title">Export to PDF — mandatory for donor reporting to their own governance boards</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ Every grant view must have "Export PDF" button · PDF includes: Samoa DPI letterhead, grant reference, amount (WST + USD), recipient ministry, full tranche history with on-chain transaction IDs, verification timestamps, current status · react-pdf or equivalent · World Bank, ADB, and bilateral donors file internal governance reports — this PDF is their evidence · Print stylesheet fallback if react-pdf is deferred</div>
+      <div class="item-location">apps/donor/src/components/GrantExport.jsx — new file</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 8 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">08 · Verify Portal — Single Action, Zero Friction</div>
+    <div class="section-count" id="count-s8"></div>
+  </div>
+  <div class="section-desc">The simplest portal in the platform. An employer, hospital administrator, or service provider enters a credential reference and gets a verified result. No account required. The UX must be so simple that someone with minimal digital literacy completes a verification in under 30 seconds.</div>
+
+  <div class="item phase3-item" data-id="VER-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">VER-1</span><span class="item-title">Single-action verification flow — one field, one button, one clear result</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ UI: large reference number input field → "Verify" button → result: green (✓ Verified by Government of Samoa · Record exists · Ministry: [name] · Date: DD/MM/YYYY) or red (✗ Not found · Reference number not in system) or amber (⚠ Pending · Record exists but verification in progress) · No account required · No wallet required · Mobile-optimised · Under 30 seconds end to end</div>
+      <div class="item-location">apps/verify/src/App.jsx — replace placeholder</div>
+    </div>
+  </div>
+
+  <div class="item phase3-item" data-id="VER-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">VER-2</span><span class="item-title">Printable result — verifier can print or save as PDF</span><span class="badge badge-high">High</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ Verification result page: "Print / Save PDF" button prominent · Print output: reference number, verification status, ministry, date, Samoa DPI official header, on-chain transaction reference · This document may be used as official evidence by employers and institutions · Must look like an official government document when printed</div>
+      <div class="item-location">apps/verify/src/components/VerificationResult.jsx — new file</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="phase-banner p2">▸ SHARED INFRASTRUCTURE — Components and architecture that support all portals</div>
+
+<!-- SECTION 9 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">09 · Shared Component Library — packages/shared-ui</div>
+    <div class="section-count" id="count-s9"></div>
+  </div>
+  <div class="section-desc">Currently shared-ui has only design tokens. The full component library needs to be built here so every portal uses the same components without rebuilding them. Any component used by more than one app belongs in shared-ui.</div>
+
+  <div class="item phase2-item" data-id="SHARED-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">SHARED-1</span><span class="item-title">Move all 8 currency components from admin to packages/shared-ui</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Move: AmountDisplay, SettlementChip, CurrencyBadge, PrecisionToggle, AmountColumn, ErrorAmount, TimestampDisplay, CurrencyAbstractionLayer · Update admin imports to use @samoa-dpi/shared-ui · DBS portal, Donor portal, Citizens portal all import from shared-ui · One implementation of Currency Display Spec v1.0 across the entire platform · Never rebuild currency components per-app again</div>
+      <div class="item-location">packages/shared-ui/src/currency/ — new directory</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="SHARED-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">SHARED-2</span><span class="item-title">Tooltip component — accessible hover/focus explanation for all acronyms</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Tooltip wraps any element · Props: children, content (explanation text), labelSM (Samoan explanation) · Keyboard accessible: focus shows tooltip · Screen reader: aria-describedby · Mobile: touch shows tooltip for 3 seconds · Every government acronym in every portal wraps in this component · Tooltip appears above, repositions to below if near top of viewport</div>
+      <div class="item-location">packages/shared-ui/src/Tooltip.jsx — new file</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="SHARED-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">SHARED-3</span><span class="item-title">StatusBadge — standard status indicator, icon + colour + text, all portals</span><span class="badge badge-high">High</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Props: status (operational|degraded|offline|observer|pending|active|blocked), size (sm|md|lg), lang · Always renders: icon + background colour + text label — never colour alone · Replaces the ad-hoc status rendering currently duplicated across admin panels</div>
+      <div class="item-location">packages/shared-ui/src/StatusBadge.jsx — new file</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="SHARED-4" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">SHARED-4</span><span class="item-title">ErrorPage — consistent 503/offline error state across all portals</span><span class="badge badge-high">High</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ If any portal cannot reach its data source: branded error page (Samoa DPI identity, flag, tapa) · Clear message: "The system is temporarily unavailable. Please try again shortly." · Retry button · Support contact · Bilingual SM/EN · Looks authoritative and trustworthy even in failure state · Never show raw error messages, stack traces, or technical details to end users</div>
+      <div class="item-location">packages/shared-ui/src/ErrorPage.jsx — new file</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="SHARED-5" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">SHARED-5</span><span class="item-title">LanguageToggle — shared bilingual toggle component, consistent across all apps</span><span class="badge badge-medium">Medium</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Currently each app has its own language toggle button · Move to shared-ui · Persist language preference in localStorage (not sessionStorage — should survive across sessions) · Default: SM for citizens app, EN for admin/ministry apps · Component: button with current language code + flag indicator</div>
+      <div class="item-location">packages/shared-ui/src/LanguageToggle.jsx — new file</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="SHARED-6" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">SHARED-6</span><span class="item-title">Design tokens — migrate from theme.js JS objects to CSS custom properties</span><span class="badge badge-medium">Medium</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Convert COLORS, TYPOGRAPHY constants to CSS custom properties: --color-flag-red: #CE1126; --color-flag-blue: #003087; etc. · Makes tokens available in pure CSS, media queries, and future design tool integrations · Allows professional designer to modify tokens without touching React code · Inject as :root { } block from shared-ui · All apps import the same CSS tokens</div>
+      <div class="item-location">packages/shared-ui/src/tokens.css — new file</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 10 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">10 · API &amp; Data Service Abstraction</div>
+    <div class="section-count" id="count-s10"></div>
+  </div>
+  <div class="section-desc">All data fetching is currently inline in hooks with simulated data. When real RPC data becomes available, every hook needs surgery. A service layer abstracts this: hooks call services, services return the same data shape regardless of whether the source is simulated or live. Swapping simulated for live is a one-file change per service.</div>
+
+  <div class="item phase2-item" data-id="API-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">API-1</span><span class="item-title">NodeService — abstraction layer for all node health data fetching</span><span class="badge badge-high">High</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Create src/services/nodeService.js: export async function getNodeHealth(address) { } · Phase 1: returns simulated data · Phase 2: returns actual RPC call to MinistryNode.isOperational() etc. · useNodeHealth hook calls nodeService, not the simulation directly · Swapping simulated for real data: change nodeService.js only, zero hook changes</div>
+      <div class="item-location">apps/admin/src/services/nodeService.js — new file</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="API-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">API-2</span><span class="item-title">RPC proxy — production server-side proxy replaces localhost:3001 placeholder</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Current: Vite proxies /api to localhost:3001 which doesn't exist · Phase 2: deploy a minimal Express/Hono server that proxies RPC calls to the sovereign chain node · The proxy holds the RPC endpoint URL securely (never in the browser bundle) · Add rate limiting (100 req/min per IP) · Add CORS policy restricted to *.dpi.gov.ws origins only · Deploy to same infrastructure as the Vite apps</div>
+      <div class="item-location">api/ — new directory in monorepo root · Separate deployment</div>
+    </div>
+  </div>
+
+  <div class="item phase2-item" data-id="API-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">API-3</span><span class="item-title">Feature flag system — CBS governance decisions toggle features programmatically</span><span class="badge badge-medium">Medium</span><span class="badge badge-phase2">Phase 2</span></div>
+      <div class="item-fix">→ Replace hardcoded Phase 2 stub panels with feature flags · When CBS resolves a governance item (e.g., PAUSABLE), set FEATURE_CIRCUIT_BREAKER=true and the panel activates · Flags stored in a CBS-controlled config file (not hardcoded) · This is the technical bridge between CBS governance decisions and portal functionality · Initially: environment variables. Phase 3: on-chain feature flags controlled by the CBS Governor role</div>
+      <div class="item-location">packages/shared-ui/src/feature-flags.js — new file</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="phase-banner p4">▸ DEPLOYMENT, TRAINING &amp; PRODUCTION — Post-CBS Sanction · .gov.ws domain migration · Operational readiness</div>
+
+<!-- SECTION 11 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">11 · Deployment Architecture — Production Configuration</div>
+    <div class="section-count" id="count-s11"></div>
+  </div>
+  <div class="section-desc">When government authorisation is received, the platform migrates from research URLs to official *.dpi.gov.ws subdomains. The architecture is designed for this migration to be a configuration change, not a code change.</div>
+
+  <div class="item phase3-item" data-id="DEPLOY-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">DEPLOY-1</span><span class="item-title">Environment variable config — all subdomain URLs driven by .env, zero hardcoding</span><span class="badge badge-high">High</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ Every cross-app URL reference uses: process.env.VITE_URL_ADMIN, VITE_URL_CITIZENS, VITE_URL_MINISTRY, VITE_URL_DBS, VITE_URL_DONOR, VITE_URL_VERIFY · Research defaults: vercel preview URLs · Production: VITE_URL_ADMIN=https://admin.dpi.gov.ws · Domain migration = update .env values in Vercel dashboard, redeploy. No code changes.</div>
+      <div class="item-location">All apps/.env.production files · Vercel environment configuration</div>
+    </div>
+  </div>
+
+  <div class="item phase3-item" data-id="DEPLOY-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">DEPLOY-2</span><span class="item-title">Production CSP headers — update connect-src from localhost to *.dpi.gov.ws</span><span class="badge badge-critical">Critical</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ Current admin CSP: connect-src 'self' http://localhost:3001 · Production: connect-src 'self' https://api.dpi.gov.ws https://rpc.dpi.gov.ws · Each app gets its own CSP matching its actual data sources · Enforce at both Vite meta tag AND server/CDN header level · Ministry subdomains: connect-src limited to their specific ministry contract's RPC endpoint</div>
+      <div class="item-location">All apps/*/index.html · Vercel headers configuration</div>
+    </div>
+  </div>
+
+  <div class="item phase3-item" data-id="DEPLOY-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">DEPLOY-3</span><span class="item-title">Ministry subdomain Vercel projects — one project per ministry, env-injected at build</span><span class="badge badge-high">High</span><span class="badge badge-phase3">Phase 3</span></div>
+      <div class="item-fix">→ Eight Vercel projects for ministry subdomains: all deploy the same apps/ministry/ codebase · Each project has different VITE_MINISTRY_CODE env var · Custom domain per project: mof.dpi.gov.ws → MOF project, etc. · Automatic deployments on git push to main · Preview deployments on PR for testing before production push</div>
+      <div class="item-location">Vercel dashboard · apps/ministry/ — single codebase</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 12 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">12 · Training, Upskilling &amp; Pilot Programme</div>
+    <div class="section-count" id="count-s12"></div>
+  </div>
+  <div class="section-desc">The technical platform is only half the equation. Government officials who have never used a blockchain-adjacent system need training, confidence, and support. The pilot programme must include structured upskilling alongside the technical deployment. This is as critical as any technical item.</div>
+
+  <div class="item training-item" data-id="TRAIN-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">TRAIN-1</span><span class="item-title">Cold wallet operation training — designated officials before Phase 2 auth goes live</span><span class="badge badge-critical">Critical</span><span class="badge badge-training">Training</span></div>
+      <div class="item-fix">→ Before any ministry official uses their cold wallet for portal authentication: structured training programme · Topics: what a cold wallet is (plain language), how to connect via WalletConnect, how to read and sign a transaction, what to do if device is lost, key recovery procedure · Delivered by Synergy Blockchain Pacific in person · Accompanied by written guide in both English and Samoan · CBS/PSC designates who receives training and in what order</div>
+      <div class="item-location">Training programme — separate deliverable from SBP</div>
+    </div>
+  </div>
+
+  <div class="item training-item" data-id="TRAIN-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">TRAIN-2</span><span class="item-title">CBS demo rehearsal — structured walkthrough of all admin portal panels</span><span class="badge badge-critical">Critical</span><span class="badge badge-training">Training</span></div>
+      <div class="item-fix">→ Before CBS leadership demo: conduct a rehearsal with Synergy staff playing the roles of CBS officials · Script the walkthrough: role picker → overview → governance decisions → compliance → node health → audit · Identify any UX confusion points · Fix before the actual demo · The demo is a "new car test" — if the person at the wheel needs to read the manual, the UX has failed</div>
+      <div class="item-location">Rehearsal event — 48 hours before CBS demo</div>
+    </div>
+  </div>
+
+  <div class="item training-item" data-id="TRAIN-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">TRAIN-3</span><span class="item-title">Ministry IT contact registry — one IT lead per ministry subdomain</span><span class="badge badge-high">High</span><span class="badge badge-training">Training</span></div>
+      <div class="item-fix">→ Each ministry deploying the portal needs a designated IT contact who: understands what the portal does · Can assist colleagues with wallet connection issues · Can escalate to SBP/CBS IT for contract-level issues · Has received the full cold wallet training (TRAIN-1) · This person also coordinates the registration of new officials' wallet addresses with CBS/PSC (AUTH-1)</div>
+      <div class="item-location">Operational policy — per ministry</div>
+    </div>
+  </div>
+
+  <div class="item training-item" data-id="TRAIN-4" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">TRAIN-4</span><span class="item-title">Citizen onboarding materials — plain-language guides in both SM and EN</span><span class="badge badge-high">High</span><span class="badge badge-training">Training</span></div>
+      <div class="item-fix">→ When citizens portal launches: produce printed and digital guides · "How to check your government record" — A4 pamphlet, SM primary, EN secondary · Distributed through CBS, post offices, government offices · For low-digital-literacy users: illustrated step-by-step with screenshots · These guides complement the in-app onboarding coach marks (CIT-6)</div>
+      <div class="item-location">Design deliverable — printed and digital formats</div>
+    </div>
+  </div>
+
+  <div class="item training-item" data-id="TRAIN-5" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">TRAIN-5</span><span class="item-title">External issues audit log — document all platform issues for NUS/ISOC research data</span><span class="badge badge-medium">Medium</span><span class="badge badge-training">Training</span></div>
+      <div class="item-fix">→ Every Vercel/GitHub Pages/RPC/wallet issue encountered during development is research data · Maintain a structured log: date, platform, issue description, resolution, impact on development · This log is submitted as part of the NUS/ISOC paper's "implementation challenges" section · It demonstrates the real-world obstacles of building sovereign digital infrastructure in a SIDS context · Honest documentation of difficulties strengthens the research contribution</div>
+      <div class="item-location">docs/EXTERNAL_ISSUES_LOG.md — maintain throughout development</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 13 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">13 · NUS/ISOC Research Submission Readiness</div>
+    <div class="section-count" id="count-s13"></div>
+  </div>
+  <div class="section-desc">The NUS/ISOC Internet Society submission requires the platform to be demonstrably functional, documented, and ethically sound as a research prototype. These items are specifically oriented toward the research submission criteria.</div>
+
+  <div class="item" data-id="NUS-1" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">NUS-1</span><span class="item-title">Research gate on all public portals — ethical research disclosure</span><span class="badge badge-critical">Critical</span></div>
+      <div class="item-fix">→ Every public-facing portal (landing, citizens, verify) must display the research gate before allowing access · Admin/Ministry/DBS/Donor portals: research disclaimer in footer at minimum · NUS/ISOC ethical research requirements: participants must be informed this is a research prototype · No real citizen data. Not government-sanctioned. Contact information present. Clear research programme identification.</div>
+      <div class="item-location">packages/shared-ui/src/ResearchGate.jsx — after ADMIN-4</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="NUS-2" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">NUS-2</span><span class="item-title">Architecture documentation — interoperability protocol written up for paper</span><span class="badge badge-critical">Critical</span></div>
+      <div class="item-fix">→ The full interoperability protocol (citizen → NDIDS → Ministry → InteroperabilityHub → AIDisbursementTracker → WST-DPI) must be documented in academic language for the NUS paper · Architecture diagrams: system overview, authentication flow, cross-ministry consent flow, CBDC distribution tiers · Reference: EstoniaX-Road comparison, India Aadhaar comparison, Samoa DPI differentiators · Technology-neutral language throughout (no proprietary protocol names)</div>
+      <div class="item-location">docs/ARCHITECTURE_PAPER_DRAFT.md — new file</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="NUS-3" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">NUS-3</span><span class="item-title">Live demo environment — stable URL, working build, accessible during review period</span><span class="badge badge-critical">Critical</span></div>
+      <div class="item-fix">→ Vercel deployment must be stable and publicly accessible for the duration of NUS/ISOC review period · Landing: samoa-dpi-landing.vercel.app · Admin: samoa-dpi-admin.vercel.app · Citizens: samoa-dpi-citizens.vercel.app · All three build and deploy from main branch on push · No broken builds in the review window · Consider pinning to a specific commit hash for submission stability</div>
+      <div class="item-location">Vercel deployments · GitHub Actions CI/CD</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="NUS-4" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">NUS-4</span><span class="item-title">CBS governance decisions documented as "architecture ready, policy pending"</span><span class="badge badge-high">High</span></div>
+      <div class="item-fix">→ The 6 CBS-blocked items are research findings, not failures · In the NUS paper: each item is presented as "the technical implementation is complete; the governance framework is being established" · This demonstrates the correct sequencing of technology before policy — a contribution to the literature on CBDC implementation in small island states · The CBS Governance panel in the admin portal is itself evidence of this — screenshot for the paper</div>
+      <div class="item-location">NUS paper draft · CBS Governance panel screenshots</div>
+    </div>
+  </div>
+
+  <div class="item" data-id="NUS-5" onclick="toggle(this)">
+    <div class="checkbox"><span class="checkmark">✓</span></div>
+    <div class="item-body">
+      <div class="item-top"><span class="item-id">NUS-5</span><span class="item-title">ISOC Pacific context framing — Pacific-first, SIDS constraints, regional expansion path</span><span class="badge badge-high">High</span></div>
+      <div class="item-fix">→ NUS/ISOC paper positions Samoa DPI as: (1) first Pacific Island nation to implement sovereign CBDC + blockchain identity + interoperability protocol as a unified system · (2) designed for SIDS constraints: low bandwidth, mobile-first, small workforce, limited institutional capacity · (3) replicable model for Tonga, Fiji, Vanuatu, Solomon Islands, PNG · (4) potential foundation for Pacific-wide interoperability (regional X-Road equivalent) · This Pacific-first framing is the unique contribution to ISOC's mission</div>
+      <div class="item-location">NUS paper · Executive summary · Abstract</div>
+    </div>
+  </div>
+</div>
+
+<div class="checklist-footer">
+  <h3>Project Guide — Strategic Vision</h3>
+  <p>
+    <strong>What this platform is:</strong> Samoa's sovereign digital public infrastructure — the first Pacific Island nation to unify CBDC, blockchain identity, government interoperability, and retail distribution on a single cryptographically-verified platform.<br><br>
+    <strong>How it beats Estonia:</strong> X-Road uses centralised PKI and centralised audit logs. Samoa DPI uses on-chain access control (immutable, decentralised) and on-chain audit events (tamper-evident). No single authority can secretly access another ministry's data.<br><br>
+    <strong>How it beats India:</strong> Aadhaar stores biometric data centrally with significant privacy risk. NDIDS stores only cryptographic hashes — no PII on-chain. Consent is enforced by smart contract, not administrative process.<br><br>
+    <strong>The Pacific advantage:</strong> Designed from day one for low-bandwidth mobile users, bilingual SM/EN interfaces, and the institutional capacity constraints of a SIDS. Replicable across Tonga, Fiji, Vanuatu, Solomon Islands, PNG using the same architecture.<br><br>
+    <strong>Build order:</strong> Phase 1 (research submission) → Phase 2 (authentication + shared components) → Phase 3 (ministry subdomains + DBS + donor + verify) → Phase 4 (production .gov.ws + real auth + full institutional registry).<br><br>
+    <strong>The new car test:</strong> Every portal must be immediately legible to a government official encountering it for the first time. If they need to read a manual, the UX has failed. Test every panel with someone who has never seen it before.<br><br>
+    v1.0 · Samoa DPI · Synergy Blockchain Pacific · NUS/ISOC Research Programme · 2026
+  </p>
+</div>
+
+<script>
+  const STORAGE_KEY = 'samoa-dpi-frontend-checklist-v1';
+
+  function saveState() {
+    const state = {};
+    document.querySelectorAll('.item').forEach(item => {
+      state[item.getAttribute('data-id')] = item.classList.contains('done');
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function loadState() {
+    try {
+      const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      document.querySelectorAll('.item').forEach(item => {
+        const id = item.getAttribute('data-id');
+        if (state[id]) item.classList.add('done');
+      });
+    } catch(e) {}
+  }
+
+  function toggle(el) {
+    el.classList.toggle('done');
+    saveState();
+    updateProgress();
+    updateSectionCounts();
+  }
+
+  function resetAll() {
+    if (!confirm('Reset all items to incomplete?')) return;
+    document.querySelectorAll('.item').forEach(el => el.classList.remove('done'));
+    saveState();
+    updateProgress();
+    updateSectionCounts();
+  }
+
+  function updateProgress() {
+    const total = document.querySelectorAll('.item').length;
+    const done  = document.querySelectorAll('.item.done').length;
+    const pct   = total ? Math.round((done / total) * 100) : 0;
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-done').textContent = done;
+    document.getElementById('progress-total').textContent = total;
+  }
+
+  function updateSectionCounts() {
+    for (let i = 1; i <= 13; i++) {
+      const el = document.getElementById('count-s' + i);
+      if (!el) continue;
+      const section = el.closest('.section');
+      if (!section) continue;
+      const items = section.querySelectorAll('.item');
+      const done  = section.querySelectorAll('.item.done');
+      el.textContent = done.length + ' / ' + items.length + ' done';
+    }
+  }
+
+  loadState();
+  updateProgress();
+  updateSectionCounts();
+</script>
+</body>
+</html>

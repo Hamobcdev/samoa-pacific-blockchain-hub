@@ -1,0 +1,85 @@
+@import '@samoa-dpi/shared-ui/src/tokens.css';
+
+/*
+ * Admin portal — dark Pacific theme overrides.
+ * Base dark token values from tokens.css are correct for admin — no overrides needed.
+ * App-specific globals below.
+ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background:               var(--color-bg);
+  color:                    var(--color-text);
+  font-family:              var(--font-ui);
+  font-size:                var(--font-size-body);
+  line-height:              1.65;
+  -webkit-font-smoothing:   antialiased;
+  overflow-x:               hidden;
+}
+
+:focus-visible {
+  outline:        2px solid var(--color-gold);
+  outline-offset: 3px;
+  border-radius:  2px;
+}
+
+.skip-link {
+  position:    absolute;
+  top:         -100%;
+  left:        0;
+  background:  var(--color-gold);
+  color:       #000;
+  padding:     8px 16px;
+  font-family: var(--font-mono);
+  font-size:   12px;
+  font-weight: 600;
+  z-index:     var(--z-modal);
+  text-decoration: none;
+  border-radius:   0 0 4px 0;
+}
+.skip-link:focus { top: 0; }
+
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--color-surface); }
+::-webkit-scrollbar-thumb { background: var(--color-border-2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-dim); }
+
+::selection { background: rgba(0, 48, 135, 0.45); color: var(--color-text); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:  0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  [data-print-hide]   { display: none !important; }
+  body                { background: white; color: black; font-size: 11pt; }
+  [data-panel]        { page-break-after: always; }
+  [data-panel-heading]{ color: var(--color-flag-blue); border-color: var(--color-flag-blue); }
+  table               { width: 100%; border-collapse: collapse; }
+  td, th              { border: 1px solid #ccc; padding: 6px; }
+}

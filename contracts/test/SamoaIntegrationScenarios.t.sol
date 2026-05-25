@@ -276,11 +276,6 @@ contract SamoaIntegrationScenarios is Test {
         console.log("=== SCENARIO 3: AID Grant Full Lifecycle ===");
 
         // Step 1: Create UNICEF education grant
-        string[] memory milestones = new string[](3);
-        milestones[0] = "Programme setup and 20 children enrolled";
-        milestones[1] = "50 children with 80 percent attendance for one term";
-        milestones[2] = "End of year learning outcomes documented";
-
         uint256[] memory amounts = new uint256[](3);
         amounts[0] = 30_000;
         amounts[1] = 40_000;
@@ -288,13 +283,10 @@ contract SamoaIntegrationScenarios is Test {
 
         vm.prank(admin);
         uint256 grantId = aidTracker.createGrant(
-            "UNICEF Samoa Education Access Programme 2025",
-            address(0x000000000000000000000000000000000000dEaD), // UNICEF placeholder
+            bytes32("WST"),
+            uint8(2),
             address(educationNode),
-            100_000,
-            50,
-            "EDUCATION",
-            milestones,
+            "UNICEF Samoa Education Access Programme 2025",
             amounts
         );
         console.log("UNICEF: Grant created. ID:", grantId);
@@ -648,15 +640,18 @@ contract SamoaIntegrationScenarios is Test {
         mofNode.recordService(TRADER_FALE, "MOF_PAYMENT", DUTY_PAYMENT_DATA, false);
 
         // Create and run AID grant
-        string[] memory ms = new string[](2);
-        ms[0] = "Enrolment milestone";
-        ms[1] = "Outcome milestone";
         uint256[] memory am = new uint256[](2);
         am[0] = 50_000;
         am[1] = 50_000;
 
         vm.prank(admin);
-        aidTracker.createGrant("UNICEF Samoa 2025", address(0xdEaD), address(educationNode), 100_000, 50, "EDUCATION", ms, am);
+        aidTracker.createGrant(
+            bytes32("WST"),
+            uint8(2),
+            address(educationNode),
+            "EDUCATION",
+            am
+        );
         vm.prank(admin);
         aidTracker.authoriseVerifier(auditor);
         vm.prank(admin);

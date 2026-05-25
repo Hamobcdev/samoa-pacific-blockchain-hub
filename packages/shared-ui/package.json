@@ -1,0 +1,20 @@
+{
+  "name": "@samoa-dpi/shared-ui",
+  "version": "0.1.0",
+  "description": "Design tokens and UI primitives for Samoa DPI apps",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./src/tokens.css": "./src/tokens.css"
+  },
+  "scripts": {},
+  "devDependencies": {
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "decimal.js": "^10.6.0"
+  }
+}

@@ -12,6 +12,7 @@ frontend/dist/
 # Environment
 .env
 *.env.local
+api/.env
 
 # OS
 .DS_Store
@@ -20,3 +21,8 @@ node_modules/
 package-lock.json
 .vercel
 .env*.local
+docs/RESEARCH_LOG.md
+
+# Build artifacts — never commit
+apps/*/dist/
+api/dist/

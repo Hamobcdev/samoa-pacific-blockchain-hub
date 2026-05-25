@@ -1,8 +1,9 @@
-# Samoa Pacific Blockchain Hub
+# Samoa Digital Public Infrastructure (DPI)
 
-**Government interoperability infrastructure for Samoa — built by a small Pacific team, proving what is possible before asking for permission.**
+**Whole-of-Government Digital Public Infrastructure for the Independent State of Samoa.**
 
-Built by [Synergy Blockchain Pacific](https://github.com/Hamobcdev) · UNICEF Venture Fund 2026 Application
+**Lead Institution:** National University of Samoa · NUS/ISOC Research Programme 2026
+**Technical Partner:** [Synergy Blockchain Pacific](https://github.com/Hamobcdev) · Apia, Samoa
 
 🌐 **Live Demo:** [hamobcdev.github.io/samoa-pacific-blockchain-hub](https://hamobcdev.github.io/samoa-pacific-blockchain-hub/)
 📹 **Demo Video:** [youtu.be/fe1tNsUf40s](https://youtu.be/fe1tNsUf40s)
@@ -58,15 +59,9 @@ Since 1 January 2024, all IMO Member States including Samoa are required under t
 
 ## Who We Are
 
-Synergy Blockchain Pacific was founded by Anthony George Williams — currently the only blockchain developer based in Samoa.
+Synergy Blockchain Pacific was founded by Anthony George Williams — technical partner to the NUS/ISOC Research Programme 2026 and the first blockchain developer based in Samoa.
 
-Anthony pivoted away from cryptocurrency speculation to the underlying technology in 2019, after recognising that blockchain infrastructure — not speculative trading — was where the real transformative potential lay for small island developing states. With no formal blockchain development programme available in Samoa, he taught himself to build blockchain applications from the ground up, driven by a clear conviction: this technology is better suited to small island developing states than almost anywhere else. Because of our size, we are actually better positioned to scale blockchain infrastructure across an entire economy than larger nations with legacy systems too embedded to replace.
-
-Synergy Blockchain Pacific today is Anthony, co-founder Suetena, and Britney who is supporting education and marketing outreach. No external funding. No institutional backing. Building because the window to get this right — before global standards lock in and Samoa is left adapting to infrastructure designed elsewhere — is closing.
-
-This is not a corporate submission. It is a genuine grassroots effort from the only person on the island who has spent years developing both the technical capability and the government relationships needed to make this real.
-
-We are asking UNICEF not just to fund a product, but to fund the beginning of an industry in the Pacific — and the person who has already spent years building it without being asked to.
+Synergy Blockchain Pacific today is Anthony and co-founder Suetena, building the technical infrastructure under the academic direction of Dr. Edna Temese at the National University of Samoa. The research programme is funded by the ISOC Foundation and led independently by NUS.
 
 ---
 
@@ -113,11 +108,9 @@ This system is that demonstration. It is what we show when words are not enough.
 
 ---
 
-## Why Children Are Central to This Work
+## Aid Accountability
 
-UNICEF's focus on children is not peripheral to what we are building — it is the reason the aid disbursement tracker exists at all.
-
-In Samoa, as across the Pacific, significant international aid directed at children passes through government systems with limited transparency and accountability. Funding intended for school enrolment subsidies, nutrition programmes, and early childhood services is often delayed, misallocated, or simply unverifiable at the point of delivery.
+In Samoa, as across the Pacific, significant international development aid passes through government systems with limited transparency and accountability. Funding intended for education, health, and social services is often delayed, misallocated, or simply unverifiable at the point of delivery.
 
 The AID Disbursement Tracker in this system addresses that directly:
 
@@ -125,8 +118,6 @@ The AID Disbursement Tracker in this system addresses that directly:
 - Tranches release only when field-verified milestones are met
 - Evidence hashes are stored permanently — not in a spreadsheet, not in a ministry filing cabinet
 - Every dollar from commitment to delivery is auditable by anyone with the contract address
-
-Children cannot advocate for the money meant for them. This system creates a permanent, tamper-proof record that someone can always check.
 
 ---
 
@@ -136,7 +127,7 @@ Four stakeholder views — no login required:
 
 | Role | What you see |
 |---|---|
-| **UNICEF Donor** | Grant lifecycle, milestone progress, tranche releases, full audit trail |
+| **Development Partner** | Grant lifecycle, milestone progress, tranche releases, full audit trail |
 | **Ministry Officer** | Service recording, citizen verification, cross-ministry workflow status |
 | **Citizen** | Your own service history, verified identity status, benefit eligibility |
 | **Administrator** | Full system overview, all ministry nodes, workflow log, permission grants |
@@ -174,7 +165,7 @@ Slither static analysis completed across all four contracts. **Zero critical fin
 | Low | 18 | ✅ All fixed |
 
 **Security improvements applied in this version:**
-- `ReentrancyGuard` (`nonReentrant`) on `InteroperabilityHub.executeEnrollmentWorkflow()`
+- `ReentrancyGuard` (`nonReentrant`) on `InteroperabilityHub.executeEnrolmentWorkflow()`
 - Check-Effects-Interactions (CEI) pattern enforced on `MinistryNode.recordService()`
 - `indexed` parameters added to all key events for efficient CBS monitoring queries
 - Gas-optimised `batchRegister()` — single `SSTORE` write after loop, not per iteration
@@ -213,7 +204,7 @@ The previous version of this README noted testnet deployment as blocked. **That 
 
 This section is retained to document the honest reality of building infrastructure without funding: what took a well-resourced team hours took us significantly longer — navigating RPC limits, gas configuration for a new network, dependency management on an isolated connection, and debugging deployment tooling without a support team. Every one of those barriers was a resource problem, not a technical one.
 
-UNICEF funding does not just accelerate development. It removes the friction that makes every step harder than it needs to be for a team building in the Pacific without institutional support.
+The NUS/ISOC research programme provides the institutional framework that makes collaboration with government possible — converting a working prototype into a credible academic research engagement.
 
 ---
 
@@ -280,24 +271,6 @@ Layer 2 contracts currently in architecture and design:
 - [ ] Purpose-locked remittance product for diaspora (RemitSafe)
 - [ ] CBS mainnet deployment — conditional on sandbox MOU signature
 
-### Phase 4 — Privacy, Compliance & Security
-- [ ] Full AML/CFT oracle — Chainlink external adapter, OFAC + UN sanctions
-- [ ] IoT parametric insurance — cold chain, route deviation, tamper detection
-- [ ] Selective disclosure ZK proof implementation
-- [ ] Independent security audit — Code4rena or Sherlock competitive audit
-- [ ] UUPS proxy + timelock pattern across all production contracts
-
-### Phase 5 — Sovereign Geth Network
-- [ ] Three-node Geth QBFT consensus on physical hardware in Apia
-- [ ] Validator nodes: CBS + MCIT + neutral government data centre
-- [ ] Migration from Amoy testnet to sovereign chain
-- [ ] Island-mode operation testing — graceful degradation verification
-
-### Phase 6 — Pacific Regional Consortium
-- [ ] PacificChain white-label deployment — Fiji as first partner node
-- [ ] ADB Pacific regional infrastructure funding application
-- [ ] Multi-nation permissioned chain — each nation sovereign over own node
-- [ ] Samoa national project → Pacific Digital Sovereignty Infrastructure
 
 ---
 
@@ -321,7 +294,7 @@ samoa-pacific-blockchain-hub/
 ├── contracts/
 │   ├── src/                          # Smart contracts
 │   │   ├── NDIDSRegistry.sol         # National Digital ID System
-│   │   ├── AIDisbursementTracker.sol # UNICEF grant milestone tracker
+│   │   ├── AIDisbursementTracker.sol # Grant lifecycle and disbursement tracker
 │   │   ├── InteroperabilityHub.sol   # Cross-ministry coordination
 │   │   └── MinistryNode.sol          # Individual ministry logic
 │   ├── test/                         # 29 automated tests
@@ -342,15 +315,13 @@ See [LICENSE.txt](./LICENSE.txt) for full terms. Built and owned by Synergy Bloc
 
 ---
 
-## Parallel Applications and Submissions
+## Research Programme Context
 
-This repository is the primary submission to the **UNICEF Venture Fund 2026** — focused on the children, aid accountability, and government service delivery dimensions of the system.
+This repository is the technical artefact of the **NUS/ISOC Research Programme 2026**, led by Dr. Edna Temese at the National University of Samoa.
 
-We are also preparing a parallel submission to **UNCTAD** focused on the trade facilitation, customs workflow, and interoperability framework components — directly aligned with the UNCTAD Trade Facilitation blockchain standard targeted for global adoption by 2029.
+The research covers three parallel dimensions of Whole-of-Government DPI: identity and interoperability, trade facilitation, and digital currency — as a unified infrastructure programme for the Independent State of Samoa.
 
-A separate **CBS Stablecoin Pilot** is in development — a WST-pegged digital currency architecture designed in consultation with the Central Bank of Samoa, intended as the payment rail that connects this interoperability system to real financial settlement.
-
-These are not separate projects. They are three layers of the same Pacific blockchain infrastructure programme — identity and interoperability, trade facilitation, and digital currency — being built in parallel by the same small team with no external funding.
+A **CBS Regulatory Sandbox** application is in preparation. The digital currency architecture is designed in consultation with the Central Bank of Samoa.
 
 ---
 
@@ -366,21 +337,15 @@ A young Samoan developer trained in permissioned blockchain networks today is no
 
 ---
 
-## What UNICEF Funding Would Enable
+## Phase 2 Research Goals
 
 - Complete Phase 2 trade document and supply chain layer — six new standards-aligned contracts
 - Maritime Single Window implementation for Samoa Ports Authority — IMO FAL Convention compliance
 - Formal government pilot with at least one Samoa ministry
-- CBS Regulatory Sandbox progression to MOU and WST stablecoin pilot
-- IoT cold chain monitoring integration — parametric insurance for Pacific perishable imports
-- Fund the education programme running alongside development — workshops, government briefings, public literacy
-- Establish the first formal blockchain infrastructure deployment in Samoa's public sector
-- Create replicable open-source documentation so other Pacific nations can adopt the same approach without starting from zero
-- Grow the team to deliver education and development in parallel
-- Demonstrate to Samoa's government that the 2029 commitments are achievable with local capability, not just imported solutions
+- CBS Regulatory Sandbox progression to MOU and WST-DPI pilot
+- Establish the first formal digital public infrastructure deployment in Samoa's public sector
+- Create replicable open-source documentation so other Pacific SIDS can adopt the same approach
 
 ---
 
-*Samoa Pacific Blockchain Hub · Synergy Blockchain Pacific · 2026*
-
-*This is the work of Anthony George Williams and a small Pacific team — building the infrastructure their region needs, with the resources they have, before the window closes. Every line of code was written without a salary, without a grant, and without certainty that anyone would notice. We believe they should. Fa'afetai lava.*
+*Samoa Digital Public Infrastructure · NUS/ISOC Research Programme 2026 · Synergy Blockchain Pacific · Apia, Samoa*

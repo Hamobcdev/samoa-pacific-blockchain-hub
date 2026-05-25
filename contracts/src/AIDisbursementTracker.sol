@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
+import { DecimalMath } from "./libraries/DecimalMath.sol";
 
 /**
  * @title AIDisbursementTracker
@@ -44,19 +45,16 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable, Pausable {
     }
 
     struct Grant {
-        uint256     id;
-        string      title;
-        address     donor;            // funding organisation (e.g. UNICEF, ADB, World Bank)
-        address     recipient;        // Samoa ministry or NGO receiving funds
-        uint256     totalAmount;
-        uint256     releasedAmount;
-        uint256     verifiedAmount;
+        bytes32 currencyCode;
+        uint8 decimals;
+        uint256 nativeAmount;
+        uint256 normalizedAmount;
+        address recipient;
+        string purpose;
+        uint256 createdAt;
         GrantStatus status;
-        uint256     createdAt;
-        uint256     targetBeneficiaries;
-        uint256     actualBeneficiaries;
-        string      sector;           // "EDUCATION", "HEALTH", "SOCIAL_PROTECTION", etc.
-        Tranche[]   tranches;
+        uint256[] trancheAmounts;
+        uint256[] trancheReleasedAt;
     }
 
     // ── State ────────────────────────────────────────────────────
@@ -71,8 +69,13 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable, Pausable {
 
     mapping(uint256 => Grant) private _grants;
 
-    // donor => grant IDs they've funded
-    mapping(address => uint256[]) public donorGrants;
+    // Tranche details stored separately from the Grant struct
+    mapping(uint256 => Tranche[]) private _grantTranches;
+
+    // Per-grant accounting (removed from struct; maintained as separate mappings)
+    mapping(uint256 => uint256) private _releasedAmounts;
+    mapping(uint256 => uint256) private _verifiedAmounts;
+    mapping(uint256 => uint256) private _actualBeneficiaries;
 
     // recipient => grant IDs they've received
     mapping(address => uint256[]) public recipientGrants;
@@ -85,11 +88,12 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable, Pausable {
     event PauseAuthoritySet(address indexed authority);
     event GrantCreated(
         uint256 indexed grantId,
-        address indexed donor,
         address indexed recipient,
-        uint256 amount,
-        string sector,
-        uint256 timestamp
+        bytes32 indexed currencyCode,
+        uint8 decimals,
+        uint256 nativeAmount,
+        uint256 normalizedAmount,
+        string purpose
     );
     event TrancheReleased(
         uint256 indexed grantId,
@@ -166,39 +170,49 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable, Pausable {
     // ── Grant Creation ───────────────────────────────────────────
 
     /**
-     * @notice Create a new aid grant with milestone-based tranches
+     * @notice Create a new aid grant with milestone-based tranches.
+     *         Phase 1: WST only (2 decimals). Amounts in WST base units.
      */
     function createGrant(
-        string calldata title,
-        address donor,
+        bytes32 currencyCode,
+        uint8 decimals,
         address recipient,
-        uint256 totalAmount,
-        uint256 targetBeneficiaries,
-        string calldata sector,
-        string[] calldata milestones,
-        uint256[] calldata trancheAmounts
+        string calldata purpose,
+        uint256[] calldata amounts
     ) external onlyAdmin whenNotPaused returns (uint256 grantId) {
-        require(milestones.length == trancheAmounts.length, "Mismatch");
-        require(milestones.length > 0, "No tranches");
+        require(amounts.length > 0, "No tranches");
+        require(
+            currencyCode == bytes32("WST"),
+            "OnlyWSTInPhase1"
+        );
+        require(decimals == 2, "InvalidDecimalsWST");
+
+        uint256 nativeTotal;
+        for (uint256 i = 0; i < amounts.length; i++) {
+            nativeTotal += amounts[i];
+        }
+
+        uint256 normalized = DecimalMath.normalize(
+            nativeTotal, decimals
+        );
 
         grantId = totalGrants++;
         Grant storage g = _grants[grantId];
-        g.id                  = grantId;
-        g.title               = title;
-        g.donor               = donor;
-        g.recipient           = recipient;
-        g.totalAmount         = totalAmount;
-        g.status              = GrantStatus.Active;
-        g.createdAt           = block.timestamp; // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
-        g.targetBeneficiaries = targetBeneficiaries;
-        g.sector              = sector;
+        g.currencyCode    = currencyCode;
+        g.decimals        = decimals;
+        g.nativeAmount    = nativeTotal;
+        g.normalizedAmount = normalized;
+        g.recipient       = recipient;
+        g.purpose         = purpose;
+        g.createdAt       = block.timestamp; // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
+        g.status          = GrantStatus.Active;
 
-        uint256 trancheSum;
-        for (uint256 i = 0; i < milestones.length; i++) {
-            trancheSum += trancheAmounts[i];
-            g.tranches.push(Tranche({
-                amount:      trancheAmounts[i],
-                milestone:   milestones[i],
+        for (uint256 i = 0; i < amounts.length; i++) {
+            g.trancheAmounts.push(amounts[i]);
+            g.trancheReleasedAt.push(0);
+            _grantTranches[grantId].push(Tranche({
+                amount:      amounts[i],
+                milestone:   "",
                 evidenceHash: bytes32(0),
                 status:      TrancheStatus.Pending,
                 releasedAt:  0,
@@ -207,27 +221,33 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable, Pausable {
                 verifiedBy:  address(0)
             }));
         }
-        if (trancheSum != totalAmount) revert TrancheAmountMismatch();
 
-        donorGrants[donor].push(grantId);
         recipientGrants[recipient].push(grantId);
 
-        emit GrantCreated(grantId, donor, recipient, totalAmount, sector, block.timestamp); // @dev TS-1
+        emit GrantCreated(
+            grantId,
+            recipient,
+            currencyCode,
+            decimals,
+            nativeTotal,
+            normalized,
+            purpose
+        );
     }
 
     // ── Tranche Release ──────────────────────────────────────────
 
     /**
-     * @notice Release a funding tranche when milestone is achieved
-     *         Called by ADMIN (or in production: triggered by ministry node confirmation)
+     * @notice Release a funding tranche when milestone is achieved.
+     *         Called by ADMIN (or in production: triggered by ministry node confirmation).
      */
     function releaseTranche(uint256 grantId, uint256 trancheId) external onlyAdmin whenNotPaused {
         if (grantId >= totalGrants) revert GrantNotFound();
         Grant storage g = _grants[grantId];
         if (g.status != GrantStatus.Active) revert GrantNotActive();
-        if (trancheId >= g.tranches.length) revert InvalidTranche();
+        if (trancheId >= g.trancheAmounts.length) revert InvalidTranche();
 
-        Tranche storage t = g.tranches[trancheId];
+        Tranche storage t = _grantTranches[grantId][trancheId];
         if (t.status != TrancheStatus.Pending) revert TrancheNotPending();
 
         // @dev TS-1: validator drift guard — always passes but documents known PoA drift risk.
@@ -236,19 +256,22 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable, Pausable {
         t.releasedAt = block.timestamp; // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
         t.releasedBy = msg.sender;
 
-        g.releasedAmount += t.amount;
-        totalDisbursed   += t.amount;
+        g.trancheReleasedAt[trancheId] = block.timestamp; // @dev TS-1
 
-        emit TrancheReleased(grantId, trancheId, t.amount, t.milestone, block.timestamp); // @dev TS-1
+        uint256 amount = g.trancheAmounts[trancheId];
+        _releasedAmounts[grantId] += amount;
+        totalDisbursed             += amount;
+
+        emit TrancheReleased(grantId, trancheId, amount, t.milestone, block.timestamp); // @dev TS-1
     }
 
     // ── Usage Verification ───────────────────────────────────────
 
     /**
-     * @notice Verify that released funds reached beneficiaries
-     *         Called by authorised verifiers (ministry nodes, auditors, field workers)
-     * @param evidenceHash  keccak256 of verification report (stored on IPFS off-chain)
-     * @param beneficiariesServed  actual count of children/community members served
+     * @notice Verify that released funds reached beneficiaries.
+     *         Called by authorised verifiers (ministry nodes, auditors, field workers).
+     * @param evidenceHash       keccak256 of verification report (stored on IPFS off-chain)
+     * @param beneficiariesServed actual count of children/community members served
      */
     function verifyUsage(
         uint256 grantId,
@@ -258,9 +281,9 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable, Pausable {
     ) external onlyVerifier whenNotPaused {
         if (grantId >= totalGrants) revert GrantNotFound();
         Grant storage g = _grants[grantId];
-        if (trancheId >= g.tranches.length) revert InvalidTranche();
+        if (trancheId >= g.trancheAmounts.length) revert InvalidTranche();
 
-        Tranche storage t = g.tranches[trancheId];
+        Tranche storage t = _grantTranches[grantId][trancheId];
         if (t.status != TrancheStatus.Released) revert TrancheNotReleased();
 
         t.status       = TrancheStatus.Verified;
@@ -268,14 +291,14 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable, Pausable {
         t.verifiedAt   = block.timestamp; // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
         t.verifiedBy   = msg.sender;
 
-        g.actualBeneficiaries += beneficiariesServed;
-        g.verifiedAmount      += t.amount;
-        totalVerified         += t.amount;
+        uint256 amount = g.trancheAmounts[trancheId];
+        _actualBeneficiaries[grantId] += beneficiariesServed;
+        _verifiedAmounts[grantId]     += amount;
+        totalVerified                  += amount;
 
         emit TrancheVerified(grantId, trancheId, evidenceHash, beneficiariesServed, block.timestamp); // @dev TS-1
-        emit BeneficiariesUpdated(grantId, g.actualBeneficiaries);
+        emit BeneficiariesUpdated(grantId, _actualBeneficiaries[grantId]);
 
-        // Auto-complete if all tranches verified
         _checkCompletion(grantId);
     }
 
@@ -315,7 +338,24 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable, Pausable {
 
     // ── Queries ──────────────────────────────────────────────────
 
-    /// @notice Returns the core fields of a grant by ID.
+    /**
+     * @notice Returns grant data in a 12-field tuple for backward compatibility.
+     *         Fields that have no equivalent in the new struct return zero/empty.
+     *
+     *         Tuple layout (matches legacy callers):
+     *         1  id               — grantId (input parameter)
+     *         2  title            — purpose string
+     *         3  donor            — address(0) (not stored in Phase 1)
+     *         4  recipient        — grant recipient
+     *         5  totalAmount      — nativeAmount
+     *         6  releasedAmount   — cumulative released
+     *         7  verifiedAmount   — cumulative verified
+     *         8  status           — GrantStatus
+     *         9  createdAt        — block timestamp at creation
+     *         10 targetBeneficiaries — 0 (not stored in Phase 1)
+     *         11 actualBeneficiaries — cumulative verified beneficiaries
+     *         12 sector           — "" (not stored in Phase 1)
+     */
     function getGrant(uint256 grantId) external view returns (
         uint256 id,
         string memory title,
@@ -332,10 +372,18 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable, Pausable {
     ) {
         Grant storage g = _grants[grantId];
         return (
-            g.id, g.title, g.donor, g.recipient,
-            g.totalAmount, g.releasedAmount, g.verifiedAmount,
-            g.status, g.createdAt, g.targetBeneficiaries,
-            g.actualBeneficiaries, g.sector
+            grantId,
+            g.purpose,
+            address(0),
+            g.recipient,
+            g.nativeAmount,
+            _releasedAmounts[grantId],
+            _verifiedAmounts[grantId],
+            g.status,
+            g.createdAt,
+            0,
+            _actualBeneficiaries[grantId],
+            ""
         );
     }
 
@@ -343,24 +391,19 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable, Pausable {
     function getTranche(uint256 grantId, uint256 trancheId)
         external view returns (Tranche memory)
     {
-        return _grants[grantId].tranches[trancheId];
+        return _grantTranches[grantId][trancheId];
     }
 
     /// @notice Returns the number of tranches in a grant.
     function getTrancheCount(uint256 grantId) external view returns (uint256) {
-        return _grants[grantId].tranches.length;
+        return _grants[grantId].trancheAmounts.length;
     }
 
     /// @notice Returns all tranches for a grant as the full audit trail.
     function getAuditTrail(uint256 grantId)
         external view returns (Tranche[] memory)
     {
-        return _grants[grantId].tranches;
-    }
-
-    /// @notice Returns all grant IDs funded by a given donor address.
-    function getDonorGrants(address donor) external view returns (uint256[] memory) {
-        return donorGrants[donor];
+        return _grantTranches[grantId];
     }
 
     /// @notice Returns all grant IDs received by a given recipient address.
@@ -371,11 +414,11 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable, Pausable {
     // ── Internal ─────────────────────────────────────────────────
 
     function _checkCompletion(uint256 grantId) internal {
-        Grant storage g = _grants[grantId];
-        for (uint256 i = 0; i < g.tranches.length; i++) {
-            if (g.tranches[i].status != TrancheStatus.Verified) return;
+        Tranche[] storage tranches = _grantTranches[grantId];
+        for (uint256 i = 0; i < tranches.length; i++) {
+            if (tranches[i].status != TrancheStatus.Verified) return;
         }
-        g.status = GrantStatus.Completed;
+        _grants[grantId].status = GrantStatus.Completed;
         emit GrantCompleted(grantId, block.timestamp); // @dev TS-1: validator-drift risk documented. See audit TS-1. Acceptable on permissioned PoA chain.
     }
 
@@ -449,4 +492,9 @@ contract AIDisbursementTracker is Initializable, UUPSUpgradeable, Pausable {
     //       delete pendingTranches[key];
     //       emit TrancheMigrationCancelled(grantId, trancheId);
     //   }
+
+    /// @dev Storage gap for UUPS upgrade safety.
+    /// Reserves 50 slots to prevent storage
+    /// collision in future upgrades.
+    uint256[50] private __gap;
 }

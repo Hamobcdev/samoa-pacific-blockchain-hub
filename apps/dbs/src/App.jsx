@@ -3,7 +3,7 @@ import { ResearchGate, LanguageProvider, useLang, FeatureGate } from '@samoa-dpi
 import { BankRegistryView }  from './components/BankRegistryView';
 import { InstitutionalView } from './components/InstitutionalView';
 import { CorrespondentView } from './components/CorrespondentView';
-import { DBSRolePicker }     from './components/DBSRolePicker';
+import { DBSAuthGate }       from './components/DBSAuthGate';
 
 const TABS = [
   { id: 'banks',         label: { en: 'Retail Distributors', sm: 'Faʻasoa Tau' } },
@@ -13,16 +13,17 @@ const TABS = [
 
 function DBSApp() {
   const { lang } = useLang();
-  const [role, setRole]           = useState(null);
-  const [bankCode, setBankCode]   = useState(null);
+  const [auth, setAuth]           = useState(null);
   const [activeTab, setActiveTab] = useState('banks');
 
-  if (!role) return (
-    <DBSRolePicker
-      onSelect={(r, code) => { setRole(r); if (code) setBankCode(code); }}
-      lang={lang}
+  if (!auth) return (
+    <DBSAuthGate
+      onAuthenticated={(role, inst, label) => setAuth({ role, inst, label })}
     />
   );
+
+  const role     = auth.role;
+  const bankCode = auth.inst;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
@@ -42,15 +43,15 @@ function DBSApp() {
         </span>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px',
                        color: 'var(--color-muted)', marginLeft: 'auto' }}>
-          {role === 'DBS_STAFF' ? 'DBS Staff' : `Bank Officer — ${bankCode}`}
+          {auth.label}
         </span>
-        <button onClick={() => { setRole(null); setBankCode(null); }}
+        <button onClick={() => setAuth(null)}
           style={{ fontFamily: 'var(--font-mono)', fontSize: '10px',
                    color: 'var(--color-muted)', background: 'none',
                    border: '1px solid var(--color-border)', borderRadius: '4px',
                    padding: '3px 10px', cursor: 'pointer' }}
           data-print-hide>
-          Change Role
+          Sign Out
         </button>
       </header>
 

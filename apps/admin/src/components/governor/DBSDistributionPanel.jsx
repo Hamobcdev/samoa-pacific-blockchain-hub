@@ -18,7 +18,7 @@ const TABLE_HEADERS = ['CODE', 'INSTITUTION', 'STATUS', 'DAILY LIMIT (WST)', 'SE
 
 export function DBSDistributionPanel() {
   return (
-    <div data-panel style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div data-panel data-panel-version="1.1" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
       {/* Zone 3 classification band */}
       <div style={{

@@ -79,7 +79,7 @@ function DeliverableRow({ item }: { item: ResearchDeliverable }) {
         alignItems: 'flex-start',
         gap:        10,
         cursor:     item.evidence ? 'pointer' : 'default',
-      }} onClick={() => item.evidence && setExpanded(e => !e)}>
+      }} onClick={() => item.evidence && setExpanded((e: boolean) => !e)}>
         <span style={{
           fontFamily:    'var(--font-mono, IBM Plex Mono, monospace)',
           fontSize:      10,
@@ -152,7 +152,7 @@ function IssueRow({ issue }: { issue: ExternalIssue }) {
     }}>
       <div
         style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}
-        onClick={() => setExpanded(e => !e)}
+        onClick={() => setExpanded((e: boolean) => !e)}
       >
         <span style={{
           fontFamily:    'var(--font-mono, IBM Plex Mono, monospace)',
@@ -359,7 +359,7 @@ export function ResearchContextPanel(props: ResearchGateProps) {
         {prioritised.length > 4 && (
           <div style={{ padding: '10px 14px', borderTop: '1px solid var(--color-border, #1b2540)' }}>
             <button
-              onClick={() => setShowAll(s => !s)}
+              onClick={() => setShowAll((s: boolean) => !s)}
               style={{
                 background:    'none',
                 border:        '1px solid var(--color-border, #1b2540)',

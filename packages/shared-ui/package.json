@@ -10,6 +10,8 @@
   },
   "scripts": {},
   "devDependencies": {
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
     "typescript": "^5.0.0"
   },
   "dependencies": {

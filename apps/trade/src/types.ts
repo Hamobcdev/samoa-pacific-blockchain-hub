@@ -260,3 +260,21 @@ export interface OMWSubmissionResult {
   demoMode: boolean
   ref: string
 }
+
+// ── OMW Auth (Prompt 08) ──────────────────────────────────────────────────────
+
+export interface OMWAuthResult {
+  role: 'SHIPPING_AGENT' | 'FREIGHT_FORWARDER' | 'GOV_OFFICER'
+  zone: 1 | 2
+  label: string
+  agency: string | null
+  authedAt: string
+}
+
+export interface AuditEntry {
+  timestamp: string
+  form: string
+  reference: string
+  transmittedTo: string
+  status: string
+}

@@ -6,15 +6,15 @@ const TIER2_BANKS = [
   { code: 'SCB-WS', name: 'Samoa Commercial Bank',       limit: 200000, settlement: 'National Bank of Samoa',  compliance: 'Compliant' },
   { code: 'NBS-WS', name: 'National Bank of Samoa',      limit: 200000, settlement: 'Central Bank of Samoa',   compliance: 'Compliant' },
   { code: 'DBS-WS', name: 'Development Bank of Samoa',   limit: 150000, settlement: 'Ministry of Finance',     compliance: 'Compliant' },
-] as const
+]
 
 const TIER3_PARTICIPANTS = [
   { code: 'SNPF',   name: 'Samoa National Provident Fund',            partner: 'BSP-WS' },
   { code: 'UTOS',   name: 'Unit Trust of Samoa',                      partner: 'ANZ-WS' },
   { code: 'WSTLAC', name: 'Western Samoa Life Assurance Corporation', partner: 'NBS-WS' },
-] as const
+]
 
-const TABLE_HEADERS = ['CODE', 'INSTITUTION', 'STATUS', 'DAILY LIMIT (WST)', 'SETTLEMENT BANK', 'COMPLIANCE'] as const
+const TABLE_HEADERS = ['CODE', 'INSTITUTION', 'STATUS', 'DAILY LIMIT (WST)', 'SETTLEMENT BANK', 'COMPLIANCE']
 
 export function DBSDistributionPanel() {
   return (

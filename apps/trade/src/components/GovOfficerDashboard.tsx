@@ -13,575 +13,836 @@ function genRef(prefix: string) {
   return `${prefix}-${new Date().getFullYear()}-${String(Math.floor(100000 + Math.random() * 900000))}`
 }
 
-function sectionHead(title: string, sub?: string) {
-  return (
-    <div style={{ marginBottom: 16 }}>
-      <div style={{ fontFamily: MONO, fontSize: 11, color: C.gold, letterSpacing: '2px', textTransform: 'uppercase' }}>{title}</div>
-      {sub && <div style={{ fontFamily: MONO, fontSize: 10, color: C.dim, marginTop: 2 }}>{sub}</div>}
-    </div>
-  )
-}
-
 function statusBadge(status: string) {
+  const upper = status.toUpperCase()
   const map: Record<string, { bg: string; bdr: string; color: string }> = {
-    CLEARED:        { bg: C.greenBg,          bdr: C.greenBdr,  color: C.green    },
-    PENDING:        { bg: C.amberBg,           bdr: C.amberBdr,  color: C.amber    },
-    'UNDER REVIEW': { bg: `${C.flagBlue}18`,   bdr: C.border2,   color: C.info     },
-    FLAGGED:        { bg: C.critBg,            bdr: C.critBdr,   color: C.critical },
-    APPROVED:       { bg: C.greenBg,           bdr: C.greenBdr,  color: C.green    },
-    HELD:           { bg: C.critBg,            bdr: C.critBdr,   color: C.critical },
-    STUB:           { bg: C.surface3,          bdr: C.border,    color: C.dim      },
+    CLEARED:              { bg: C.greenBg,        bdr: C.greenBdr,  color: C.green    },
+    'FREE PRATIQUE':      { bg: C.greenBg,        bdr: C.greenBdr,  color: C.green    },
+    PENDING:              { bg: C.amberBg,         bdr: C.amberBdr,  color: C.amber    },
+    'UNDER REVIEW':       { bg: `${C.flagBlue}18`, bdr: C.border2,   color: C.info     },
+    'ASYCUDA PROCESSING': { bg: `${C.purple}18`,   bdr: C.purpleBdr, color: C.purple   },
+    FLAGGED:              { bg: C.critBg,          bdr: C.critBdr,   color: C.critical },
+    HELD:                 { bg: C.critBg,          bdr: C.critBdr,   color: C.critical },
+    'BERTH CONFIRMED':    { bg: C.greenBg,         bdr: C.greenBdr,  color: C.green    },
+    'AWAITING MDH':       { bg: C.amberBg,         bdr: C.amberBdr,  color: C.amber    },
+    'MDH SUBMITTED':      { bg: `${C.flagBlue}18`, bdr: C.border2,   color: C.info     },
   }
-  const s = map[status.toUpperCase()] ?? map['STUB']
+  const s = map[upper] ?? { bg: C.surface3, bdr: C.border, color: C.dim }
   return (
-    <span style={{ background: s.bg, border: `1px solid ${s.bdr}`, borderRadius: 3, color: s.color, fontFamily: MONO, fontSize: 9, padding: '2px 8px', letterSpacing: '0.5px' }}>
+    <span style={{ background: s.bg, border: `1px solid ${s.bdr}`, borderRadius: 3, color: s.color, fontFamily: MONO, fontSize: 9, padding: '2px 8px', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
       {status}
     </span>
   )
 }
 
-// ── Demo clearance queue ──────────────────────────────────────────────────────
-
-interface QueueEntry {
-  ref:       string
-  vessel:    string
-  imo:       string
-  eta:       string
-  status:    string
-  flagState: string
-  agent:     string
+function riskChip(risk: 'Low' | 'Medium' | 'High') {
+  const map = {
+    Low:    { color: C.green,    bg: C.greenBg,  bdr: C.greenBdr  },
+    Medium: { color: C.amber,    bg: C.amberBg,  bdr: C.amberBdr  },
+    High:   { color: C.critical, bg: C.critBg,   bdr: C.critBdr   },
+  }
+  const s = map[risk]
+  return (
+    <span style={{ background: s.bg, border: `1px solid ${s.bdr}`, borderRadius: 3, color: s.color, fontFamily: MONO, fontSize: 9, padding: '2px 6px' }}>
+      {risk}
+    </span>
+  )
 }
 
-const DEMO_QUEUE: QueueEntry[] = [
-  { ref: 'NOA-2026-0042', vessel: 'MV Pacific Star',   imo: '9234567', eta: '17/05/2026 14:00', status: 'UNDER REVIEW', flagState: 'MH', agent: 'Samoa Shipping Services Ltd' },
-  { ref: 'NOA-2026-0039', vessel: 'MV Ofu Cargo',      imo: '8812345', eta: '18/05/2026 09:00', status: 'CLEARED',       flagState: 'WS', agent: 'Pacific Trade & Logistics'  },
-  { ref: 'NOA-2026-0041', vessel: 'MV Savaii Explorer', imo: '7654321', eta: '19/05/2026 06:30', status: 'FLAGGED',       flagState: 'FJ', agent: 'Samoan Pacific Shipping Co'  },
+function tableHead(cols: string[]) {
+  return (
+    <thead>
+      <tr>
+        {cols.map(h => (
+          <th key={h} style={{ fontFamily: MONO, fontSize: 9, color: C.muted, padding: '8px 10px', borderBottom: `1px solid ${C.border}`, textAlign: 'left', letterSpacing: '1px', background: C.surface2, whiteSpace: 'nowrap' }}>
+            {h}
+          </th>
+        ))}
+      </tr>
+    </thead>
+  )
+}
+
+function td(content: React.ReactNode, mono = false) {
+  return (
+    <td style={{ fontFamily: mono ? MONO : SANS, fontSize: mono ? 10 : 12, color: C.text, padding: '8px 10px', borderBottom: `1px solid ${C.border}`, whiteSpace: 'nowrap' }}>
+      {content}
+    </td>
+  )
+}
+
+function tdMuted(content: React.ReactNode) {
+  return <td style={{ fontFamily: MONO, fontSize: 10, color: C.muted, padding: '8px 10px', borderBottom: `1px solid ${C.border}`, whiteSpace: 'nowrap' }}>{content}</td>
+}
+
+function actionBtn(label: string, onClick: () => void, variant: 'default' | 'green' | 'amber' | 'red' = 'default') {
+  const styles = {
+    default: { bg: C.surface3,   bdr: C.border2,   color: C.text     },
+    green:   { bg: C.greenBg,    bdr: C.greenBdr,  color: C.green    },
+    amber:   { bg: C.amberBg,    bdr: C.amberBdr,  color: C.amber    },
+    red:     { bg: C.critBg,     bdr: C.critBdr,   color: C.critical },
+  }
+  const s = styles[variant]
+  return (
+    <button
+      onClick={onClick}
+      style={{ background: s.bg, border: `1px solid ${s.bdr}`, borderRadius: 4, color: s.color, cursor: 'pointer', fontFamily: MONO, fontSize: 9, fontWeight: 600, letterSpacing: '0.5px', padding: '3px 10px', whiteSpace: 'nowrap' }}
+    >
+      {label}
+    </button>
+  )
+}
+
+type AgencyTab = 'queue' | 'reference'
+
+function AgencyTabs({ active, onChange }: { active: AgencyTab; onChange: (t: AgencyTab) => void }) {
+  return (
+    <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: `1px solid ${C.border}` }}>
+      {(['queue', 'reference'] as AgencyTab[]).map(t => (
+        <button
+          key={t}
+          onClick={() => onChange(t)}
+          style={{
+            background:   active === t ? C.surface2 : 'none',
+            border:       `1px solid ${active === t ? C.border2 : 'transparent'}`,
+            borderBottom: active === t ? `2px solid ${C.amber}` : '2px solid transparent',
+            borderRadius: '4px 4px 0 0',
+            color:        active === t ? C.text : C.muted,
+            cursor:       'pointer',
+            fontFamily:   MONO,
+            fontSize:     10,
+            letterSpacing: '1px',
+            marginBottom:  -1,
+            padding:      '7px 16px',
+            textTransform: 'uppercase',
+          }}
+        >
+          {t === 'queue' ? 'CLEARANCE QUEUE' : 'REFERENCE DATA'}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ── CUSTOMS ───────────────────────────────────────────────────────────────────
+
+interface CustomsEntry {
+  ref:        string
+  vessel:     string
+  imo:        string
+  eta:        string
+  cargoType:  string
+  hsCode:     string
+  asycudaRef: string
+  status:     string
+  wcoRisk:    'Low' | 'Medium' | 'High'
+}
+
+const CUSTOMS_QUEUE: CustomsEntry[] = [
+  { ref: 'NOA-2026-0042', vessel: 'MV Pacific Star',    imo: '9234567', eta: '17/05 14:00', cargoType: 'General Cargo',    hsCode: '8471.30', asycudaRef: 'SAD-20265831',  status: 'ASYCUDA PROCESSING', wcoRisk: 'Low'    },
+  { ref: 'NOA-2026-0039', vessel: 'MV Ofu Cargo',       imo: '8812345', eta: '18/05 09:00', cargoType: 'Bulk Grain',        hsCode: '1006.30', asycudaRef: 'SAD-20261247',  status: 'Pending',            wcoRisk: 'Low'    },
+  { ref: 'NOA-2026-0041', vessel: 'MV Savaii Explorer', imo: '7654321', eta: '19/05 06:30', cargoType: 'Dangerous Goods',   hsCode: '2710.12', asycudaRef: 'SAD-20268819',  status: 'FLAGGED',            wcoRisk: 'High'   },
 ]
 
-// ── Customs dashboard ─────────────────────────────────────────────────────────
+const TARIFF_CODES = [
+  { hs: '0901.11', desc: 'Coffee, not roasted',             rate: '0%'    },
+  { hs: '2203.00', desc: 'Beer of malt',                    rate: '75%'   },
+  { hs: '2402.20', desc: 'Cigarettes containing tobacco',   rate: '150%'  },
+  { hs: '8703.23', desc: 'Motor vehicles <3000cc',          rate: '15%'   },
+  { hs: '8471.30', desc: 'Portable ADP machines (laptops)', rate: '0%'    },
+  { hs: '6109.10', desc: 'T-shirts, cotton',                rate: '20%'   },
+  { hs: '1006.30', desc: 'Semi-milled or wholly milled rice', rate: '0%'  },
+  { hs: '0302.11', desc: 'Trout, fresh or chilled',         rate: '0%'    },
+  { hs: '2710.12', desc: 'Motor spirit (petrol)',            rate: 'Excise' },
+  { hs: '3004.90', desc: 'Medicaments, mixed or unmixed',   rate: '0%'    },
+  { hs: '9403.20', desc: 'Metal furniture',                 rate: '15%'   },
+  { hs: '8516.60', desc: 'Ovens, cookers, grillers',        rate: '15%'   },
+  { hs: '6403.99', desc: 'Leather footwear',                rate: '20%'   },
+  { hs: '0402.21', desc: 'Milk powder, unsweetened',        rate: '0%'    },
+  { hs: '3401.11', desc: 'Soap, toilet',                    rate: '20%'   },
+]
 
-function CustomsDashboard({ addAudit }: { addAudit: (e: AuditEntry) => void }) {
-  const [queue, setQueue] = useState<QueueEntry[]>(DEMO_QUEUE)
-  const [selected, setSelected] = useState<QueueEntry | null>(null)
-  const [decision, setDecision] = useState<string | null>(null)
-  const [notes, setNotes] = useState('')
+const PROHIBITED_GOODS = [
+  'Narcotic drugs and psychotropic substances (UN Convention 1988)',
+  'Firearms, ammunition and weapons without Ministry of Police permit',
+  'CITES Appendix I species — live animals, parts or derivatives',
+  'Obscene or objectionable publications, films or material',
+  'Counterfeit currency or forged documents',
+  'Ozone-depleting substances (Montreal Protocol)',
+  'Hazardous wastes prohibited under Basel Convention',
+  'Products of child labour (ILO Convention 182)',
+]
 
-  function handleClear(entry: QueueEntry) {
+function CustomsView({ addAudit }: { addAudit: (e: AuditEntry) => void }) {
+  const [tab, setTab] = useState<AgencyTab>('queue')
+  const [queue, setQueue] = useState<CustomsEntry[]>(CUSTOMS_QUEUE)
+
+  function handleClear(entry: CustomsEntry) {
     const r = genRef('CUS')
     setQueue(prev => prev.map(q => q.ref === entry.ref ? { ...q, status: 'CLEARED' } : q))
-    setDecision(`CLEARED`)
-    setSelected(null)
     addAudit({ timestamp: wst(), form: 'Customs Clearance — ASYCUDA Assessment', reference: r, transmittedTo: 'Samoa Customs & Revenue — MOR', status: 'CLEARED' })
   }
 
-  function handleHold(entry: QueueEntry) {
+  function handleHold(entry: CustomsEntry) {
     const r = genRef('CUS')
     setQueue(prev => prev.map(q => q.ref === entry.ref ? { ...q, status: 'HELD' } : q))
-    setDecision('HELD')
-    setSelected(null)
-    addAudit({ timestamp: wst(), form: 'Customs Hold — Further Documentation Required', reference: r, transmittedTo: 'Samoa Customs & Revenue — MOR', status: 'HELD' })
+    addAudit({ timestamp: wst(), form: 'Customs Hold — Docs Required', reference: r, transmittedTo: 'Samoa Customs & Revenue — MOR', status: 'HELD' })
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {sectionHead('Customs Clearance Queue', 'Ministry of Revenue — Customs & Excise Division · ASYCUDA World')}
+    <>
+      <AgencyTabs active={tab} onChange={setTab} />
 
-      {decision && (
-        <div style={{ background: decision === 'CLEARED' ? C.greenBg : C.critBg, border: `1px solid ${decision === 'CLEARED' ? C.greenBdr : C.critBdr}`, borderRadius: 6, padding: '10px 14px', fontFamily: MONO, fontSize: 11, color: decision === 'CLEARED' ? C.green : C.critical }}>
-          ✓ Decision recorded: {decision} at {wst()} WST
-        </div>
-      )}
-
-      {/* Queue table */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
-        <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}`, fontFamily: MONO, fontSize: 9, color: C.muted, letterSpacing: '1.5px' }}>
-          VESSEL CLEARANCE QUEUE — {queue.length} ENTRIES
-        </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                {['REFERENCE', 'VESSEL', 'IMO', 'ETA', 'FLAG', 'STATUS', 'ACTION'].map(h => (
-                  <th key={h} style={{ fontFamily: MONO, fontSize: 9, color: C.muted, padding: '8px 12px', borderBottom: `1px solid ${C.border}`, textAlign: 'left', letterSpacing: '1px', background: C.surface2 }}>{h}</th>
+      {tab === 'queue' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ fontFamily: MONO, fontSize: 9, color: C.muted, letterSpacing: '1.5px' }}>
+            VESSEL CLEARANCE QUEUE — {queue.length} ENTRIES · ASYCUDA WORLD
+          </div>
+          <div style={{ overflowX: 'auto', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              {tableHead(['VESSEL', 'IMO', 'ETA', 'CARGO TYPE', 'HS CODE', 'ASYCUDA REF', 'STATUS', 'WCO RISK', 'ACTION'])}
+              <tbody>
+                {queue.map((q, i) => (
+                  <tr key={q.ref} style={{ background: i % 2 === 0 ? 'transparent' : C.surface2 }}>
+                    {td(q.vessel)}
+                    {tdMuted(q.imo)}
+                    {tdMuted(q.eta)}
+                    {td(q.cargoType)}
+                    {td(<span style={{ fontFamily: MONO, fontSize: 10, color: C.gold }}>{q.hsCode}</span>)}
+                    {tdMuted(q.asycudaRef)}
+                    <td style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>{statusBadge(q.status)}</td>
+                    <td style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>{riskChip(q.wcoRisk)}</td>
+                    <td style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>
+                      {q.status !== 'CLEARED' && q.status !== 'HELD' && (
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          {actionBtn('Clear', () => handleClear(q), 'green')}
+                          {actionBtn('Hold', () => handleHold(q), 'red')}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {queue.map((q, i) => (
-                <tr key={q.ref} style={{ background: i % 2 === 0 ? 'transparent' : C.surface2 }}>
-                  <td style={{ fontFamily: MONO, fontSize: 10, color: C.gold, padding: '8px 12px', borderBottom: `1px solid ${C.border}` }}>{q.ref}</td>
-                  <td style={{ fontFamily: SANS, fontSize: 12, color: C.text, padding: '8px 12px', borderBottom: `1px solid ${C.border}` }}>{q.vessel}</td>
-                  <td style={{ fontFamily: MONO, fontSize: 10, color: C.muted, padding: '8px 12px', borderBottom: `1px solid ${C.border}` }}>{q.imo}</td>
-                  <td style={{ fontFamily: MONO, fontSize: 10, color: C.muted, padding: '8px 12px', borderBottom: `1px solid ${C.border}` }}>{q.eta}</td>
-                  <td style={{ fontFamily: MONO, fontSize: 10, color: C.info, padding: '8px 12px', borderBottom: `1px solid ${C.border}` }}>{q.flagState}</td>
-                  <td style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}` }}>{statusBadge(q.status)}</td>
-                  <td style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}` }}>
-                    {q.status !== 'CLEARED' && q.status !== 'HELD' && (
-                      <button
-                        onClick={() => setSelected(selected?.ref === q.ref ? null : q)}
-                        style={{ background: C.surface3, border: `1px solid ${C.border2}`, borderRadius: 4, color: C.text, cursor: 'pointer', fontFamily: MONO, fontSize: 9, padding: '3px 10px' }}
-                      >
-                        REVIEW
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Review panel */}
-      {selected && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border2}`, borderRadius: 8, padding: 20 }}>
-          <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '2px', marginBottom: 12 }}>CUSTOMS ASSESSMENT — {selected.ref}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
-            {[
-              ['Vessel', selected.vessel],
-              ['IMO Number', selected.imo],
-              ['ETA', selected.eta],
-              ['Shipping Agent', selected.agent],
-            ].map(([l, v]) => (
-              <div key={l}>
-                <div style={{ fontFamily: MONO, fontSize: 9, color: C.muted }}>{l}</div>
-                <div style={{ fontFamily: SANS, fontSize: 12, color: C.text, marginTop: 2 }}>{v}</div>
-              </div>
-            ))}
+              </tbody>
+            </table>
           </div>
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontFamily: MONO, fontSize: 9, color: C.muted, marginBottom: 4 }}>ASSESSMENT NOTES</div>
-            <textarea
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Enter assessment notes for audit trail..."
-              style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontFamily: MONO, fontSize: 11, padding: 10, width: '100%', boxSizing: 'border-box', resize: 'vertical', minHeight: 60, outline: 'none' }}
-            />
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => handleClear(selected)} style={{ background: C.greenBg, border: `1px solid ${C.greenBdr}`, borderRadius: 4, color: C.green, cursor: 'pointer', fontFamily: MONO, fontSize: 10, fontWeight: 700, letterSpacing: '1px', padding: '8px 16px' }}>
-              ✓ GRANT CLEARANCE
-            </button>
-            <button onClick={() => handleHold(selected)} style={{ background: C.critBg, border: `1px solid ${C.critBdr}`, borderRadius: 4, color: C.critical, cursor: 'pointer', fontFamily: MONO, fontSize: 10, fontWeight: 700, letterSpacing: '1px', padding: '8px 16px' }}>
-              ✕ HOLD — DOCS REQUIRED
-            </button>
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, padding: '10px 14px', fontFamily: MONO, fontSize: 9, color: C.dim }}>
+            Phase 1: decisions logged in-memory. Phase 2: transmitted via ASYCUDA XML API → Samoa DPI Chain audit anchor.
           </div>
         </div>
       )}
 
-      {/* ASYCUDA integration note */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, padding: 14 }}>
-        <div style={{ fontFamily: MONO, fontSize: 9, color: C.muted, letterSpacing: '1.5px', marginBottom: 6 }}>ASYCUDA WORLD INTEGRATION</div>
-        <div style={{ fontFamily: SANS, fontSize: 12, color: C.muted, lineHeight: 1.6 }}>
-          Phase 1: Clearance decisions are logged in-memory. Phase 2: decisions are transmitted via ASYCUDA XML API to the Customs Processing Centre and anchored to the Samoa DPI Chain for immutable audit.
+      {tab === 'reference' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* Tariff quick reference */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}`, fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '1.5px' }}>
+              TARIFF QUICK REFERENCE — WCO HS 2022 · SAMOA CUSTOMS TARIFF ACT 2016
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                {tableHead(['HS CODE', 'DESCRIPTION', 'DUTY RATE'])}
+                <tbody>
+                  {TARIFF_CODES.map((t, i) => (
+                    <tr key={t.hs} style={{ background: i % 2 === 0 ? 'transparent' : C.surface2 }}>
+                      <td style={{ fontFamily: MONO, fontSize: 10, color: C.gold, padding: '7px 10px', borderBottom: `1px solid ${C.border}` }}>{t.hs}</td>
+                      {td(t.desc)}
+                      <td style={{ padding: '7px 10px', borderBottom: `1px solid ${C.border}` }}>
+                        <span style={{ fontFamily: MONO, fontSize: 10, color: t.rate === '0%' ? C.green : t.rate === 'Excise' ? C.purple : t.rate >= '50%' ? C.critical : C.amber }}>
+                          {t.rate}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Prohibited goods */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: C.critical, letterSpacing: '1.5px', marginBottom: 10 }}>
+              PROHIBITED GOODS — CUSTOMS ACT 2014
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {PROHIBITED_GOODS.map((g, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: C.critical, flexShrink: 0 }}>■</span>
+                  <span style={{ fontFamily: SANS, fontSize: 12, color: C.muted }}>{g}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Currency rates + ASYCUDA */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '1.5px', marginBottom: 10 }}>EXCHANGE RATES — CBS</div>
+              {[['1 NZD', '1.82 WST'], ['1 USD', '2.73 WST'], ['1 AUD', '1.78 WST'], ['1 EUR', '2.98 WST'], ['1 GBP', '3.42 WST']].map(([from, to]) => (
+                <div key={from} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: MONO, fontSize: 11, padding: '4px 0', borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ color: C.muted }}>{from}</span>
+                  <span style={{ color: C.gold }}>= {to}</span>
+                </div>
+              ))}
+              <div style={{ fontFamily: MONO, fontSize: 9, color: C.dim, marginTop: 8 }}>Source: CBS indicative rates · cbs.gov.ws</div>
+            </div>
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: C.purple, letterSpacing: '1.5px', marginBottom: 10 }}>ASYCUDA WORLD</div>
+              <div style={{ fontFamily: SANS, fontSize: 12, color: C.muted, lineHeight: 1.7 }}>
+                System: ASYCUDAWorld 4.3.2<br />
+                Operator: Samoa MOR Customs<br />
+                Access: customs.gov.ws (Phase 2)<br />
+                Format: UN/EDIFACT CUSCAR<br />
+                HS Nomenclature: WCO 2022<br />
+                Risk Engine: WCO SAFE 2025
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   )
 }
 
-// ── MAF Biosecurity dashboard ─────────────────────────────────────────────────
+// ── MAF ───────────────────────────────────────────────────────────────────────
 
-interface BioChecklist {
-  pestRisk:       boolean
-  soilCheck:      boolean
-  animalProducts: boolean
-  plantMaterial:  boolean
-  seaWater:       boolean
-  vector:         boolean
+interface MAFEntry {
+  ref:             string
+  vessel:          string
+  imo:             string
+  eta:             string
+  lastPort:        string
+  storesDeclared:  string
+  status:          string
 }
 
-function MAFDashboard({ addAudit }: { addAudit: (e: AuditEntry) => void }) {
-  const [queue] = useState<QueueEntry[]>(DEMO_QUEUE)
-  const [selected, setSelected] = useState<QueueEntry | null>(null)
-  const [checklist, setChecklist] = useState<BioChecklist>({
-    pestRisk: false, soilCheck: false, animalProducts: false,
-    plantMaterial: false, seaWater: false, vector: false,
-  })
-  const [risk, setRisk] = useState<'LOW' | 'MEDIUM' | 'HIGH' | null>(null)
-  const [notes, setNotes] = useState('')
-  const [cleared, setCleared] = useState(false)
+const MAF_QUEUE: MAFEntry[] = [
+  { ref: 'NOA-2026-0042', vessel: 'MV Pacific Star',    imo: '9234567', eta: '17/05 14:00', lastPort: 'Auckland, NZ',   storesDeclared: 'Provisions only',      status: 'Pending'      },
+  { ref: 'NOA-2026-0039', vessel: 'MV Ofu Cargo',       imo: '8812345', eta: '18/05 09:00', lastPort: 'Suva, Fiji',     storesDeclared: 'Grain — bulk cargo',   status: 'UNDER REVIEW' },
+  { ref: 'NOA-2026-0041', vessel: 'MV Savaii Explorer', imo: '7654321', eta: '19/05 06:30', lastPort: 'Manila, PH',     storesDeclared: 'Agricultural equipment', status: 'FLAGGED'    },
+]
 
-  function toggleCheck(key: keyof BioChecklist) {
-    setChecklist(prev => ({ ...prev, [key]: !prev[key] }))
+const MAF_COUNTRY_RISK = [
+  { country: 'Australia',     risk: 'Low',    note: 'Equivalent biosecurity standards' },
+  { country: 'New Zealand',   risk: 'Low',    note: 'Equivalent biosecurity standards' },
+  { country: 'Fiji',          risk: 'Medium', note: 'Monitor foot-and-mouth status' },
+  { country: 'Indonesia',     risk: 'High',   note: 'African swine fever, FMD present' },
+  { country: 'Philippines',   risk: 'Medium', note: 'FMD — certificates required' },
+  { country: 'China',         risk: 'High',   note: 'Multiple pest/disease concerns' },
+  { country: 'India',         risk: 'High',   note: 'FMD, Newcastle disease' },
+  { country: 'USA',           risk: 'Low',    note: 'Pre-clearance arrangements' },
+]
+
+const MAF_PROHIBITED = [
+  'Fresh fruit without valid phytosanitary certificate',
+  'Soil or earth of any type or origin',
+  'Live animals without import permit and health certificate',
+  'Used agricultural equipment without treatment certificate',
+  'Untreated timber or unprocessed wood products',
+  'Plant material without phytosanitary certificate',
+  'Meat and meat products without veterinary health certificate',
+  'Honey and beeswax without import permit',
+  'Live snails (all species)',
+  'Feathers and feather products without treatment certificate',
+]
+
+function MAFView({ addAudit }: { addAudit: (e: AuditEntry) => void }) {
+  const [tab, setTab] = useState<AgencyTab>('queue')
+  const [queue, setQueue] = useState<MAFEntry[]>(MAF_QUEUE)
+
+  function handle(entry: MAFEntry, action: 'clear' | 'inspect' | 'fumigate') {
+    const prefix = action === 'clear' ? 'MAF' : action === 'inspect' ? 'MAF' : 'MAF'
+    const r = genRef(prefix)
+    const newStatus = action === 'clear' ? 'CLEARED' : action === 'inspect' ? 'UNDER REVIEW' : 'HELD'
+    const formLabel = action === 'clear' ? 'MAF Biosecurity Clearance' : action === 'inspect' ? 'MAF Inspection Required' : 'MAF Fumigation Order'
+    setQueue(prev => prev.map(q => q.ref === entry.ref ? { ...q, status: newStatus } : q))
+    addAudit({ timestamp: wst(), form: formLabel, reference: r, transmittedTo: 'MAF Biosecurity Division', status: newStatus })
   }
-
-  function handleAssess() {
-    const flagged = Object.values(checklist).filter(Boolean).length
-    const r: 'LOW' | 'MEDIUM' | 'HIGH' = flagged >= 3 ? 'HIGH' : flagged >= 1 ? 'MEDIUM' : 'LOW'
-    setRisk(r)
-  }
-
-  function handleClear() {
-    const r = genRef('MAF')
-    setCleared(true)
-    setSelected(null)
-    addAudit({ timestamp: wst(), form: 'MAF Biosecurity Inspection', reference: r, transmittedTo: 'MAF Biosecurity Division', status: `CLEARED — RISK: ${risk}` })
-  }
-
-  const CHECKS: { key: keyof BioChecklist; label: string; desc: string }[] = [
-    { key: 'pestRisk',       label: 'Pest Risk Material',       desc: 'Cargo contains potential pest-risk plant or animal material' },
-    { key: 'soilCheck',      label: 'Soil / Growing Media',     desc: 'Soil, growing media or earth-moving equipment declared' },
-    { key: 'animalProducts', label: 'Animal Products',          desc: 'Meat, dairy, honey, wool, hides or animal products declared' },
-    { key: 'plantMaterial',  label: 'Living Plant Material',    desc: 'Seeds, bulbs, tissue cultures, plants in soil declared' },
-    { key: 'seaWater',       label: 'Ballast Water',            desc: 'Ballast water exchange not completed in open ocean' },
-    { key: 'vector',         label: 'Vector / Quarantine Pest', desc: 'Evidence of live insects, rodents or stowaways' },
-  ]
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {sectionHead('Biosecurity Inspection Queue', 'Ministry of Agriculture & Fisheries — Biosecurity Division')}
+    <>
+      <AgencyTabs active={tab} onChange={setTab} />
 
-      {/* Queue */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
-        <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}`, fontFamily: MONO, fontSize: 9, color: C.muted, letterSpacing: '1.5px' }}>
-          BIOSECURITY INSPECTION QUEUE
+      {tab === 'queue' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ fontFamily: MONO, fontSize: 9, color: C.muted, letterSpacing: '1.5px' }}>
+            BIOSECURITY INSPECTION QUEUE — {queue.length} ENTRIES
+          </div>
+          <div style={{ overflowX: 'auto', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              {tableHead(['VESSEL', 'IMO', 'ETA', 'LAST PORT', 'STORES DECLARED', 'STATUS', 'ACTION'])}
+              <tbody>
+                {queue.map((q, i) => (
+                  <tr key={q.ref} style={{ background: i % 2 === 0 ? 'transparent' : C.surface2 }}>
+                    {td(q.vessel)}
+                    {tdMuted(q.imo)}
+                    {tdMuted(q.eta)}
+                    {td(q.lastPort)}
+                    {td(q.storesDeclared)}
+                    <td style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>{statusBadge(q.status)}</td>
+                    <td style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>
+                      {q.status !== 'CLEARED' && (
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          {actionBtn('Clear',    () => handle(q, 'clear'),    'green')}
+                          {actionBtn('Inspect',  () => handle(q, 'inspect'),  'amber')}
+                          {actionBtn('Fumigate', () => handle(q, 'fumigate'), 'red')}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-        {queue.map((q, i) => (
-          <div key={q.ref} style={{ display: 'flex', alignItems: 'center', padding: '10px 16px', borderBottom: i < queue.length - 1 ? `1px solid ${C.border}` : 'none', background: i % 2 === 0 ? 'transparent' : C.surface2 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: C.text }}>{q.vessel}</div>
-              <div style={{ fontFamily: MONO, fontSize: 9, color: C.muted, marginTop: 2 }}>{q.ref} · ETA {q.eta} · Flag: {q.flagState}</div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {statusBadge(q.status)}
-              <button
-                onClick={() => { setSelected(selected?.ref === q.ref ? null : q); setCleared(false); setRisk(null) }}
-                style={{ background: C.surface3, border: `1px solid ${C.border2}`, borderRadius: 4, color: C.text, cursor: 'pointer', fontFamily: MONO, fontSize: 9, padding: '3px 10px' }}
-              >
-                INSPECT
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+      )}
 
-      {/* Inspection panel */}
-      {selected && !cleared && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border2}`, borderRadius: 8, padding: 20 }}>
-          <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '2px', marginBottom: 16 }}>
-            BIOSECURITY INSPECTION CHECKLIST — {selected.vessel}
+      {tab === 'reference' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* Country risk */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}`, fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '1.5px' }}>
+              COUNTRY BIOSECURITY RISK RATINGS
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              {tableHead(['COUNTRY', 'RISK LEVEL', 'NOTE'])}
+              <tbody>
+                {MAF_COUNTRY_RISK.map((r, i) => (
+                  <tr key={r.country} style={{ background: i % 2 === 0 ? 'transparent' : C.surface2 }}>
+                    {td(r.country)}
+                    <td style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>
+                      {riskChip(r.risk as 'Low' | 'Medium' | 'High')}
+                    </td>
+                    {td(r.note)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-            {CHECKS.map(c => (
-              <label key={c.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={checklist[c.key]}
-                  onChange={() => toggleCheck(c.key)}
-                  style={{ marginTop: 2, accentColor: C.flagBlue }}
-                />
-                <div>
-                  <div style={{ fontFamily: MONO, fontSize: 11, color: C.text }}>{c.label}</div>
-                  <div style={{ fontFamily: SANS, fontSize: 11, color: C.muted }}>{c.desc}</div>
+
+          {/* Prohibited items */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: C.critical, letterSpacing: '1.5px', marginBottom: 10 }}>
+              PROHIBITED ITEMS — BIOSECURITY ACT 2005
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {MAF_PROHIBITED.map((g, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8 }}>
+                  <span style={{ fontFamily: MONO, fontSize: 9, color: C.critical }}>■</span>
+                  <span style={{ fontFamily: SANS, fontSize: 12, color: C.muted }}>{g}</span>
                 </div>
-              </label>
-            ))}
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontFamily: MONO, fontSize: 9, color: C.muted, marginBottom: 4 }}>INSPECTION NOTES</div>
-            <textarea
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Enter inspection findings..."
-              style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontFamily: MONO, fontSize: 11, padding: 10, width: '100%', boxSizing: 'border-box', resize: 'vertical', minHeight: 60, outline: 'none' }}
-            />
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={handleAssess}
-              style={{ background: C.surface2, border: `1px solid ${C.border2}`, borderRadius: 4, color: C.text, cursor: 'pointer', fontFamily: MONO, fontSize: 10, padding: '8px 14px' }}
-            >
-              ASSESS RISK
-            </button>
-            {risk && (
-              <button
-                onClick={handleClear}
-                style={{ background: risk === 'HIGH' ? C.critBg : C.greenBg, border: `1px solid ${risk === 'HIGH' ? C.critBdr : C.greenBdr}`, borderRadius: 4, color: risk === 'HIGH' ? C.critical : C.green, cursor: 'pointer', fontFamily: MONO, fontSize: 10, fontWeight: 700, letterSpacing: '1px', padding: '8px 16px' }}
-              >
-                RECORD — RISK {risk}
-              </button>
-            )}
-          </div>
-          {risk && (
-            <div style={{ marginTop: 10, fontFamily: MONO, fontSize: 10, color: risk === 'HIGH' ? C.critical : risk === 'MEDIUM' ? C.amber : C.green }}>
-              {risk === 'HIGH' ? '⚠ High biosecurity risk — further action required' : risk === 'MEDIUM' ? '⚠ Medium risk — monitor and document' : '✓ Low risk — standard clearance applicable'}
+              ))}
             </div>
-          )}
-        </div>
-      )}
+          </div>
 
-      {cleared && (
-        <div style={{ background: C.greenBg, border: `1px solid ${C.greenBdr}`, borderRadius: 6, padding: '12px 16px', fontFamily: MONO, fontSize: 11, color: C.green }}>
-          ✓ Biosecurity inspection recorded at {wst()} WST
+          {/* Treatment methods + contacts */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '1.5px', marginBottom: 10 }}>APPROVED TREATMENT METHODS</div>
+              {[
+                { method: 'Methyl Bromide',  spec: '21°C min · 24 hr exposure' },
+                { method: 'Heat Treatment',  spec: '56°C core temp · 30 min' },
+                { method: 'Cold Treatment',  spec: '2°C for 16 days continuous' },
+              ].map(t => (
+                <div key={t.method} style={{ marginBottom: 10 }}>
+                  <div style={{ fontFamily: MONO, fontSize: 10, color: C.text }}>{t.method}</div>
+                  <div style={{ fontFamily: SANS, fontSize: 11, color: C.muted }}>{t.spec}</div>
+                </div>
+              ))}
+              <div style={{ fontFamily: MONO, fontSize: 9, color: C.dim, marginTop: 4 }}>
+                Standard: ISPM 15 (FAO) · Codex Alimentarius
+              </div>
+            </div>
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '1.5px', marginBottom: 10 }}>CONTACTS & REFERENCES</div>
+              {[
+                ['MAF Emergency Hotline', '+685 22-561'],
+                ['Codex Alimentarius',    'codexalimentarius.org'],
+                ['IPPC / ISPM Standards', 'ippc.int'],
+                ['OIE / WOAH',            'woah.org'],
+              ].map(([label, val]) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: MONO, fontSize: 10, padding: '4px 0', borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ color: C.muted }}>{label}</span>
+                  <span style={{ color: C.info }}>{val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
 
-// ── Port Health dashboard ─────────────────────────────────────────────────────
+// ── PORT HEALTH ───────────────────────────────────────────────────────────────
 
-function PortHealthDashboard({ addAudit }: { addAudit: (e: AuditEntry) => void }) {
-  const [queue] = useState<QueueEntry[]>(DEMO_QUEUE)
-  const [selected, setSelected] = useState<QueueEntry | null>(null)
-  const [illnessOnBoard,     setIllnessOnBoard]     = useState(false)
-  const [deathOnBoard,       setDeathOnBoard]       = useState(false)
-  const [validCert,          setValidCert]          = useState(true)
-  const [vaccinations,       setVaccinations]       = useState(true)
-  const [pratique,           setPratique]           = useState(false)
-  const [pratiqueRef,        setPratiqueRef]        = useState('')
+interface PHEntry {
+  ref:            string
+  vessel:         string
+  imo:            string
+  eta:            string
+  crewCount:      number
+  illnessReports: number
+  mdhStatus:      string
+  status:         string
+}
 
-  function handleGrantPratique() {
+const PH_QUEUE: PHEntry[] = [
+  { ref: 'NOA-2026-0042', vessel: 'MV Pacific Star',    imo: '9234567', eta: '17/05 14:00', crewCount: 18, illnessReports: 0, mdhStatus: 'MDH SUBMITTED', status: 'Pending'      },
+  { ref: 'NOA-2026-0039', vessel: 'MV Ofu Cargo',       imo: '8812345', eta: '18/05 09:00', crewCount: 12, illnessReports: 0, mdhStatus: 'MDH SUBMITTED', status: 'FREE PRATIQUE' },
+  { ref: 'NOA-2026-0041', vessel: 'MV Savaii Explorer', imo: '7654321', eta: '19/05 06:30', crewCount: 9,  illnessReports: 1, mdhStatus: 'AWAITING MDH',  status: 'UNDER REVIEW' },
+]
+
+function PortHealthView({ addAudit }: { addAudit: (e: AuditEntry) => void }) {
+  const [tab, setTab] = useState<AgencyTab>('queue')
+  const [queue, setQueue] = useState<PHEntry[]>(PH_QUEUE)
+
+  function handlePratique(entry: PHEntry) {
     const r = genRef('FP')
-    setPratiqueRef(r)
-    setPratique(true)
+    setQueue(prev => prev.map(q => q.ref === entry.ref ? { ...q, status: 'FREE PRATIQUE' } : q))
     addAudit({ timestamp: wst(), form: 'Free Pratique — WHO IHR 2005', reference: r, transmittedTo: 'Port Health Officer — MOH', status: 'FREE PRATIQUE GRANTED' })
   }
 
+  function handleInspect(entry: PHEntry) {
+    const r = genRef('PH')
+    setQueue(prev => prev.map(q => q.ref === entry.ref ? { ...q, status: 'UNDER REVIEW' } : q))
+    addAudit({ timestamp: wst(), form: 'Port Health Inspection Required', reference: r, transmittedTo: 'Port Health Officer — MOH', status: 'INSPECTION REQUIRED' })
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {sectionHead('Port Health Screening', 'Ministry of Health — Port Health Division · WHO IHR 2005')}
+    <>
+      <AgencyTabs active={tab} onChange={setTab} />
 
-      {/* Info */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, padding: 14 }}>
-        <div style={{ fontFamily: MONO, fontSize: 9, color: C.muted, letterSpacing: '1.5px', marginBottom: 6 }}>WHO IHR 2005 — FREE PRATIQUE</div>
-        <div style={{ fontFamily: SANS, fontSize: 12, color: C.muted, lineHeight: 1.6 }}>
-          Free Pratique is the permission granted to a ship to enter a port, embark or disembark, discharge or load cargo or stores after the vessel's Maritime Declaration of Health has been assessed.
-          Authority: WHO International Health Regulations 2005.
+      {tab === 'queue' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ fontFamily: MONO, fontSize: 9, color: C.muted, letterSpacing: '1.5px' }}>
+            PORT HEALTH SCREENING QUEUE — WHO IHR 2005
+          </div>
+          <div style={{ overflowX: 'auto', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              {tableHead(['VESSEL', 'IMO', 'ETA', 'CREW', 'ILLNESS REPORTS', 'MDH STATUS', 'STATUS', 'ACTION'])}
+              <tbody>
+                {queue.map((q, i) => (
+                  <tr key={q.ref} style={{ background: i % 2 === 0 ? 'transparent' : C.surface2 }}>
+                    {td(q.vessel)}
+                    {tdMuted(q.imo)}
+                    {tdMuted(q.eta)}
+                    {tdMuted(String(q.crewCount))}
+                    <td style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>
+                      <span style={{ fontFamily: MONO, fontSize: 10, color: q.illnessReports > 0 ? C.critical : C.green }}>
+                        {q.illnessReports > 0 ? `⚠ ${q.illnessReports}` : '✓ None'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>{statusBadge(q.mdhStatus)}</td>
+                    <td style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>{statusBadge(q.status)}</td>
+                    <td style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>
+                      {q.status !== 'FREE PRATIQUE' && (
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          {q.illnessReports === 0 && q.mdhStatus === 'MDH SUBMITTED' &&
+                            actionBtn('Grant Pratique', () => handlePratique(q), 'green')}
+                          {actionBtn('Inspect', () => handleInspect(q), 'amber')}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Queue */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
-        <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}`, fontFamily: MONO, fontSize: 9, color: C.muted, letterSpacing: '1.5px' }}>
-          PORT HEALTH SCREENING QUEUE
-        </div>
-        {queue.map((q, i) => (
-          <div key={q.ref} style={{ display: 'flex', alignItems: 'center', padding: '10px 16px', borderBottom: i < queue.length - 1 ? `1px solid ${C.border}` : 'none', background: i % 2 === 0 ? 'transparent' : C.surface2 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: C.text }}>{q.vessel}</div>
-              <div style={{ fontFamily: MONO, fontSize: 9, color: C.muted, marginTop: 2 }}>{q.ref} · ETA {q.eta}</div>
-            </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              {statusBadge(q.status)}
-              <button
-                onClick={() => setSelected(selected?.ref === q.ref ? null : q)}
-                style={{ background: C.surface3, border: `1px solid ${C.border2}`, borderRadius: 4, color: C.text, cursor: 'pointer', fontFamily: MONO, fontSize: 9, padding: '3px 10px' }}
-              >
-                ASSESS
-              </button>
+      {tab === 'reference' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* WHO alert status */}
+          <div style={{ background: C.greenBg, border: `1px solid ${C.greenBdr}`, borderRadius: 6, padding: '10px 16px' }}>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: C.green, letterSpacing: '1.5px', marginBottom: 4 }}>WHO GLOBAL ALERT STATUS</div>
+            <div style={{ fontFamily: SANS, fontSize: 13, color: C.green, fontWeight: 600 }}>
+              No active WHO Public Health Emergency of International Concern (PHEIC) — May 2026
             </div>
           </div>
-        ))}
-      </div>
 
-      {/* Assessment panel */}
-      {selected && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border2}`, borderRadius: 8, padding: 20 }}>
-          <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '2px', marginBottom: 16 }}>
-            PORT HEALTH ASSESSMENT — {selected.vessel}
+          {/* Vaccine cert requirements */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}`, fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '1.5px' }}>
+              VACCINATION CERTIFICATE REQUIREMENTS BY REGION
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              {tableHead(['REGION / ORIGIN', 'YELLOW FEVER', 'OTHER REQUIREMENTS'])}
+              <tbody>
+                {[
+                  ['Pacific Islands',            'Not required',          'Standard WHO IHR screening'],
+                  ['Sub-Saharan Africa',          'Required',              'Valid ICV certificate mandatory'],
+                  ['South America (endemic)',     'Required',              'Valid ICV certificate mandatory'],
+                  ['Southeast Asia',              'Not required',          'Cholera awareness — monitor'],
+                  ['Middle East (Hajj season)',   'Not required',          'Meningococcal ACWY certificate'],
+                  ['All regions',                 '—',                     'COVID: follow current WHO guidance'],
+                ].map(([region, yf, other], i) => (
+                  <tr key={region} style={{ background: i % 2 === 0 ? 'transparent' : C.surface2 }}>
+                    {td(region)}
+                    <td style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>
+                      <span style={{ fontFamily: MONO, fontSize: 10, color: yf === 'Required' ? C.critical : C.green }}>
+                        {yf}
+                      </span>
+                    </td>
+                    {td(other)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-            {[
-              { label: 'Illness on board declared', value: illnessOnBoard, set: setIllnessOnBoard, warn: true },
-              { label: 'Death on board declared', value: deathOnBoard, set: setDeathOnBoard, warn: true },
-              { label: 'Deratisation certificate valid', value: validCert, set: setValidCert, warn: false },
-              { label: 'Crew vaccination records verified', value: vaccinations, set: setVaccinations, warn: false },
-            ].map(({ label, value, set, warn }) => (
-              <label key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={value}
-                  onChange={() => set(!value)}
-                  style={{ accentColor: warn ? C.critical : C.green }}
-                />
-                <div style={{ fontFamily: MONO, fontSize: 11, color: warn ? (value ? C.critical : C.text) : (value ? C.green : C.muted) }}>
-                  {label}
+
+          {/* Free pratique conditions + contacts */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '1.5px', marginBottom: 10 }}>
+                FREE PRATIQUE CONDITIONS — WHO IHR 2005
+              </div>
+              {[
+                'No cases of illness on board (or resolved with isolation)',
+                'Valid deratisation / deratisation exemption certificate',
+                'Maritime Declaration of Health submitted and assessed',
+                'No reportable conditions under IHR Annex 2',
+                'Crew vaccination records verified (yellow fever where applicable)',
+              ].map((c, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: C.green, flexShrink: 0 }}>{i + 1}.</span>
+                  <span style={{ fontFamily: SANS, fontSize: 12, color: C.muted }}>{c}</span>
                 </div>
-              </label>
-            ))}
-          </div>
-          {(illnessOnBoard || deathOnBoard) && (
-            <div style={{ background: C.critBg, border: `1px solid ${C.critBdr}`, borderRadius: 4, padding: '8px 12px', marginBottom: 12, fontFamily: MONO, fontSize: 10, color: C.critical }}>
-              ⚠ Public health alert conditions declared — refer to Medical Officer of Health before granting free pratique
+              ))}
             </div>
-          )}
-          {!pratique ? (
-            <button
-              onClick={handleGrantPratique}
-              disabled={illnessOnBoard || deathOnBoard || !validCert}
-              style={{
-                background:   (illnessOnBoard || deathOnBoard || !validCert) ? C.surface3 : C.greenBg,
-                border:       `1px solid ${(illnessOnBoard || deathOnBoard || !validCert) ? C.border : C.greenBdr}`,
-                borderRadius: 4,
-                color:        (illnessOnBoard || deathOnBoard || !validCert) ? C.dim : C.green,
-                cursor:       (illnessOnBoard || deathOnBoard || !validCert) ? 'not-allowed' : 'pointer',
-                fontFamily:   MONO,
-                fontSize:     10,
-                fontWeight:   700,
-                letterSpacing: '1px',
-                padding:      '8px 16px',
-              }}
-            >
-              GRANT FREE PRATIQUE
-            </button>
-          ) : (
-            <div style={{ background: C.greenBg, border: `1px solid ${C.greenBdr}`, borderRadius: 6, padding: '10px 14px' }}>
-              <div style={{ fontFamily: MONO, fontSize: 11, color: C.green }}>✓ FREE PRATIQUE GRANTED</div>
-              <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, marginTop: 4 }}>Reference: {pratiqueRef}</div>
-              <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted }}>Issued: {wst()} WST</div>
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '1.5px', marginBottom: 10 }}>CONTACTS</div>
+              {[
+                ['Port Health Office', '+685 21-212'],
+                ['24hr Emergency', '+685 777-0000'],
+                ['Medical Officer of Health', '+685 21-212 ext 3'],
+                ['WHO Pacific', 'who.int/westernpacific'],
+              ].map(([label, val]) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: MONO, fontSize: 10, padding: '5px 0', borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ color: C.muted }}>{label}</span>
+                  <span style={{ color: C.info }}>{val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+// ── SPA ───────────────────────────────────────────────────────────────────────
+
+interface SPAEntry {
+  ref:           string
+  vessel:        string
+  imo:           string
+  loa:           number
+  eta:           string
+  berthAssigned: string
+  dues:          string
+  status:        string
+}
+
+const SPA_QUEUE_INIT: SPAEntry[] = [
+  { ref: 'NOA-2026-0042', vessel: 'MV Pacific Star',    imo: '9234567', loa: 142.5, eta: '17/05 14:00', berthAssigned: 'Berth 1',  dues: '15,687.00', status: 'BERTH CONFIRMED' },
+  { ref: 'NOA-2026-0039', vessel: 'MV Ofu Cargo',       imo: '8812345', loa: 112.0, eta: '18/05 09:00', berthAssigned: '—',         dues: '10,332.00', status: 'Pending'        },
+  { ref: 'NOA-2026-0041', vessel: 'MV Savaii Explorer', imo: '7654321', loa: 98.5,  eta: '19/05 06:30', berthAssigned: 'Berth 3',  dues: '8,568.00',  status: 'UNDER REVIEW'   },
+]
+
+const BERTH_OPTIONS = [
+  { id: 'B1', label: 'Berth 1 — 180m LOA · 9m draft · General cargo' },
+  { id: 'B2', label: 'Berth 2 — 120m LOA · 7m draft · Container/Ro-Ro' },
+  { id: 'B3', label: 'Berth 3 — 80m LOA · 5m draft · Small vessels' },
+  { id: 'AN', label: 'Anchorage — All vessel types' },
+]
+
+function SPAView({ addAudit }: { addAudit: (e: AuditEntry) => void }) {
+  const [tab, setTab] = useState<AgencyTab>('queue')
+  const [queue, setQueue] = useState<SPAEntry[]>(SPA_QUEUE_INIT)
+  const [assignModal, setAssignModal] = useState<SPAEntry | null>(null)
+  const [selectedBerth, setSelectedBerth] = useState('B1')
+
+  function confirmAssign() {
+    if (!assignModal) return
+    const r = genRef('BR')
+    const berthLabel = BERTH_OPTIONS.find(b => b.id === selectedBerth)?.label.split(' — ')[0] ?? 'Berth'
+    setQueue(prev => prev.map(q => q.ref === assignModal.ref ? { ...q, berthAssigned: berthLabel, status: 'BERTH CONFIRMED' } : q))
+    setAssignModal(null)
+    addAudit({ timestamp: wst(), form: 'Berth Assignment — SPA Port Operations', reference: r, transmittedTo: 'SPA Port Authority · Vessel Agent', status: `BERTH CONFIRMED — ${berthLabel}` })
+  }
+
+  return (
+    <>
+      <AgencyTabs active={tab} onChange={setTab} />
+
+      {tab === 'queue' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ fontFamily: MONO, fontSize: 9, color: C.muted, letterSpacing: '1.5px' }}>
+            VESSEL ARRIVALS QUEUE — APIA PORT OPERATIONS
+          </div>
+          <div style={{ overflowX: 'auto', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              {tableHead(['VESSEL', 'IMO', 'LOA (M)', 'ETA', 'BERTH ASSIGNED', 'DUES (WST)', 'STATUS', 'ACTION'])}
+              <tbody>
+                {queue.map((q, i) => (
+                  <tr key={q.ref} style={{ background: i % 2 === 0 ? 'transparent' : C.surface2 }}>
+                    {td(q.vessel)}
+                    {tdMuted(q.imo)}
+                    {tdMuted(String(q.loa))}
+                    {tdMuted(q.eta)}
+                    {tdMuted(q.berthAssigned)}
+                    <td style={{ fontFamily: MONO, fontSize: 10, color: C.gold, padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>{q.dues}</td>
+                    <td style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>{statusBadge(q.status)}</td>
+                    <td style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>
+                      {q.status !== 'BERTH CONFIRMED' && actionBtn('Assign Berth', () => { setAssignModal(q); setSelectedBerth('B1') }, 'default')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Berth assignment modal */}
+          {assignModal && (
+            <div style={{ background: C.surface, border: `1px solid ${C.border2}`, borderRadius: 8, padding: 20 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '2px', marginBottom: 12 }}>
+                ASSIGN BERTH — {assignModal.vessel} (LOA {assignModal.loa}m)
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+                {BERTH_OPTIONS.map(b => (
+                  <label key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 12px', background: selectedBerth === b.id ? `${C.flagBlue}22` : 'transparent', borderRadius: 4, border: `1px solid ${selectedBerth === b.id ? C.border2 : 'transparent'}` }}>
+                    <input
+                      type="radio"
+                      name="berth"
+                      value={b.id}
+                      checked={selectedBerth === b.id}
+                      onChange={() => setSelectedBerth(b.id)}
+                      style={{ accentColor: C.flagBlue }}
+                    />
+                    <span style={{ fontFamily: MONO, fontSize: 11, color: selectedBerth === b.id ? C.text : C.muted }}>{b.label}</span>
+                  </label>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {actionBtn('Confirm Assignment', confirmAssign, 'green')}
+                {actionBtn('Cancel', () => setAssignModal(null))}
+              </div>
             </div>
           )}
         </div>
       )}
-    </div>
-  )
-}
 
-// ── SPA Port Authority dashboard ──────────────────────────────────────────────
+      {tab === 'reference' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-const BERTHS = [
-  { code: 'APIA_MAIN',     name: 'Apia Main Wharf',        status: 'OCCUPIED',   vessel: 'MV Pacific Star',    loa: 142.5 },
-  { code: 'APIA_DOMESTIC', name: 'Apia Domestic Wharf',    status: 'AVAILABLE',  vessel: null,                 loa: null  },
-  { code: 'SALELOLOGA',    name: 'Salelologa Wharf',       status: 'ASSIGNED',   vessel: 'MV Savaii Explorer', loa: 98.5  },
-]
+          {/* Port charges */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}`, fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '1.5px' }}>
+              PORT CHARGES SCHEDULE — SPA TARIFF
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              {tableHead(['SERVICE', 'RATE', 'NOTE'])}
+              <tbody>
+                {[
+                  ['Berth dues',              'WST 0.50 / GT / 24hr',    'Minimum WST 500 per call'],
+                  ['Pilotage (compulsory >500 GT)', 'WST 800 / movement', 'Compulsory for all vessels >500 GT'],
+                  ['Towage',                  'WST 1,200 / movement',    'Per tug engagement'],
+                  ['Mooring / unmooring',     'WST 150 / movement',      'Per mooring gang call'],
+                  ['Waste reception',         'WST 200 / call',          'MARPOL Annex V compliance'],
+                ].map(([svc, rate, note], i) => (
+                  <tr key={svc} style={{ background: i % 2 === 0 ? 'transparent' : C.surface2 }}>
+                    {td(svc)}
+                    <td style={{ fontFamily: MONO, fontSize: 10, color: C.gold, padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>{rate}</td>
+                    {tdMuted(note)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-function SPADashboard({ addAudit }: { addAudit: (e: AuditEntry) => void }) {
-  const [berths, setBerths] = useState(BERTHS)
-  const [duesVessel, setDuesVessel] = useState('MV Pacific Star')
-  const [gt, setGt] = useState('12450')
-  const [vesselType, setVesselType] = useState('CARGO')
-  const [crew, setCrew] = useState('18')
-  const [duesRef, setDuesRef] = useState('')
-  const [duesPaid, setDuesPaid] = useState(false)
-  const [departure, setDeparture] = useState<QueueEntry | null>(null)
-  const [departureRef, setDepartureRef] = useState('')
+          {/* Berth specs + VHF */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
+              <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}`, fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '1.5px' }}>
+                BERTH SPECIFICATIONS
+              </div>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                {tableHead(['BERTH', 'MAX LOA', 'MAX DRAFT', 'TYPE'])}
+                <tbody>
+                  {[
+                    ['Berth 1', '180m', '9.0m', 'General cargo'],
+                    ['Berth 2', '120m', '7.0m', 'Container/Ro-Ro'],
+                    ['Berth 3', '80m',  '5.0m', 'Small vessels'],
+                    ['Anchorage', '—', '—',     'All types'],
+                  ].map(([b, loa, draft, type], i) => (
+                    <tr key={b} style={{ background: i % 2 === 0 ? 'transparent' : C.surface2 }}>
+                      {td(b, true)}
+                      {tdMuted(loa)}
+                      {tdMuted(draft)}
+                      {td(type)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '1.5px', marginBottom: 10 }}>VHF RADIO DIRECTORY</div>
+              {[
+                ['Port Control',    'Ch 16 (calling) / Ch 12 (working)'],
+                ['Pilots',          'Ch 14'],
+                ['Harbour Master',  'Ch 16'],
+                ['Vessel Traffic',  'Ch 12'],
+              ].map(([station, freq]) => (
+                <div key={station} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: MONO, fontSize: 10, padding: '5px 0', borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ color: C.muted }}>{station}</span>
+                  <span style={{ color: C.info }}>{freq}</span>
+                </div>
+              ))}
+              <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '1.5px', marginTop: 14, marginBottom: 8 }}>EXTERNAL RESOURCES</div>
+              {[
+                ['IMO GISIS vessel lookup', 'gisis.imo.org'],
+                ['Notices to Mariners',     'sps.ws/notices (Phase 2)'],
+                ['Tokyo MOU PSC',           'tokyo-mou.org'],
+              ].map(([label, val]) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: MONO, fontSize: 10, padding: '4px 0', borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ color: C.muted }}>{label}</span>
+                  <span style={{ color: C.dim }}>{val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-  const RATE: Record<string, number> = { CARGO: 0.42, TANKER: 0.55, PASSENGER: 0.38, BULK: 0.40, OTHER: 0.35 }
-  const gtVal    = parseFloat(gt) || 0
-  const crewVal  = parseInt(crew) || 0
-  const duesAmt  = gtVal * (RATE[vesselType] ?? 0.42) + crewVal * 50 + 500
-
-  function handlePayDues() {
-    const r = genRef('CBS')
-    setDuesRef(r)
-    setDuesPaid(true)
-    addAudit({ timestamp: wst(), form: 'Harbour Dues — CBS Payment Gateway', reference: r, transmittedTo: 'Central Bank of Samoa (CBS) · SPA Port Authority', status: 'PAID — CBS CLEARED' })
-  }
-
-  function handleDeparture() {
-    const r = genRef('DC')
-    setDepartureRef(r)
-    setDeparture(DEMO_QUEUE[0])
-    addAudit({ timestamp: wst(), form: 'Departure Clearance Certificate', reference: r, transmittedTo: 'SPA Port Authority · All agencies', status: 'DEPARTURE CLEARED' })
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {sectionHead('SPA Port Operations', 'Samoa Ports Authority · Berth Management · Harbour Dues')}
-
-      {/* Berth status board */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
-        <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}`, fontFamily: MONO, fontSize: 9, color: C.muted, letterSpacing: '1.5px' }}>
-          BERTH STATUS BOARD
-        </div>
-        {berths.map((b, i) => {
-          const color = b.status === 'AVAILABLE' ? C.green : b.status === 'OCCUPIED' ? C.critical : C.amber
-          const bg    = b.status === 'AVAILABLE' ? C.greenBg : b.status === 'OCCUPIED' ? C.critBg : C.amberBg
-          const bdr   = b.status === 'AVAILABLE' ? C.greenBdr : b.status === 'OCCUPIED' ? C.critBdr : C.amberBdr
-          return (
-            <div key={b.code} style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderBottom: i < berths.length - 1 ? `1px solid ${C.border}` : 'none', background: i % 2 === 0 ? 'transparent' : C.surface2 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: C.text }}>{b.name}</div>
-                <div style={{ fontFamily: MONO, fontSize: 9, color: C.muted, marginTop: 2 }}>
-                  {b.vessel ? `${b.vessel} · LOA ${b.loa}m` : 'No vessel assigned'}
+          {/* PSC inspection */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '1.5px', marginBottom: 10 }}>
+              PSC INSPECTION REFERENCE — TOKYO MOU
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: C.muted, marginBottom: 6 }}>CERTIFICATES TO VERIFY</div>
+                {['Class certificates (Flag State)', 'Safety Equipment Certificate', 'MARPOL (I, II, V, VI)', 'ISM Code — Safety Management Certificate', 'ISPS Code — ISSC', 'MLC 2006 — DMLC Parts I & II'].map((c, i) => (
+                  <div key={i} style={{ fontFamily: SANS, fontSize: 12, color: C.muted, padding: '3px 0' }}>• {c}</div>
+                ))}
+              </div>
+              <div>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: C.muted, marginBottom: 6 }}>DETENTION THRESHOLDS</div>
+                <div style={{ fontFamily: SANS, fontSize: 12, color: C.muted, lineHeight: 1.8 }}>
+                  3 or more deficiencies → refer to PSC Officer<br />
+                  1 critical deficiency → immediate detention consideration<br />
+                  Class suspension → detention mandatory<br />
+                  <br />
+                  <span style={{ color: C.dim, fontFamily: MONO, fontSize: 9 }}>Ref: Tokyo MOU Annual Report 2025</span>
                 </div>
               </div>
-              <span style={{ background: bg, border: `1px solid ${bdr}`, borderRadius: 3, color, fontFamily: MONO, fontSize: 9, padding: '2px 8px' }}>
-                {b.status}
-              </span>
-              {b.status === 'AVAILABLE' && (
-                <button
-                  onClick={() => setBerths(prev => prev.map(bx => bx.code === b.code ? { ...bx, status: 'ASSIGNED', vessel: 'MV Ofu Cargo', loa: 112.0 } : bx))}
-                  style={{ marginLeft: 10, background: C.surface3, border: `1px solid ${C.border2}`, borderRadius: 4, color: C.text, cursor: 'pointer', fontFamily: MONO, fontSize: 9, padding: '3px 10px' }}
-                >
-                  ASSIGN
-                </button>
-              )}
             </div>
-          )
-        })}
-      </div>
-
-      {/* Harbour dues calculator */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
-        <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '2px', marginBottom: 12 }}>HARBOUR DUES CALCULATOR — CBS PAYMENT GATEWAY</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-          <div>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, marginBottom: 4 }}>Vessel</div>
-            <input value={duesVessel} onChange={e => setDuesVessel(e.target.value)} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontFamily: MONO, fontSize: 12, padding: '8px 10px', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
-          </div>
-          <div>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, marginBottom: 4 }}>Vessel Type</div>
-            <select value={vesselType} onChange={e => setVesselType(e.target.value)} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontFamily: MONO, fontSize: 12, padding: '8px 10px', outline: 'none', width: '100%' }}>
-              {['CARGO', 'TANKER', 'PASSENGER', 'BULK', 'OTHER'].map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
-          <div>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, marginBottom: 4 }}>Gross Tonnage</div>
-            <input type="number" value={gt} onChange={e => setGt(e.target.value)} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontFamily: MONO, fontSize: 12, padding: '8px 10px', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
-          </div>
-          <div>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, marginBottom: 4 }}>Crew Count</div>
-            <input type="number" value={crew} onChange={e => setCrew(e.target.value)} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontFamily: MONO, fontSize: 12, padding: '8px 10px', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
           </div>
         </div>
-        <div style={{ background: C.surface2, borderRadius: 6, padding: '12px 16px', marginBottom: 12 }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, marginBottom: 4 }}>DUES BREAKDOWN</div>
-          <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>GT rate ({vesselType}): WST {(gtVal * (RATE[vesselType] ?? 0.42)).toFixed(2)}</div>
-          <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>Crew wharfage (×{crewVal} × WST 50): WST {(crewVal * 50).toFixed(2)}</div>
-          <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>Port entry fee: WST 500.00</div>
-          <div style={{ fontFamily: MONO, fontSize: 14, color: C.gold, fontWeight: 700, marginTop: 8 }}>TOTAL: WST {duesAmt.toFixed(2)}</div>
-        </div>
-        {!duesPaid ? (
-          <button onClick={handlePayDues} style={{ background: C.flagBlue, border: 'none', borderRadius: 4, color: '#fff', cursor: 'pointer', fontFamily: MONO, fontSize: 11, fontWeight: 700, letterSpacing: '1px', padding: '10px 18px' }}>
-            PROCESS VIA CBS PAYMENT GATEWAY →
-          </button>
-        ) : (
-          <div style={{ background: C.greenBg, border: `1px solid ${C.greenBdr}`, borderRadius: 6, padding: '10px 14px' }}>
-            <div style={{ fontFamily: MONO, fontSize: 11, color: C.green }}>✓ HARBOUR DUES PAID — CBS CLEARED</div>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, marginTop: 4 }}>Reference: {duesRef} · {wst()} WST</div>
-          </div>
-        )}
-      </div>
-
-      {/* Departure clearance queue */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
-        <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '2px', marginBottom: 12 }}>DEPARTURE CLEARANCE</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-          {DEMO_QUEUE.map((q, i) => (
-            <div key={q.ref} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: i % 2 === 0 ? C.surface2 : C.surface3, borderRadius: 4 }}>
-              <div>
-                <span style={{ fontFamily: SANS, fontSize: 12, color: C.text }}>{q.vessel}</span>
-                <span style={{ fontFamily: MONO, fontSize: 9, color: C.muted, marginLeft: 8 }}>{q.ref}</span>
-              </div>
-              {statusBadge(q.status)}
-            </div>
-          ))}
-        </div>
-        {!departure ? (
-          <button onClick={handleDeparture} style={{ background: C.surface2, border: `1px solid ${C.border2}`, borderRadius: 4, color: C.text, cursor: 'pointer', fontFamily: MONO, fontSize: 10, padding: '8px 16px' }}>
-            ISSUE DEPARTURE CLEARANCE — MV PACIFIC STAR
-          </button>
-        ) : (
-          <div style={{ background: C.greenBg, border: `1px solid ${C.greenBdr}`, borderRadius: 6, padding: '10px 14px' }}>
-            <div style={{ fontFamily: MONO, fontSize: 11, color: C.green }}>✓ DEPARTURE CLEARANCE ISSUED</div>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, marginTop: 4 }}>Reference: {departureRef} · {wst()} WST</div>
-          </div>
-        )}
-      </div>
-    </div>
+      )}
+    </>
   )
 }
 
@@ -590,8 +851,6 @@ function SPADashboard({ addAudit }: { addAudit: (e: AuditEntry) => void }) {
 interface Props {
   session: OMWAuthResult
 }
-
-type GovTab = 'queue' | 'assess' | 'reports'
 
 export function GovOfficerDashboard({ session }: Props) {
   const [audit, setAudit] = useState<AuditEntry[]>([])
@@ -602,34 +861,38 @@ export function GovOfficerDashboard({ session }: Props) {
 
   const agency = session.agency ?? 'CUSTOMS'
 
-  const agencyLabel: Record<string, { label: string; color: string }> = {
-    CUSTOMS:    { label: 'Ministry of Revenue — Customs & Excise', color: C.amber  },
-    MAF:        { label: 'Ministry of Agriculture & Fisheries',     color: C.green  },
-    PORT_HEALTH:{ label: 'Ministry of Health — Port Health',        color: C.info   },
-    SPA:        { label: 'Samoa Ports Authority',                   color: C.gold   },
+  const agencyMeta: Record<string, { label: string; color: string; subtitle: string }> = {
+    CUSTOMS:     { label: 'Customs Officer — MOR',       color: C.amber, subtitle: 'Ministry of Revenue — Customs & Excise Division' },
+    MAF:         { label: 'MAF Biosecurity Officer',     color: C.green, subtitle: 'Ministry of Agriculture & Fisheries — Biosecurity Division' },
+    PORT_HEALTH: { label: 'Port Health Officer — MOH',  color: C.info,  subtitle: 'Ministry of Health — Port Health Division' },
+    SPA:         { label: 'SPA Port Operations Officer', color: C.gold,  subtitle: 'Samoa Ports Authority' },
   }
 
-  const al = agencyLabel[agency] ?? agencyLabel['CUSTOMS']
+  const meta = agencyMeta[agency] ?? agencyMeta['CUSTOMS']
 
   return (
     <div style={{ fontFamily: SANS, color: C.text }}>
       {/* Role header */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '12px 16px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div style={{ fontFamily: MONO, fontSize: 9, color: C.amber, letterSpacing: '2px' }}>ZONE 2 — RESTRICTED OFFICIAL</div>
-          <div style={{ fontFamily: SANS, fontSize: 14, fontWeight: 700, color: C.text, marginTop: 2 }}>{session.label}</div>
-          <div style={{ fontFamily: MONO, fontSize: 10, color: al.color, marginTop: 2 }}>{al.label}</div>
+      <div style={{ background: C.surface, border: `1px solid ${C.amberBdr}`, borderRadius: 8, padding: '12px 16px', marginBottom: 20 }}>
+        <div style={{ fontFamily: MONO, fontSize: 9, color: C.amber, letterSpacing: '2px', marginBottom: 4 }}>
+          ZONE 2 — RESTRICTED OFFICIAL
         </div>
-        <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted }}>
+        <div style={{ fontFamily: SANS, fontSize: 15, fontWeight: 700, color: C.text }}>
+          {session.label}
+        </div>
+        <div style={{ fontFamily: MONO, fontSize: 10, color: meta.color, marginTop: 2 }}>
+          {meta.subtitle}
+        </div>
+        <div style={{ fontFamily: MONO, fontSize: 9, color: C.dim, marginTop: 4 }}>
           Auth: {new Date(session.authedAt).toLocaleString('en-WS', { timeZone: 'Pacific/Apia', hour12: false })} WST
         </div>
       </div>
 
-      {/* Agency-specific dashboard */}
-      {agency === 'CUSTOMS'     && <CustomsDashboard     addAudit={addAudit} />}
-      {agency === 'MAF'         && <MAFDashboard          addAudit={addAudit} />}
-      {agency === 'PORT_HEALTH' && <PortHealthDashboard   addAudit={addAudit} />}
-      {agency === 'SPA'         && <SPADashboard          addAudit={addAudit} />}
+      {/* Agency-specific content */}
+      {agency === 'CUSTOMS'     && <CustomsView     addAudit={addAudit} />}
+      {agency === 'MAF'         && <MAFView          addAudit={addAudit} />}
+      {agency === 'PORT_HEALTH' && <PortHealthView   addAudit={addAudit} />}
+      {agency === 'SPA'         && <SPAView          addAudit={addAudit} />}
 
       <AuditLog entries={audit} />
     </div>

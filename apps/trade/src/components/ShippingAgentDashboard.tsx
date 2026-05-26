@@ -122,6 +122,7 @@ export function ShippingAgentDashboard({ session }: Props) {
   const [refs, setRefs] = useState({ fal1: '', fal2: '', fal3: '', fal5: '', dc: '' })
   const [crewCount, setCrewCount] = useState(0)
   const [hasDG, setHasDG] = useState(false)
+  const [vesselData, setVesselData] = useState({ vesselName: '', imoNumber: '', masterName: '', flagState: '', crewCount: 0, callSign: '', locked: false })
 
   const addAudit = useCallback((entry: AuditEntry) => {
     setAudit(a => [entry, ...a])
@@ -160,16 +161,72 @@ export function ShippingAgentDashboard({ session }: Props) {
       masterName: '', portOfArrival: 'Apia, Independent State of Samoa',
       eta: '', lastPort: '', nextPort: '', purpose: 'Commercial',
     })
+    const [timelineOpen, setTimelineOpen] = useState(false)
+    const [ispsLevel, setIspsLevel] = useState<'1' | '2' | '3'>('1')
+    const [portsCalled, setPortsCalled] = useState([
+      { port: '', country: '', ispsLevel: '', departure: '' },
+      { port: '', country: '', ispsLevel: '', departure: '' },
+    ])
 
     function handleSubmit() {
       if (!f.vesselName || !f.imoNumber) return
       const r = ref('OMW')
       markSubmitted('fal1', r, 'fal1')
+      setVesselData({ vesselName: f.vesselName, imoNumber: f.imoNumber, masterName: f.masterName, flagState: f.flagState, crewCount: 0, callSign: f.callSign, locked: true })
       addAudit({ timestamp: wst(), form: 'FAL Form 1 — General Declaration', reference: r, transmittedTo: 'SPA · Customs · MAF · Port Health', status: 'Submitted' })
     }
 
+    const timelineRows: Array<{ window: string; form: string; key: keyof typeof submitted }> = [
+      { window: '72 hours before arrival',    form: 'FAL 1 — General Declaration',         key: 'fal1' },
+      { window: '72 hours before arrival',    form: 'FAL 2 — Cargo Declaration',            key: 'fal2' },
+      { window: '24 hours before arrival',    form: "FAL 3 — Ship's Stores Declaration",    key: 'fal3' },
+      { window: '24 hours before arrival',    form: "FAL 4 — Crew's Effects Declaration",   key: 'fal4' },
+      { window: '24 hours before arrival',    form: 'FAL 5 — Crew List',                    key: 'fal5' },
+      { window: '24 hours before arrival',    form: 'MDH — Maritime Declaration of Health', key: 'mdh'  },
+      { window: 'On arrival (if applicable)', form: 'FAL 7 — Dangerous Goods',             key: 'fal7' },
+    ]
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 680 }}>
+
+        {/* CHANGE B — IMO FAL Submission Timeline */}
+        <div style={{ border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
+          <button onClick={() => setTimelineOpen(o => !o)}
+            style={{ background: C.surface2, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', width: '100%', textAlign: 'left' }}>
+            <div>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: C.gold, fontWeight: 600, letterSpacing: '1px' }}>IMO FAL SUBMISSION TIMELINE</span>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: C.dim, marginTop: 2 }}>IMO FAL Convention 2024 — Required submission windows</div>
+            </div>
+            <span style={{ color: C.muted, fontFamily: MONO, fontSize: 11 }}>{timelineOpen ? '▲' : '▼'}</span>
+          </button>
+          {timelineOpen && (
+            <div style={{ padding: 16 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>{['Window', 'Forms Required', 'Status'].map(h => (
+                    <th key={h} style={{ fontFamily: MONO, fontSize: 9, color: C.muted, padding: '6px 10px', borderBottom: `1px solid ${C.border}`, textAlign: 'left', letterSpacing: '1px' }}>{h}</th>
+                  ))}</tr>
+                </thead>
+                <tbody>
+                  {timelineRows.map((row, i) => {
+                    const done = submitted[row.key]
+                    const r = row.key === 'fal1' ? refs.fal1 : row.key === 'fal5' ? refs.fal5 : ''
+                    return (
+                      <tr key={i} style={{ background: i % 2 === 0 ? 'transparent' : C.surface2 }}>
+                        <td style={{ fontFamily: MONO, fontSize: 10, color: C.dim, padding: '7px 10px', borderBottom: `1px solid ${C.border}`, whiteSpace: 'nowrap' }}>{row.window}</td>
+                        <td style={{ fontFamily: SANS, fontSize: 12, color: C.text, padding: '7px 10px', borderBottom: `1px solid ${C.border}` }}>{row.form}</td>
+                        <td style={{ fontFamily: MONO, fontSize: 10, padding: '7px 10px', borderBottom: `1px solid ${C.border}`, whiteSpace: 'nowrap', color: done ? C.green : C.muted }}>
+                          {done ? `✓ Submitted${r ? ` — ${r}` : ''}` : '○ Pending'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
         {sectionHead('FAL Form 1 — General Declaration', 'IMO FAL Convention 2024 · Standard General Declaration')}
 
         {grid2([
@@ -194,6 +251,54 @@ export function ShippingAgentDashboard({ session }: Props) {
 
         {sel('Purpose of Call', f.purpose, v => setF(x => ({ ...x, purpose: v })),
           ['Commercial', 'Bunkering', 'Crew Change', 'Emergency', 'Other'])}
+
+        {/* CHANGE C — ISPS Security Declaration */}
+        <div style={{ border: `1px solid ${C.border}`, borderRadius: 6, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: C.gold, letterSpacing: '2px', textTransform: 'uppercase' }}>ISPS SECURITY DECLARATION</div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: C.dim, marginTop: 2 }}>International Ship and Port Facility Security Code — Mandatory pre-arrival notification</div>
+          </div>
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, marginBottom: 6 }}>ISPS SECURITY LEVEL</div>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              {(['1', '2', '3'] as const).map(lvl => (
+                <label key={lvl} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontFamily: MONO, fontSize: 11, color: ispsLevel === lvl ? C.text : C.muted }}>
+                  <input type="radio" name="ispsLevel" value={lvl} checked={ispsLevel === lvl} onChange={() => setIspsLevel(lvl)} style={{ accentColor: C.amber }} />
+                  {lvl === '1' ? 'Level 1 (Normal)' : lvl === '2' ? 'Level 2 (Heightened)' : 'Level 3 (Exceptional)'}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, marginBottom: 6 }}>LAST 10 PORTS OF CALL</div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                <thead>
+                  <tr>{['Port Name', 'Country', 'ISPS Level at Port', 'Date of Departure'].map(h => (
+                    <th key={h} style={{ fontFamily: MONO, fontSize: 9, color: C.muted, padding: '4px 8px', borderBottom: `1px solid ${C.border}`, textAlign: 'left' }}>{h}</th>
+                  ))}</tr>
+                </thead>
+                <tbody>
+                  {portsCalled.map((row, i) => (
+                    <tr key={i}>
+                      <td style={{ padding: 4 }}><input value={row.port} onChange={e => { const n=[...portsCalled]; n[i]={...n[i],port:e.target.value}; setPortsCalled(n) }} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 3, color: C.text, fontFamily: MONO, fontSize: 11, padding: '4px 6px', width: '100%', boxSizing: 'border-box' }} /></td>
+                      <td style={{ padding: 4 }}><input value={row.country} onChange={e => { const n=[...portsCalled]; n[i]={...n[i],country:e.target.value}; setPortsCalled(n) }} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 3, color: C.text, fontFamily: MONO, fontSize: 11, padding: '4px 6px', width: '100%', boxSizing: 'border-box' }} /></td>
+                      <td style={{ padding: 4 }}><input value={row.ispsLevel} onChange={e => { const n=[...portsCalled]; n[i]={...n[i],ispsLevel:e.target.value}; setPortsCalled(n) }} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 3, color: C.text, fontFamily: MONO, fontSize: 11, padding: '4px 6px', width: 80 }} /></td>
+                      <td style={{ padding: 4 }}><input type="date" value={row.departure} onChange={e => { const n=[...portsCalled]; n[i]={...n[i],departure:e.target.value}; setPortsCalled(n) }} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 3, color: C.text, fontFamily: MONO, fontSize: 11, padding: '4px 6px', width: 130 }} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+              <button onClick={() => setPortsCalled(x => [...x, { port: '', country: '', ispsLevel: '', departure: '' }])} style={{ background: C.surface3, border: `1px solid ${C.border2}`, borderRadius: 3, color: C.muted, cursor: 'pointer', fontFamily: MONO, fontSize: 9, padding: '3px 8px' }}>+ Add Row</button>
+              {portsCalled.length > 1 && <button onClick={() => setPortsCalled(x => x.slice(0, -1))} style={{ background: C.surface3, border: `1px solid ${C.border2}`, borderRadius: 3, color: C.muted, cursor: 'pointer', fontFamily: MONO, fontSize: 9, padding: '3px 8px' }}>− Remove</button>}
+            </div>
+          </div>
+          <div style={{ background: `${C.amber}18`, border: `1px solid ${C.amberBdr}`, borderRadius: 4, padding: '10px 14px', fontFamily: SANS, fontSize: 12, color: C.amber, lineHeight: 1.6 }}>
+            The Master declares that the vessel is in compliance with the ISPS Code and SOLAS Chapter XI-2. This declaration will be transmitted to the Samoa Port Authority.
+          </div>
+        </div>
 
         {!submitted.fal1
           ? submitBtn('Submit FAL Form 1 — General Declaration', handleSubmit)
@@ -223,6 +328,10 @@ export function ShippingAgentDashboard({ session }: Props) {
     const [f7, setF7] = useState({ unNo: '', psn: '', imoClass: '', packGroup: '', stowage: '', emergency: '' })
     // MDH
     const [mdh, setMdh] = useState({ illness: false, deaths: false, infected: false, vaccination: 'All vaccinated' })
+    // MARPOL
+    const [marpol, setMarpol] = useState({ oilyWaste: '', sewage: false, garbage: '', hazardous: false, hazardousDesc: '', wasteReception: false })
+    const [marpolSubmitted, setMarpolSubmitted] = useState(false)
+    const [marpolRef, setMarpolRef] = useState('')
 
     function submitFAL2() {
       const r = `ASYCUDA-${String(Math.floor(10000000 + Math.random() * 90000000))}`
@@ -246,7 +355,9 @@ export function ShippingAgentDashboard({ session }: Props) {
     function submitFAL5() {
       const r = ref('FAL5')
       markSubmitted('fal5', r, 'fal5')
-      setCrewCount(f5Crew.filter(c => c.name.trim()).length)
+      const count = f5Crew.filter(c => c.name.trim()).length
+      setCrewCount(count)
+      setVesselData(v => ({ ...v, crewCount: count }))
       addAudit({ timestamp: wst(), form: 'FAL Form 5 — Crew List', reference: r, transmittedTo: 'Port Health · Immigration (stub)', status: 'Submitted' })
     }
 
@@ -275,6 +386,11 @@ export function ShippingAgentDashboard({ session }: Props) {
         {/* FAL 2 */}
         <Collapsible title="FAL Form 2 — Cargo Declaration" standard="IMO FAL / ASYCUDA World / WCO Data Model v3" defaultOpen>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {vesselData.vesselName && (
+              <div style={{ background: `${C.flagBlue}10`, border: `1px solid ${C.border2}`, borderRadius: 4, padding: '6px 10px', fontFamily: MONO, fontSize: 10, color: C.dim }}>
+                Vessel: <span style={{ color: C.text }}>{vesselData.vesselName}</span> — Pre-filled from FAL 1 — Single Window: submit once, use many times
+              </div>
+            )}
             {grid2([
               fld('B/L Number', f2.bl, v => setF2(x => ({ ...x, bl: v }))),
               fld('HS Code (WCO Harmonized System Code)', f2.hs, v => setF2(x => ({ ...x, hs: v })), { placeholder: '6-digit' }),
@@ -313,6 +429,11 @@ export function ShippingAgentDashboard({ session }: Props) {
         {/* FAL 3 */}
         <Collapsible title="FAL Form 3 — Ship's Stores Declaration" standard="IMO FAL Convention">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {vesselData.vesselName && (
+              <div style={{ background: `${C.flagBlue}10`, border: `1px solid ${C.border2}`, borderRadius: 4, padding: '6px 10px', fontFamily: MONO, fontSize: 10, color: C.dim }}>
+                Vessel: <span style={{ color: C.text }}>{vesselData.vesselName}</span> — Pre-filled from FAL 1 — Single Window: submit once, use many times
+              </div>
+            )}
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
               <thead><tr>{["Description","Quantity","Unit","Voyage Use"].map(h => <th key={h} style={{ fontFamily: MONO, fontSize: 9, color: C.muted, padding: '4px 8px', borderBottom: `1px solid ${C.border}`, textAlign: 'left' }}>{h}</th>)}</tr></thead>
               <tbody>
@@ -340,6 +461,11 @@ export function ShippingAgentDashboard({ session }: Props) {
         {/* FAL 4 */}
         <Collapsible title="FAL Form 4 — Crew's Effects Declaration" standard="IMO FAL Convention">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {vesselData.vesselName && (
+              <div style={{ background: `${C.flagBlue}10`, border: `1px solid ${C.border2}`, borderRadius: 4, padding: '6px 10px', fontFamily: MONO, fontSize: 10, color: C.dim }}>
+                Vessel: <span style={{ color: C.text }}>{vesselData.vesselName}</span> — Pre-filled from FAL 1 — Single Window: submit once, use many times
+              </div>
+            )}
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
               <thead><tr>{["Crew Member","Nationality","Items Declared","Est. Value (WST)"].map(h => <th key={h} style={{ fontFamily: MONO, fontSize: 9, color: C.muted, padding: '4px 8px', borderBottom: `1px solid ${C.border}`, textAlign: 'left' }}>{h}</th>)}</tr></thead>
               <tbody>
@@ -369,6 +495,11 @@ export function ShippingAgentDashboard({ session }: Props) {
         {/* FAL 5 */}
         <Collapsible title="FAL Form 5 — Crew List" standard="IMO FAL Convention">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {vesselData.crewCount > 0 && (
+              <div style={{ background: `${C.flagBlue}10`, border: `1px solid ${C.border2}`, borderRadius: 4, padding: '6px 10px', fontFamily: MONO, fontSize: 10, color: C.dim }}>
+                Crew count from previous submission: <span style={{ color: C.text }}>{vesselData.crewCount}</span> — Pre-filled from FAL 1 — Single Window: submit once, use many times
+              </div>
+            )}
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, minWidth: 700 }}>
                 <thead><tr>{['Name','Rank/Rating','Nationality','Passport No','Date of Birth','Port of Embarkation','Visa/Permit (opt.)'].map(h => <th key={h} style={{ fontFamily: MONO, fontSize: 9, color: C.muted, padding: '4px 8px', borderBottom: `1px solid ${C.border}`, textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>)}</tr></thead>
@@ -401,6 +532,8 @@ export function ShippingAgentDashboard({ session }: Props) {
           </div>
         </Collapsible>
 
+        {/* CHANGE D — MARPOL Waste Declaration (collapsible, after MDH in DOM order we put it last) */}
+
         {/* FAL 7 — only if DG */}
         {(hasDG || submitted.fal2) && (
           <Collapsible title="FAL Form 7 — Dangerous Goods" standard="IMO IMDG Code / FAL Convention">
@@ -424,6 +557,11 @@ export function ShippingAgentDashboard({ session }: Props) {
         {/* MDH */}
         <Collapsible title="Maritime Declaration of Health (MDH)" standard="WHO International Health Regulations 2005">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {crewCount > 0 && (
+              <div style={{ background: `${C.flagBlue}10`, border: `1px solid ${C.border2}`, borderRadius: 4, padding: '6px 10px', fontFamily: MONO, fontSize: 10, color: C.dim }}>
+                Crew count: <span style={{ color: C.text }}>{crewCount}</span> — Pre-filled from FAL 1 — Single Window: submit once, use many times
+              </div>
+            )}
             {[
               ['illness',  'Any crew illness in last 30 days'],
               ['deaths',   'Deaths on board in last 30 days'],
@@ -439,6 +577,61 @@ export function ShippingAgentDashboard({ session }: Props) {
             {!submitted.mdh
               ? submitBtn('Transmit to Port Health — MOH', submitMDH)
               : confirmation(['✓ Maritime Declaration of Health transmitted', 'Transmitted to: Port Health — MOH', `Timestamp: ${wst()} WST`])
+            }
+          </div>
+        </Collapsible>
+
+        {/* MARPOL Waste Declaration */}
+        <Collapsible title="MARPOL Waste Declaration" standard="MARPOL Annex V — Ship-generated waste notification — Samoa Port Authority">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: C.dim }}>MARPOL Annex V compliance — Port reception facility notification required 24 hours before arrival</div>
+            {grid2([
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontFamily: MONO, fontSize: 10, color: C.muted }}>Oily waste / bilge water (litres)</label>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input type="number" value={marpol.oilyWaste} onChange={e => setMarpol(x => ({ ...x, oilyWaste: e.target.value }))}
+                    style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontFamily: MONO, fontSize: 12, padding: '8px 10px', outline: 'none', flex: 1, boxSizing: 'border-box' }} />
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: C.muted }}>litres</span>
+                </div>
+              </div>,
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontFamily: MONO, fontSize: 10, color: C.muted }}>Garbage / domestic waste (bags)</label>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input type="number" value={marpol.garbage} onChange={e => setMarpol(x => ({ ...x, garbage: e.target.value }))}
+                    style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontFamily: MONO, fontSize: 12, padding: '8px 10px', outline: 'none', flex: 1, boxSizing: 'border-box' }} />
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: C.muted }}>bags</span>
+                </div>
+              </div>,
+            ])}
+            {[
+              { key: 'sewage' as const, label: 'Sewage on board' },
+              { key: 'hazardous' as const, label: 'Hazardous waste on board' },
+              { key: 'wasteReception' as const, label: 'Waste reception required at Apia' },
+            ].map(({ key, label }) => (
+              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontFamily: MONO, fontSize: 11, color: C.muted }}>
+                <input type="checkbox" checked={marpol[key]} onChange={e => setMarpol(x => ({ ...x, [key]: e.target.checked }))} style={{ accentColor: C.amber }} />
+                {label}
+              </label>
+            ))}
+            {marpol.hazardous && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontFamily: MONO, fontSize: 10, color: C.muted }}>Hazardous waste description</label>
+                <input value={marpol.hazardousDesc} onChange={e => setMarpol(x => ({ ...x, hazardousDesc: e.target.value }))}
+                  style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontFamily: MONO, fontSize: 12, padding: '8px 10px', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
+              </div>
+            )}
+            {!marpolSubmitted
+              ? submitBtn('Notify SPA — Waste Reception', () => {
+                  const r = `WR-${new Date().getFullYear()}-${String(Math.floor(100000 + Math.random() * 900000))}`
+                  setMarpolRef(r)
+                  setMarpolSubmitted(true)
+                  addAudit({ timestamp: wst(), form: 'MARPOL Waste Declaration', reference: r, transmittedTo: 'SPA Port Operations — Waste Reception', status: 'Submitted' })
+                })
+              : confirmation([
+                  `✓ Transmitted to SPA Port Operations — Waste Reception Reference: ${marpolRef}`,
+                  'MARPOL Annex V compliance — Port reception facility notification required 24 hours before arrival',
+                  `Timestamp: ${wst()} WST`,
+                ])
             }
           </div>
         </Collapsible>

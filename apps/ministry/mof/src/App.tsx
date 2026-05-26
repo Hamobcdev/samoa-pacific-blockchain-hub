@@ -100,7 +100,7 @@ export default function App() {
   }, [])
 
   return (
-    <ResearchGate storageKey="sdpi_mof_acknowledged">
+    <>
       {gatewaySession && (
         <ClassificationBand zone={gatewaySession.zone} role={gatewaySession.role} />
       )}
@@ -316,6 +316,6 @@ export default function App() {
           </div>
         </footer>
       </div>
-    </ResearchGate>
+    </>
   )
 }

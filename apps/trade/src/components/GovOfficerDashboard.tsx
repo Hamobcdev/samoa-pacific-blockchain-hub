@@ -298,6 +298,13 @@ function CustomsView({ addAudit }: { addAudit: (e: AuditEntry) => void }) {
               </div>
             </div>
           </div>
+
+          {/* CHANGE F — IMO GISIS (Customs) */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '12px 16px' }}>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '1.5px', marginBottom: 6 }}>IMO GISIS VESSEL LOOKUP</div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: C.info }}>gisis.imo.org</div>
+            <div style={{ fontFamily: SANS, fontSize: 12, color: C.muted, marginTop: 4 }}>Verify IMO numbers, vessel certificates, and flag state records before processing clearance.</div>
+          </div>
         </div>
       )}
     </>
@@ -839,6 +846,49 @@ function SPAView({ addAudit }: { addAudit: (e: AuditEntry) => void }) {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* CHANGE E — Tokyo MOU PSC checklist table */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}` }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '1.5px' }}>TOKYO MOU — PORT STATE CONTROL INSPECTION</div>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: C.dim, marginTop: 2 }}>Tokyo MOU on Port State Control — Pacific Region</div>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                {tableHead(['CERTIFICATE', 'VALID PERIOD', 'DETENTION IF MISSING'])}
+                <tbody>
+                  {[
+                    ['Class Certificate',              'Annual survey',   'Yes — critical'],
+                    ['Safety Equipment Certificate',   '5 years',        'Yes — critical'],
+                    ['MARPOL (IOPP Certificate)',       '5 years',        'Yes — critical'],
+                    ['ISM (SMC Certificate)',           '5 years',        'Yes — critical'],
+                    ['ISPS (ISSC Certificate)',         '5 years',        'Yes — critical'],
+                    ['MLC 2006 (DMLC)',                '5 years',        'Yes — critical'],
+                    ['Tonnage Certificate',            'Permanent',      'No — advisory'],
+                  ].map(([cert, period, detention], i) => (
+                    <tr key={cert} style={{ background: i % 2 === 0 ? 'transparent' : C.surface2 }}>
+                      {td(cert)}
+                      {tdMuted(period)}
+                      <td style={{ fontFamily: MONO, fontSize: 10, padding: '8px 10px', borderBottom: `1px solid ${C.border}`, color: detention.startsWith('Yes') ? C.critical : C.muted, whiteSpace: 'nowrap' }}>
+                        {detention}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ padding: '10px 16px', borderTop: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: C.dim }}>Detention threshold: 3 or more deficiencies, or 1 critical deficiency. Source: Tokyo MOU Annual Report 2024</div>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: C.dim }}>Tokyo MOU: tokyomou.org</div>
+            </div>
+          </div>
+
+          {/* CHANGE F — IMO GISIS (SPA) */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '12px 16px' }}>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: C.gold, letterSpacing: '1.5px', marginBottom: 6 }}>IMO GISIS VESSEL LOOKUP</div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: C.info }}>gisis.imo.org</div>
+            <div style={{ fontFamily: SANS, fontSize: 12, color: C.muted, marginTop: 4 }}>Cross-check vessel IMO number and class certificates before berth assignment.</div>
           </div>
         </div>
       )}

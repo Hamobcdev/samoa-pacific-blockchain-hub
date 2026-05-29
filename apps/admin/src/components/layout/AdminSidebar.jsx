@@ -3,15 +3,14 @@ import { COLORS, TYPOGRAPHY, ROLES, TAPA_BG } from '../../theme.js'
 import { t } from '../../i18n.js'
 
 const NAV_ITEMS = [
-  { key: 'overview',    icon: '⬡', access: ['full','readonly','technical','finance'] },
-  { key: 'governance',  icon: '⚖', access: ['full'] },
-  { key: 'compliance',  icon: '✓', access: ['full','readonly'] },
-  { key: 'nodes',       icon: '◎', access: ['full','readonly','technical'] },
-  { key: 'audit',       icon: '⟳', access: ['full'] },
-  { key: 'ministry',    icon: '🏛', access: ['full','readonly','technical','finance'] },
-  { key: 'donor',       icon: '◈', access: ['full','readonly'] },
-  { key: 'dbs',         icon: '◉', access: ['full','finance'] },
-  { key: 'research',    icon: '◑', access: ['full','readonly','technical','finance'] },
+  { key: 'command',    icon: '⬡', access: ['full','readonly','technical','finance'] },
+  { key: 'governance', icon: '⚖', access: ['full'] },
+  { key: 'compliance', icon: '✓', access: ['full','readonly'] },
+  { key: 'nodes',      icon: '◎', access: ['full','readonly','technical'] },
+  { key: 'audit',      icon: '⟳', access: ['full'] },
+  { key: 'donor',      icon: '◈', access: ['full','readonly'] },
+  // dbs: absorbed into command — Ministry Portals → MOF Dashboard
+  { key: 'research',   icon: '◑', access: ['full','readonly','technical','finance'] },
 ]
 
 export function AdminSidebar({ activePanel, onNav, role, lang, onSignOut, governancePending }) {

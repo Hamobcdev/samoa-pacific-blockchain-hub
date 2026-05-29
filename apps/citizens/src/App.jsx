@@ -236,8 +236,44 @@ const translations = {
     officeSavaii: "Salelologa Office — Salelologa, Savaii",
     officeMore: "More offices — Phase 2",
     requestAccess: "Request Access →",
+    panelIdentityTitle: "Your Digital Identity",
+    panelTalaTitle: "Your Digital Tala",
+    panelDataTitle: "Your Data — How It Works",
+    researchBand: "RESEARCH PROTOTYPE · NUS / ISOC Research Programme 2026 · Not an operational system",
+    grievanceBtn: "Have a concern or feedback? Submit here →",
+    grievanceTitle: "Feedback & Concerns",
+    grievanceSubmit: "Submit",
+    grievanceThanks: "Thank you. Your feedback has been recorded.",
+    svcReqBtn: "View requirements & contacts ▾",
+    svcReqClose: "Close details ▴",
+    svcSLA: "Processing time",
+    svcDocs: "Required documents",
+    svcFees: "Fees",
+    svcOffice: "Office & contacts",
+    statusBoardTitle: "SERVICE STATUS — CURRENT AVAILABILITY",
+    statusBoardSub: "Government service delivery status · Updated daily",
+    statusBoardPhase2: "Phase 2: live status from government service management systems",
   }
 }
+
+// SM additions patch
+translations.SM.panelIdentityTitle = "Lau Fa'asinomaga Faitau"
+translations.SM.panelTalaTitle = "Lau Tala Faitau"
+translations.SM.panelDataTitle = "Lau Faamatalaga"
+translations.SM.researchBand = "Fa'ata'ita'iga Su'esu'ega · Iunivesete Samoa · Polokalame Su'esu'ega ISOC 2026"
+translations.SM.grievanceBtn = "Fesili pe'a iai ou mana'o →"
+translations.SM.grievanceTitle = "O Sau Fesili pe'a Mana'omia"
+translations.SM.grievanceSubmit = "Lafo"
+translations.SM.grievanceThanks = "Fa'afetai. Ua taulafo lau fesili."
+translations.SM.svcReqBtn = "Va'ai mana'oga ma fa'afesota'iga ▾"
+translations.SM.svcReqClose = "Tapuni ▴"
+translations.SM.svcSLA = "Taimi Fa'agasologa"
+translations.SM.svcDocs = "Pepa Mana'omia"
+translations.SM.svcFees = "Totogi"
+translations.SM.svcOffice = "Ofisi ma Fa'afesota'iga"
+translations.SM.statusBoardTitle = "TULAGA O AUAUNAGA — AVANOA NEI"
+translations.SM.statusBoardSub = "Tulaga tautua a le malo · Fa'afou aso taitasi"
+translations.SM.statusBoardPhase2 = "Vaega 2: fa'afesota'i sa'o ma faiga tautua a le malo"
 
 // ─── SERVICE DATA ────────────────────────────────────────────────────────────
 const SERVICE_DATA = [
@@ -332,6 +368,166 @@ const SERVICE_DATA = [
       { id:'DBS-001', name:'SME Loan Application', nameS:'Talosaga Nonogatupe SME', fee:'Free', processing:'20 business days', minTier:1, status:'soon', ministry:'Development Bank of Samoa' },
     ]
   },
+]
+
+// ─── CATEGORY DETAILS ────────────────────────────────────────────────────────
+const CATEGORY_DETAILS = {
+  1: {
+    slas: [
+      { service: 'SDIN registration', time: '10 working days' },
+      { service: 'Birth certificate', time: '5 working days' },
+      { service: 'Passport', time: '10 working days' },
+    ],
+    docs: [
+      { service: 'SDIN registration', req: 'Birth certificate OR baptism record, witness from village council' },
+      { service: 'Birth certificate', req: 'Hospital record, parental ID' },
+      { service: 'Passport', req: 'SDIN (Phase 2) OR birth certificate, 2 passport photos, application form' },
+    ],
+    fees: [
+      { service: 'SDIN registration', fee: 'Free (World Bank funded)' },
+      { service: 'Birth certificate', fee: 'WST 10.00' },
+      { service: 'Passport (standard)', fee: 'WST 100.00' },
+    ],
+    offices: [
+      { name: 'Samoa Bureau of Statistics', address: 'Level 3, Lotemau Centre, Apia', hours: 'Mon–Fri 8:00am–4:30pm', tel: '(685) 62000', email: 'sbs@sbs.gov.ws' },
+    ],
+  },
+  2: {
+    slas: [
+      { service: 'Visa application', time: '5 working days' },
+      { service: 'Re-entry permit', time: '3 working days' },
+    ],
+    docs: [
+      { service: 'Visa', req: 'Valid passport (6 months), application form, return ticket, accommodation proof' },
+      { service: 'Re-entry permit', req: 'Samoan citizenship certificate, passport, application form' },
+    ],
+    fees: [
+      { service: 'Visitor visa', fee: 'WST 60.00' },
+      { service: 'Re-entry permit', fee: 'WST 50.00' },
+    ],
+    offices: [
+      { name: 'Immigration Division — MFAT', address: 'FMFM I Building, Beach Road, Apia', hours: 'Mon–Fri 8:00am–4:30pm', tel: '(685) 21171', email: '' },
+    ],
+  },
+  3: {
+    slas: [
+      { service: 'Business name registration', time: '3 working days' },
+      { service: 'Company incorporation', time: '5 working days' },
+    ],
+    docs: [
+      { service: 'Business name', req: 'Application form, NID/passport, proposed business name' },
+      { service: 'Company', req: 'Constitution, director details, share structure, registered office address' },
+    ],
+    fees: [
+      { service: 'Business name', fee: 'WST 100.00' },
+      { service: 'Company registration', fee: 'WST 300.00' },
+      { service: 'Annual return', fee: 'WST 50.00' },
+    ],
+    offices: [
+      { name: 'Ministry of Commerce Industry & Labour', address: 'Level 2, Lotomau Centre, Apia', hours: 'Mon–Fri 8:00am–4:30pm', tel: '(685) 20441', email: 'mcil@mcil.gov.ws' },
+    ],
+  },
+  4: {
+    slas: [
+      { service: 'Health certificate', time: '3 working days' },
+      { service: 'Medical records request', time: '10 working days' },
+    ],
+    docs: [
+      { service: 'Health certificate', req: 'Medical examination, vaccination records, application form' },
+      { service: 'Records request', req: 'NID/passport, consent form' },
+    ],
+    fees: [
+      { service: 'Health certificate', fee: 'WST 30.00' },
+      { service: 'Medical examination', fee: 'Per service schedule' },
+    ],
+    offices: [
+      { name: 'Ministry of Health', address: 'Motootua, Apia', hours: 'Mon–Fri 8:00am–4:30pm', tel: '(685) 68100', email: '' },
+      { name: 'Emergency', address: '', hours: '', tel: '994', email: '' },
+    ],
+  },
+  5: {
+    slas: [
+      { service: "Driver's licence", time: '5 working days' },
+      { service: 'Vehicle registration', time: '2 working days' },
+    ],
+    docs: [
+      { service: "Driver's licence", req: 'Eye test, written test pass, application form, passport photo, NID/passport' },
+      { service: 'Vehicle registration', req: 'Ownership documents, roadworthy certificate, insurance' },
+    ],
+    fees: [
+      { service: "Driver's licence", fee: 'WST 50.00' },
+      { service: 'Vehicle registration', fee: 'Per vehicle class' },
+    ],
+    offices: [
+      { name: 'Land Transport Authority', address: 'Vaivase-tai, Apia', hours: 'Mon–Fri 8:00am–4:30pm', tel: '(685) 26740', email: '' },
+    ],
+  },
+  6: {
+    slas: [
+      { service: 'Matai title registration', time: 'Fono process' },
+      { service: 'Police clearance', time: '5 working days' },
+    ],
+    docs: [
+      { service: 'Matai title', req: 'Village fono resolution, genealogical documentation, application to Land & Titles Court' },
+      { service: 'Police clearance', req: 'Application form, NID/passport, passport photo' },
+    ],
+    fees: [
+      { service: 'Matai registration', fee: 'Per court schedule' },
+      { service: 'Police clearance', fee: 'WST 20.00' },
+    ],
+    offices: [
+      { name: 'Ministry of Justice', address: '', hours: '', tel: '(685) 22601', email: 'justice@justice.gov.ws' },
+      { name: 'Electoral Commission', address: '', hours: '', tel: '(685) 23202', email: 'electoral@electoral.gov.ws' },
+    ],
+  },
+  7: {
+    slas: [
+      { service: 'Academic certificate verification', time: '5 working days' },
+      { service: 'Scholarship application', time: 'Per cycle' },
+    ],
+    docs: [
+      { service: 'Certificate verification', req: 'Original certificate, NID/passport, application form' },
+      { service: 'Scholarship', req: 'Academic records, application form, reference letters' },
+    ],
+    fees: [
+      { service: 'Certificate verification', fee: 'WST 20.00' },
+      { service: 'Most scholarship applications', fee: 'Free' },
+    ],
+    offices: [
+      { name: 'Ministry of Education Sports & Culture', address: 'Matafele, Apia', hours: 'Mon–Fri 8:00am–4:30pm', tel: '(685) 21911', email: '' },
+    ],
+  },
+  8: {
+    slas: [
+      { service: 'Land title search', time: '5 working days' },
+      { service: 'Freehold transfer', time: '20 working days' },
+    ],
+    docs: [
+      { service: 'Land title search', req: 'Application form, NID/passport, survey plan reference' },
+      { service: 'Freehold transfer', req: 'Title deed, transfer instrument, valuation, legal representation' },
+    ],
+    fees: [
+      { service: 'Land title search', fee: 'WST 50.00' },
+      { service: 'Title registration', fee: 'Per transaction value' },
+      { service: 'Address verification (PUMA)', fee: 'Free' },
+    ],
+    offices: [
+      { name: 'MNRE — Division of Lands & Environment', address: 'Apia Park Complex', hours: '', tel: '(685) 22481', email: 'mnre@mnre.gov.ws' },
+      { name: 'PUMA (Planning & Urban Management)', address: '', hours: '', tel: '(685) 22481', email: '' },
+    ],
+  },
+}
+
+// ─── SERVICE STATUS DATA ──────────────────────────────────────────────────────
+const SERVICE_STATUS_DATA = [
+  { service: 'SDIN Registration', status: 'Open', wait: '10 working days', notice: 'Mass registration events scheduled' },
+  { service: 'Birth Certificate', status: 'Open', wait: '5 working days', notice: '' },
+  { service: 'Passport', status: 'Open', wait: '10 working days', notice: 'High demand — apply early' },
+  { service: 'Business Registration', status: 'Open', wait: '3 working days', notice: '' },
+  { service: "Driver's Licence", status: 'Open', wait: '5 working days', notice: '' },
+  { service: 'Land Title Search', status: 'Open', wait: '5 working days', notice: '' },
+  { service: 'Health Certificate', status: 'Open', wait: '3 working days', notice: '' },
+  { service: 'Matai Registration', status: 'Per Fono process', wait: 'Varies', notice: 'Requires village fono resolution' },
 ]
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -538,6 +734,97 @@ function ServiceCard({ service, t, lang, identityState, onOpenIdentity }) {
   )
 }
 
+// ─── CATEGORY SERVICE DETAIL ─────────────────────────────────────────────────
+
+function CategoryServiceDetail({ catId, t }) {
+  const [open, setOpen] = useState(false)
+  const d = CATEGORY_DETAILS[catId]
+  if (!d) return null
+
+  return (
+    <div style={{ borderTop: `1px solid ${CL.border}`, marginTop: 4 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', background: open ? CL.surfaceBlue : 'transparent',
+          border: 'none', padding: '10px 20px', cursor: 'pointer',
+          fontFamily: FL.mono, fontSize: 11, color: CL.primary,
+          textAlign: 'left', display: 'flex', justifyContent: 'space-between',
+        }}
+      >
+        <span>{open ? t.svcReqClose : t.svcReqBtn}</span>
+      </button>
+
+      {open && (
+        <div style={{ padding: '4px 20px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* SLAs */}
+          <div>
+            <div style={{ fontFamily: FL.mono, fontSize: 10, fontWeight: 700, color: CL.primary, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
+              {t.svcSLA}
+            </div>
+            {d.slas.map((row, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${CL.border}`, padding: '5px 0', gap: 8 }}>
+                <span style={{ fontFamily: FL.ui, fontSize: 12, color: CL.textSoft }}>{row.service}</span>
+                <span style={{ fontFamily: FL.mono, fontSize: 12, color: CL.text, fontWeight: 600, whiteSpace: 'nowrap' }}>{row.time}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Required documents */}
+          <div>
+            <div style={{ fontFamily: FL.mono, fontSize: 10, fontWeight: 700, color: CL.primary, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
+              {t.svcDocs}
+            </div>
+            {d.docs.map((row, i) => (
+              <div key={i} style={{ marginBottom: 8 }}>
+                <div style={{ fontFamily: FL.mono, fontSize: 11, fontWeight: 600, color: CL.text }}>{row.service}</div>
+                <div style={{ fontFamily: FL.ui, fontSize: 12, color: CL.textSoft, lineHeight: 1.5, marginTop: 2 }}>{row.req}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Fees */}
+          <div>
+            <div style={{ fontFamily: FL.mono, fontSize: 10, fontWeight: 700, color: CL.primary, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
+              {t.svcFees}
+            </div>
+            {d.fees.map((row, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${CL.border}`, padding: '5px 0', gap: 8 }}>
+                <span style={{ fontFamily: FL.ui, fontSize: 12, color: CL.textSoft }}>{row.service}</span>
+                <span style={{ fontFamily: FL.mono, fontSize: 12, color: CL.text, fontWeight: 600, whiteSpace: 'nowrap' }}>{row.fee}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Offices */}
+          <div>
+            <div style={{ fontFamily: FL.mono, fontSize: 10, fontWeight: 700, color: CL.primary, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
+              {t.svcOffice}
+            </div>
+            {d.offices.map((off, i) => (
+              <div key={i} style={{ background: CL.surface2, borderRadius: 6, padding: '10px 12px', marginBottom: 8 }}>
+                <div style={{ fontFamily: FL.ui, fontSize: 13, fontWeight: 700, color: CL.text }}>{off.name}</div>
+                {off.address && <div style={{ fontFamily: FL.mono, fontSize: 10, color: CL.muted, marginTop: 3 }}>{off.address}</div>}
+                {off.hours  && <div style={{ fontFamily: FL.mono, fontSize: 10, color: CL.muted }}>{off.hours}</div>}
+                <div style={{ display: 'flex', gap: 16, marginTop: 4, flexWrap: 'wrap' }}>
+                  {off.tel   && <span style={{ fontFamily: FL.mono, fontSize: 11, color: CL.primary }}>Tel: {off.tel}</span>}
+                  {off.email && <span style={{ fontFamily: FL.mono, fontSize: 11, color: CL.primary }}>{off.email}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Simulated notice */}
+          <div style={{ background: '#fffbeb', border: '1px solid #fbbf24', borderLeft: '3px solid #f59e0b', borderRadius: 5, padding: '8px 12px', fontFamily: FL.mono, fontSize: 10, color: '#92400e' }}>
+            Phase 1 — contact details are illustrative. Phase 2: direct form submission via DPI.
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── CATEGORY SECTION ─────────────────────────────────────────────────────────
 
 function CategorySection({ cat, t, lang, identityState, onOpenIdentity, defaultOpen }) {
@@ -612,6 +899,8 @@ function CategorySection({ cat, t, lang, identityState, onOpenIdentity, defaultO
           ))}
         </div>
       )}
+
+      <CategoryServiceDetail catId={cat.id} t={t} />
     </div>
   )
 }
@@ -883,7 +1172,7 @@ function RecordsTab({ t, lang, identityState, onOpenIdentity }) {
 
 // ─── HELP TAB ─────────────────────────────────────────────────────────────────
 
-function HelpTab({ t }) {
+function HelpTab({ t, lang }) {
   const sections = [
     {
       title: t.helpContact,
@@ -896,7 +1185,7 @@ function HelpTab({ t }) {
             synergyblockchaintf@gmail.com
           </a>
           <div style={{ fontFamily: FL.ui, fontSize: 13, color: CL.textSoft }}>
-            {lang === 'SM' ? 'Fesili su\'esu\'e: NUS, Dr. Edna Temese' : 'Research enquiries: NUS, Dr. Edna Temese'}
+            {lang === 'SM' ? "Fesili su'esu'e: NUS, Dr. Edna Temese" : 'Research enquiries: NUS, Dr. Edna Temese'}
           </div>
         </div>
       )
@@ -1242,6 +1531,301 @@ function OfflineBanner({ t }) {
   )
 }
 
+// ─── DASHBOARD PANELS ────────────────────────────────────────────────────────
+
+function NDIDSPanel({ t }) {
+  return (
+    <div style={{ background: CL.surface, border: `1px solid ${CL.border}`, borderTop: `3px solid #7040A8`, borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div>
+        <div style={{ fontFamily: FL.mono, fontSize: 11, fontWeight: 700, color: '#7040A8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.panelIdentityTitle}</div>
+        <div style={{ fontFamily: FL.mono, fontSize: 9, color: CL.muted, marginTop: 2 }}>Samoa Digital ID Number (SDIN) · Samoa Bureau of Statistics · NDIDS Act 2024</div>
+      </div>
+      <div style={{ background: '#fffbeb', border: '1px solid #fbbf24', borderLeft: '3px solid #f59e0b', borderRadius: 5, padding: '8px 12px', fontFamily: FL.mono, fontSize: 10, color: '#92400e', lineHeight: 1.6 }}>
+        <strong>Citizen identity portal: Phase 2</strong><br />
+        Your SDIN status will be accessible here when the SBS NDIDS production system is deployed (SFSRDP 2025–2029). Current display is illustrative.
+      </div>
+      <div style={{ background: CL.surface2, borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {[
+          { label: 'SDIN', value: 'SDIN-••••••••••' },
+          { label: 'Status', value: 'Pending Registration' },
+          { label: 'Issuing Authority', value: 'Samoa Bureau of Statistics' },
+          { label: 'Assurance Level', value: 'LoA 3 pending' },
+          { label: 'Registration', value: 'Visit your nearest SBS office or authorised registration point' },
+        ].map(row => (
+          <div key={row.label} style={{ display: 'flex', gap: 10 }}>
+            <span style={{ fontFamily: FL.mono, fontSize: 9, color: CL.muted, width: 110, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.3px', paddingTop: 1 }}>{row.label}</span>
+            <span style={{ fontFamily: FL.mono, fontSize: 11, color: CL.text, fontWeight: 500 }}>{row.value}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontFamily: FL.mono, fontSize: 10, color: CL.primary }}>Learn about the NDIDS →</div>
+    </div>
+  )
+}
+
+function DigitalTalaPanel({ t }) {
+  return (
+    <div style={{ background: CL.surface, border: `1px solid ${CL.border}`, borderTop: `3px solid ${CL.gold}`, borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div>
+        <div style={{ fontFamily: FL.mono, fontSize: 11, fontWeight: 700, color: CL.warning, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.panelTalaTitle}</div>
+        <div style={{ fontFamily: FL.mono, fontSize: 9, color: CL.muted, marginTop: 2 }}>WST-DPI · Central Bank of Samoa · Digital Payment Instrument</div>
+      </div>
+      <div style={{ background: '#fffbeb', border: '1px solid #fbbf24', borderLeft: '3px solid #f59e0b', borderRadius: 5, padding: '8px 12px', fontFamily: FL.mono, fontSize: 10, color: '#92400e', lineHeight: 1.6 }}>
+        <strong>Digital Tala citizen access: Phase 2</strong><br />
+        Your WST-DPI balance and transaction history will be accessible here when the CBS production system is live. Current display is illustrative.
+      </div>
+      <div style={{ background: CL.surface2, borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {[
+          { label: 'Balance', value: 'WST ••.••' },
+          { label: 'Institution', value: 'Development Bank of Samoa (DBS) — retail distribution partner' },
+          { label: 'Status', value: 'Awaiting SDIN registration' },
+        ].map(row => (
+          <div key={row.label} style={{ display: 'flex', gap: 10 }}>
+            <span style={{ fontFamily: FL.mono, fontSize: 9, color: CL.muted, width: 80, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.3px', paddingTop: 1 }}>{row.label}</span>
+            <span style={{ fontFamily: FL.mono, fontSize: 11, color: CL.text, fontWeight: 500 }}>{row.value}</span>
+          </div>
+        ))}
+        <div style={{ fontFamily: FL.mono, fontSize: 10, color: '#92400e', marginTop: 4 }}>
+          Digital Tala access requires a registered SDIN. Register at your nearest SBS office.
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DataGovernancePanel({ t }) {
+  const parties = [
+    { label: 'CITIZEN', desc: 'You own your identity', color: '#003087' },
+    { label: 'SBS', desc: 'Issues your SDIN', color: '#7040A8' },
+    { label: 'MINISTRY', desc: 'Holds service records linked to your hash', color: '#00793D' },
+    { label: 'SBP', desc: 'Blockchain trust layer', color: '#B87000' },
+    { label: 'CBS', desc: 'Regulatory oversight', color: '#CE1126' },
+  ]
+
+  return (
+    <div style={{ background: CL.surface, border: `1px solid ${CL.border}`, borderTop: `3px solid ${CL.primary}`, borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div>
+        <div style={{ fontFamily: FL.mono, fontSize: 11, fontWeight: 700, color: CL.primary, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.panelDataTitle}</div>
+        <div style={{ fontFamily: FL.mono, fontSize: 9, color: CL.muted, marginTop: 2 }}>National Digital Identification Act 2024 · Samoa Privacy Act 2021</div>
+      </div>
+
+      {/* Five-party diagram */}
+      <div style={{ overflowX: 'auto', padding: '4px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4, minWidth: 340 }}>
+          {parties.map((p, i) => (
+            <React.Fragment key={p.label}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 58, textAlign: 'center' }}>
+                <div style={{ background: p.color, color: 'white', padding: '4px 6px', borderRadius: 4, fontFamily: FL.mono, fontSize: 9, fontWeight: 700, whiteSpace: 'nowrap' }}>{p.label}</div>
+                <div style={{ fontFamily: FL.mono, fontSize: 8, color: CL.muted, marginTop: 4, lineHeight: 1.4 }}>{p.desc}</div>
+              </div>
+              {i < parties.length - 1 && (
+                <span style={{ color: CL.muted, fontSize: 12, flexShrink: 0, marginTop: 5 }}>→</span>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      {/* Consent notice */}
+      <div style={{ background: '#fffbeb', border: '1px solid #fbbf24', borderLeft: '3px solid #f59e0b', borderRadius: 6, padding: '12px 14px', fontFamily: FL.mono, fontSize: 10, color: '#374151', lineHeight: 1.75 }}>
+        <div style={{ fontWeight: 700, color: '#92400e', marginBottom: 4 }}>CURRENT: Admin-mediated access</div>
+        Under the current system, your ministry grants access to your service records on your behalf. You are not required to sign anything.
+        <div style={{ fontWeight: 700, color: '#92400e', margin: '8px 0 4px' }}>PHASE 2: Citizen-controlled consent</div>
+        When Phase 2 is deployed, you will be able to approve or revoke access to your records directly using your SDIN digital wallet.
+        <div style={{ fontWeight: 700, color: '#374151', margin: '8px 0 4px' }}>What is stored on the blockchain</div>
+        A cryptographic hash of your SDIN only. This cannot be reversed to reveal your identity. No personal information is stored on-chain.
+        <div style={{ color: CL.muted, marginTop: 8 }}>Legal basis: NDIDS Act 2024 · Samoa Privacy Act 2021 · Data Controller: Samoa Bureau of Statistics</div>
+      </div>
+    </div>
+  )
+}
+
+function DashboardPanels({ t }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 20 }}>
+      <NDIDSPanel t={t} />
+      <DigitalTalaPanel t={t} />
+      <DataGovernancePanel t={t} />
+    </div>
+  )
+}
+
+// ─── SERVICE STATUS BOARD ─────────────────────────────────────────────────────
+
+function ServiceStatusBoard({ t }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div style={{ background: CL.surface, border: `1px solid ${CL.border}`, borderRadius: 10, marginBottom: 20, overflow: 'hidden' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', padding: '14px 20px', background: open ? CL.surfaceBlue : 'transparent',
+          border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}
+      >
+        <div>
+          <div style={{ fontFamily: FL.mono, fontSize: 11, fontWeight: 700, color: CL.text, textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left' }}>{t.statusBoardTitle}</div>
+          <div style={{ fontFamily: FL.mono, fontSize: 9, color: CL.muted, marginTop: 2, textAlign: 'left' }}>{t.statusBoardSub}</div>
+        </div>
+        <span style={{ fontFamily: FL.mono, fontSize: 10, color: CL.muted, flexShrink: 0, marginLeft: 12 }}>{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div style={{ borderTop: `1px solid ${CL.border}`, padding: 16 }}>
+          <div style={{ background: '#fffbeb', border: '1px solid #fbbf24', borderLeft: '3px solid #f59e0b', borderRadius: 5, padding: '8px 12px', fontFamily: FL.mono, fontSize: 10, color: '#92400e', marginBottom: 12 }}>
+            {t.statusBoardPhase2}
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: FL.mono, fontSize: 11, minWidth: 400 }}>
+              <thead>
+                <tr>
+                  {['Service', 'Status', 'Current Wait', 'Notice'].map(h => (
+                    <th key={h} style={{ padding: '6px 10px', background: '#f3f4f6', color: '#374151', fontWeight: 700, textTransform: 'uppercase', fontSize: 9, letterSpacing: '0.4px', textAlign: 'left', borderBottom: '1px solid #d1d5db' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {SERVICE_STATUS_DATA.map((row, i) => (
+                  <tr key={i} style={{ background: i % 2 === 0 ? 'white' : '#fafbfc' }}>
+                    <td style={{ padding: '7px 10px', borderBottom: '1px solid #e5e7eb', fontWeight: 600, color: CL.text }}>{row.service}</td>
+                    <td style={{ padding: '7px 10px', borderBottom: '1px solid #e5e7eb' }}>
+                      <span style={{ background: '#f0fdf4', color: '#166534', padding: '1px 7px', borderRadius: 3, fontSize: 10, fontWeight: 600 }}>{row.status}</span>
+                    </td>
+                    <td style={{ padding: '7px 10px', borderBottom: '1px solid #e5e7eb', color: CL.textSoft }}>{row.wait}</td>
+                    <td style={{ padding: '7px 10px', borderBottom: '1px solid #e5e7eb', color: CL.muted, fontSize: 10 }}>{row.notice || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ fontFamily: FL.mono, fontSize: 9, color: CL.muted, marginTop: 10 }}>
+            All statuses: simulated. Phase 2: live government system integration.
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── GRIEVANCE MECHANISM ──────────────────────────────────────────────────────
+
+function grievanceAuthority(cat) {
+  const map = {
+    'Data concern': 'Samoa Bureau of Statistics — sbs@sbs.gov.ws',
+    'Service complaint': 'Relevant Ministry — via DPI Citizen Feedback',
+    'NDIDS query': 'Samoa Bureau of Statistics — sbs@sbs.gov.ws',
+    'Digital Tala query': 'Central Bank of Samoa — CBS',
+    'Other': 'Samoa DPI — DPI Helpdesk',
+  }
+  return map[cat] || 'Samoa DPI — DPI Helpdesk'
+}
+
+function genFBRef() {
+  return 'FB-' + new Date().getFullYear() + '-' + String(Math.floor(100000 + Math.random() * 900000))
+}
+
+function GrievanceMechanism({ t }) {
+  const [open, setOpen] = useState(false)
+  const [cat, setCat] = useState('')
+  const [desc, setDesc] = useState('')
+  const [contact, setContact] = useState('')
+  const [submitted, setSubmitted] = useState(null)
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    if (!cat || !desc.trim()) return
+    setSubmitted({ ref: genFBRef(), authority: grievanceAuthority(cat) })
+  }
+
+  function handleClose() { setOpen(false); setSubmitted(null); setCat(''); setDesc(''); setContact('') }
+
+  return (
+    <>
+      {/* Floating button */}
+      <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 150 }}>
+        <button
+          onClick={() => setOpen(true)}
+          style={{
+            background: CL.primary, color: 'white', border: 'none', borderRadius: 24,
+            padding: '10px 18px', fontFamily: FL.mono, fontSize: 11, fontWeight: 600,
+            cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,48,135,0.25)',
+            maxWidth: 280,
+          }}
+        >
+          {t.grievanceBtn}
+        </button>
+      </div>
+
+      {/* Modal */}
+      {open && (
+        <div
+          role="dialog" aria-modal="true"
+          onClick={e => { if (e.target === e.currentTarget) handleClose() }}
+          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(10,22,40,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+        >
+          <div style={{ background: CL.surface, borderRadius: 12, padding: 24, maxWidth: 460, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', border: `1px solid ${CL.border}`, maxHeight: '90vh', overflowY: 'auto' }}>
+            {!submitted ? (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                  <h2 style={{ fontFamily: FL.ui, fontSize: 18, fontWeight: 700, color: CL.primary, margin: 0 }}>{t.grievanceTitle}</h2>
+                  <button onClick={handleClose} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: CL.muted, lineHeight: 1, padding: 4 }}>×</button>
+                </div>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div>
+                    <label style={{ fontFamily: FL.mono, fontSize: 10, color: CL.textSoft, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 6 }}>Category *</label>
+                    <select value={cat} onChange={e => setCat(e.target.value)} required style={{ width: '100%', fontFamily: FL.ui, fontSize: 14, padding: '10px 12px', border: `1px solid ${CL.border}`, borderRadius: 8, background: 'white', outline: 'none' }}>
+                      <option value="">Select category...</option>
+                      {['Data concern', 'Service complaint', 'NDIDS query', 'Digital Tala query', 'Other'].map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontFamily: FL.mono, fontSize: 10, color: CL.textSoft, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 6 }}>Description * (max 500 characters)</label>
+                    <textarea
+                      value={desc} onChange={e => setDesc(e.target.value.slice(0, 500))} required rows={4}
+                      style={{ width: '100%', fontFamily: FL.ui, fontSize: 14, padding: '10px 12px', border: `1px solid ${CL.border}`, borderRadius: 8, outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
+                    />
+                    <div style={{ fontFamily: FL.mono, fontSize: 9, color: CL.muted, textAlign: 'right' }}>{desc.length}/500</div>
+                  </div>
+                  <div>
+                    <label style={{ fontFamily: FL.mono, fontSize: 10, color: CL.textSoft, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 6 }}>Preferred contact method (optional)</label>
+                    <select value={contact} onChange={e => setContact(e.target.value)} style={{ width: '100%', fontFamily: FL.ui, fontSize: 14, padding: '10px 12px', border: `1px solid ${CL.border}`, borderRadius: 8, background: 'white', outline: 'none' }}>
+                      <option value="">Prefer not to say</option>
+                      {['Email', 'Phone', 'Village council'].map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <button type="submit" style={{ background: CL.primary, color: 'white', border: 'none', borderRadius: 8, padding: '12px 20px', fontFamily: FL.ui, fontSize: 14, fontWeight: 700, cursor: 'pointer', minHeight: 44 }}>
+                    {t.grievanceSubmit}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ fontFamily: FL.ui, fontSize: 18, fontWeight: 700, color: CL.success }}>{t.grievanceThanks}</div>
+                {[
+                  { label: 'Reference', value: submitted.ref },
+                  { label: 'Relevant authority', value: submitted.authority },
+                  { label: 'Response time', value: '5–10 working days' },
+                ].map(row => (
+                  <div key={row.label} style={{ display: 'flex', gap: 10 }}>
+                    <span style={{ fontFamily: FL.mono, fontSize: 10, color: CL.muted, width: 130, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.3px', paddingTop: 2 }}>{row.label}</span>
+                    <span style={{ fontFamily: FL.mono, fontSize: 12, color: CL.text, fontWeight: 600 }}>{row.value}</span>
+                  </div>
+                ))}
+                <div style={{ fontFamily: FL.mono, fontSize: 10, color: CL.muted, lineHeight: 1.6 }}>
+                  For urgent data concerns contact SBS directly: sbs@sbs.gov.ws · (685) 62000<br />
+                  Phase 2: feedback routed directly to relevant ministry via DPI workflow system.
+                </div>
+                <button onClick={handleClose} style={{ background: CL.primary, color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', fontFamily: FL.ui, fontSize: 14, fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}>Close</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 // ─── SHARED STYLES ────────────────────────────────────────────────────────────
 
 const styles = {
@@ -1314,6 +1898,11 @@ function CitizenApp() {
         onIdentityClick={() => setShowIdentityPanel(s => !s)}
       />
 
+      {/* Research band — bilingual */}
+      <div style={{ background: '#fffbeb', borderBottom: '2px solid #fbbf24', padding: '6px 16px', textAlign: 'center', fontFamily: FL.mono, fontSize: '10px', color: '#92400e', letterSpacing: '0.5px', fontWeight: 600 }}>
+        {t.researchBand}
+      </div>
+
       <OfflineBanner t={t} />
 
       <NavTabs activeTab={activeTab} setActiveTab={setActiveTab} t={t} />
@@ -1322,15 +1911,19 @@ function CitizenApp() {
         id={`panel-${activeTab}`}
         role="tabpanel"
         aria-labelledby={`tab-${activeTab}`}
-        style={{ flex: 1, padding: '20px 16px 40px', maxWidth: 1100, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}
+        style={{ flex: 1, padding: '20px 16px 80px', maxWidth: 1100, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}
       >
         {activeTab === 'all' && (
-          <ServiceGrid
-            t={t}
-            lang={lang}
-            identityState={identityState}
-            onOpenIdentity={() => setShowIdentityPanel(true)}
-          />
+          <>
+            <DashboardPanels t={t} />
+            <ServiceStatusBoard t={t} />
+            <ServiceGrid
+              t={t}
+              lang={lang}
+              identityState={identityState}
+              onOpenIdentity={() => setShowIdentityPanel(true)}
+            />
+          </>
         )}
 
         {(activeTab === 'travel' || activeTab === 'business' || activeTab === 'community') && (
@@ -1354,8 +1947,10 @@ function CitizenApp() {
 
         {activeTab === 'verify' && <VerifyTab t={t} />}
 
-        {activeTab === 'help' && <HelpTab t={t} />}
+        {activeTab === 'help' && <HelpTab t={t} lang={lang} />}
       </main>
+
+      <GrievanceMechanism t={t} />
 
       {showIdentityPanel && (
         <IdentityPanel

@@ -199,6 +199,30 @@ export const ROLES = {
     color: '#003087', access: 'readonly',
     ariaDescription: 'Read-only access — no write operations',
   },
+  'CBS-DEPUTY-2026': {
+    id: 'CBS-DEPUTY-2026', label: 'Deputy Governor',
+    labelSM: 'Sui Kovana o le Faletupe',
+    color: '#2563eb', access: 'readonly',
+    ariaDescription: 'Read-only access — Deputy Governor role',
+  },
+  'CBS-CFO-2026': {
+    id: 'CBS-CFO-2026', label: 'Chief Financial Officer',
+    labelSM: "Pulega Tupe Sili o le Faletupe",
+    color: '#7c3aed', access: 'readonly',
+    ariaDescription: 'Read-only access — Chief Financial Officer role',
+  },
+  'CBS-AUDITOR-2026': {
+    id: 'CBS-AUDITOR-2026', label: 'Auditor',
+    labelSM: "Tagata Siaki o le Faletupe",
+    color: '#dc2626', access: 'readonly',
+    ariaDescription: 'Read-only access — Auditor role',
+  },
+  'CBS-IT-2026': {
+    id: 'CBS-IT-2026', label: 'IT Platform Officer',
+    labelSM: "Ofisa Fa'aupuga IT o le Faletupe",
+    color: '#6b7280', access: 'readonly',
+    ariaDescription: 'Read-only access — IT Platform Officer role',
+  },
   MCIT_ADMIN: {
     id: 'MCIT_ADMIN', label: 'MCIT Administrator',
     labelSM: "Pule Fa'atonu MCIT",

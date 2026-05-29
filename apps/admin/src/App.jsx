@@ -21,6 +21,7 @@ import { NodeHealthMatrix }   from './components/panels/NodeHealthMatrix.jsx'
 import { AuditRemediationPanel } from './components/panels/AuditRemediationPanel.jsx'
 import { StubPanel }          from './components/panels/StubPanel.jsx'
 import { ResearchContextPanel } from './components/panels/ResearchContextPanel.jsx'
+import GovernorCommandDashboard from './components/governor/GovernorCommandDashboard.jsx'
 function injectGlobalStyles() {
   if (typeof document === 'undefined') return
   if (document.getElementById('cbs-admin-globals')) return
@@ -235,20 +236,22 @@ function DBSDistributionPanel() {
 }
 
 const PANEL_MAP = {
-  overview:   OverviewPanel,
+  command:    null,  // handled via GovernorCommandDashboard (see PanelContent)
   governance: CBSGovernancePanel,
   compliance: CompliancePanel,
   nodes:      NodeHealthMatrix,
   audit:      AuditRemediationPanel,
-  dbs:        DBSDistributionPanel,
+  // dbs: absorbed into command — CBS Distribution is now inside GovernorCommandDashboard
   research:   ResearchContextPanel,
 }
 
-function PanelContent({ activePanel, nodeHealth, governance, auditLog, lang }) {
+function PanelContent({ activePanel, nodeHealth, governance, auditLog, lang, userCredential }) {
+  if (activePanel === 'command') {
+    return <GovernorCommandDashboard userRole={userCredential || 'CBS-ANALYST-2026'} />
+  }
   const Component = PANEL_MAP[activePanel]
   if (Component) {
     const props = { lang }
-    if (activePanel === 'overview')    { props.nodeHealth = nodeHealth; props.governance = governance }
     if (activePanel === 'governance')  { props.governance = governance }
     if (activePanel === 'nodes')       { props.nodeHealth = nodeHealth }
     if (activePanel === 'audit')       { props.auditLog   = auditLog }
@@ -260,7 +263,7 @@ function PanelContent({ activePanel, nodeHealth, governance, auditLog, lang }) {
 function AdminApp() {
   const { lang, toggle: toggleLang } = useLang()
   const [hasRole, setHasRole]         = useState(false)
-  const [activePanel, setActivePanel] = useState('overview')
+  const [activePanel, setActivePanel] = useState('command')
   const [gatewaySession, setGatewaySession] = useState(null)
 
   const { roleId, role, setRole, can } = useRole()
@@ -470,6 +473,7 @@ function AdminApp() {
                 governance={governance}
                 auditLog={auditLog}
                 lang={lang}
+                userCredential={roleId}
               />
             </ErrorBoundary>
           </main>

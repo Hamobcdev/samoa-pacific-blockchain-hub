@@ -1,5 +1,6 @@
 export const STRINGS = {
   'app.title':        { EN: 'CBS Administration Portal',     SM: "Fale Pulega — DPI Samoa" },
+  'nav.command':      { EN: 'Command Centre',                 SM: 'Nofoaga Tapulaʻa' },
   'nav.overview':     { EN: 'Overview',                      SM: 'Iloilo Aoao' },
   'nav.governance':   { EN: 'CBS Governance',                SM: 'Pulega o le CBS' },
   'nav.compliance':   { EN: 'Compliance',                    SM: 'Usoga Tulafono' },

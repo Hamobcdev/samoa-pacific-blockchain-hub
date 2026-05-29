@@ -2,5 +2,6 @@
   "private": true,
   "dependencies": {
     "ethers": "^6.16.0"
-  }
+  },
+  "packageManager": "pnpm@10.33.0"
 }

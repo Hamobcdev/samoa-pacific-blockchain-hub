@@ -14,7 +14,6 @@ import { SessionWarning }     from './components/layout/SessionWarning.jsx'
 import { RolePicker }         from './components/layout/RolePicker.jsx'
 import { SystemStatusBar }    from './components/layout/SystemStatusBar.jsx'
 import { AdminSidebar }       from './components/layout/AdminSidebar.jsx'
-import { OverviewPanel }      from './components/panels/OverviewPanel.jsx'
 import { CBSGovernancePanel } from './components/panels/CBSGovernancePanel.jsx'
 import { CompliancePanel }    from './components/panels/CompliancePanel.jsx'
 import { NodeHealthMatrix }   from './components/panels/NodeHealthMatrix.jsx'
@@ -303,13 +302,18 @@ function AdminApp() {
         setGatewaySession({ zone: routeCtx.zone, role: routeCtx.role })
         setRole(routeCtx.roleId)
         setHasRole(true)
+        return
       }
+      // No routeCtx in DEV — fall through to RolePicker
+      setHasRole(false)
       return
     }
 
     const session = getSession()
     if (!session) {
-      window.location.href = 'https://landing-alpha-seven-82.vercel.app/government'
+      if (import.meta.env.PROD) {
+        window.location.href = 'https://landing-alpha-seven-82.vercel.app/government'
+      }
       return
     }
 

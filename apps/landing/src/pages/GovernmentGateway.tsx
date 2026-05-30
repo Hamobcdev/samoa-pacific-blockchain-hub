@@ -1,12 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
-import { storeSession } from '../lib/gov-auth'
+import { useState, useEffect } from 'react'
 
 export default function GovernmentGateway() {
-  const [credential, setCredential] = useState('')
-  const [status, setStatus] = useState<'idle' | 'loading' | 'denied' | 'granted'>('idle')
-  const [attempts, setAttempts] = useState(0)
   const [utcTime, setUtcTime] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const tick = () => setUtcTime(new Date().toISOString().replace('T', ' ').slice(0, 19))
@@ -15,55 +10,7 @@ export default function GovernmentGateway() {
     return () => clearInterval(id)
   }, [])
 
-  useEffect(() => {
-    if (status === 'idle') inputRef.current?.focus()
-  }, [status])
-
   const isDev = import.meta.env.DEV
-
-  async function handleAuth() {
-    if (!credential.trim()) return
-    setStatus('loading')
-    setAttempts(a => a + 1)
-
-    try {
-      const response = await fetch('/api/gov-auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential: credential.trim() }),
-      })
-
-      if (!response.ok) {
-        setStatus('denied')
-        setCredential('')
-        setTimeout(() => setStatus('idle'), 3000)
-        return
-      }
-
-      const data = await response.json()
-      const result = {
-        role: data.role as string,
-        zone: data.zone as 1 | 2 | 3,
-        portalUrl: (data.redirect as string) ?? '',
-        sessionToken: btoa(JSON.stringify({ role: data.role, zone: data.zone, issued: Date.now() })),
-      }
-
-      storeSession(result)
-      setStatus('granted')
-
-      setTimeout(() => {
-        if (result.portalUrl.startsWith('http')) {
-          window.location.href = result.portalUrl + '?token=' + encodeURIComponent(result.sessionToken)
-        } else {
-          window.location.href = result.portalUrl
-        }
-      }, 800)
-    } catch {
-      setStatus('denied')
-      setCredential('')
-      setTimeout(() => setStatus('idle'), 3000)
-    }
-  }
 
   return (
     <div style={{
@@ -185,51 +132,37 @@ export default function GovernmentGateway() {
 
           <div style={{ width: '100%', height: 1, background: '#1e2a3a', marginBottom: 28 }} />
 
-          {/* Credential input */}
-          <input
-            ref={inputRef}
-            type="password"
-            value={credential}
-            onChange={e => setCredential(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAuth()}
-            placeholder="ENTER MINISTRY ACCESS CREDENTIAL"
-            autoComplete="off"
-            spellCheck={false}
-            aria-label="Ministry access credential"
-            style={{
-              width:        '100%',
-              background:   '#0d1520',
-              border:       '1px solid #1e2a3a',
-              borderRadius: 3,
-              padding:      '14px 20px',
-              color:        '#8ab4c8',
-              fontFamily:   "'IBM Plex Mono', monospace",
-              fontSize:     13,
-              letterSpacing:4,
-              textAlign:    'center',
-              outline:      'none',
-              boxSizing:    'border-box',
-              marginBottom: 8,
-            }}
-          />
-
-          {/* Status line */}
-          <div style={{ height: 18, marginBottom: 8, textAlign: 'center' }}>
-            {status === 'denied' && (
-              <span style={{ color: '#6a1a1a', fontSize: 11, letterSpacing: 2 }}>
-                ACCESS DENIED.
+          {/* Secure gateway notice */}
+          <div style={{
+            width:         '100%',
+            background:    '#0d1520',
+            border:        '1px solid #1e2a3a',
+            borderRadius:  3,
+            padding:       '24px 20px',
+            textAlign:     'center',
+            marginBottom:  24,
+          }}>
+            <div style={{ fontSize: 22, marginBottom: 12 }}>🔒</div>
+            <p style={{
+              color:         '#8ab4c8',
+              fontFamily:    "'IBM Plex Mono', monospace",
+              fontSize:      11,
+              letterSpacing: 1.5,
+              lineHeight:    1.9,
+              margin:        0,
+              textTransform: 'uppercase',
+            }}>
+              Government portal access is available<br />
+              via secure gateway only.<br />
+              <br />
+              CBS and ministry officials access DPI<br />
+              administration through a hardened,<br />
+              classified domain.<br />
+              <br />
+              <span style={{ color: '#4a6070' }}>
+                Contact CBS IT to request access.
               </span>
-            )}
-            {status === 'granted' && (
-              <span style={{ color: '#4a8a6a', fontSize: 11, letterSpacing: 2 }}>
-                ACCESS GRANTED · ROUTING...
-              </span>
-            )}
-            {status === 'loading' && (
-              <span style={{ color: '#4a6070', fontSize: 11, letterSpacing: 2 }}>
-                VERIFYING...
-              </span>
-            )}
+            </p>
           </div>
 
           {/* Legal warning */}
@@ -248,29 +181,6 @@ export default function GovernmentGateway() {
             Unauthorised access is an offence under the laws of the
             Independent State of Samoa and will be prosecuted.
           </p>
-
-          {/* Auth button */}
-          <button
-            onClick={handleAuth}
-            disabled={status === 'loading' || status === 'granted'}
-            style={{
-              width:        '100%',
-              background:   '#0d1e2a',
-              border:       '1px solid #1e4a6a',
-              borderRadius: 3,
-              padding:      '14px 40px',
-              color:        '#4a8aaa',
-              fontFamily:   "'IBM Plex Mono', monospace",
-              fontSize:     11,
-              letterSpacing:3,
-              cursor:       'pointer',
-              transition:   'all 0.15s',
-              marginBottom: 20,
-            }}
-          >
-            {status === 'loading' ? 'VERIFYING...' :
-             status === 'granted' ? 'ROUTING...' : 'AUTHENTICATE'}
-          </button>
 
           {/* Prototype disclaimer */}
           <p style={{ color: '#1e2a3a', fontSize: 9, letterSpacing: 1, textAlign: 'center', lineHeight: 1.8 }}>
@@ -297,7 +207,7 @@ export default function GovernmentGateway() {
           SESSION: NONE · ZONE: UNAUTHENTICATED
         </span>
         <span style={{ color: '#1e3a4a', fontSize: 9, letterSpacing: 1 }}>
-          ATTEMPTS: {attempts}
+          ACCESS: RESTRICTED
         </span>
       </div>
     </div>

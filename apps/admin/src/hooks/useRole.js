@@ -28,6 +28,7 @@ export function useRole() {
     if (role.access === 'readonly')  return capability === 'read'
     if (role.access === 'technical') return ['read', 'nodes', 'infra'].includes(capability)
     if (role.access === 'finance')   return ['read', 'currency', 'disbursement'].includes(capability)
+    if (role.access === 'audit')     return ['read', 'export', 'compliance', 'security'].includes(capability)
     return false
   }, [role])
 

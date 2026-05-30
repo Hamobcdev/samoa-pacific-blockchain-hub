@@ -311,9 +311,9 @@ function AdminApp() {
 
     const session = getSession()
     if (!session) {
-      if (import.meta.env.PROD) {
-        window.location.href = 'https://landing-alpha-seven-82.vercel.app/government'
-      }
+      // No gateway session — show RolePicker for direct access
+      // Gateway redirect deferred to Phase 2 hardened auth
+      setHasRole(false)
       return
     }
 

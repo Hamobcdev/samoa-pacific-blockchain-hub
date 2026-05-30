@@ -1822,7 +1822,8 @@ function PacificTab() {
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
 export default function GovernorCommandDashboard({ userRole }) {
-  const role       = ROLES[userRole] || ROLES['CBS-ANALYST-2026']
+  const ROLE_NORM = {'CBS_GOVERNOR':'CBS-GOVERNOR-2026','CBS_ANALYST':'CBS-ANALYST-2026','CBS_AUDITOR':'CBS-AUDITOR-2026','MOF_ADMIN':'CBS-ANALYST-2026','MCIT_ADMIN':'CBS-ANALYST-2026'};
+  const role = ROLES[ROLE_NORM[userRole] ?? userRole] || ROLES['CBS-GOVERNOR-2026']
   const visibleTabs = role.tabs === 'all' ? ALL_TABS : ALL_TABS.filter(t => role.tabs.includes(t.id))
   const canWrite   = (action) => role.write.includes(action)
   const [activeTab, setActiveTab] = useState(visibleTabs[0]?.id)
@@ -1957,7 +1958,9 @@ export default function GovernorCommandDashboard({ userRole }) {
       <div style={{
         background: COLORS.surface2, borderBottom: `1px solid ${COLORS.border}`,
         display: 'flex', overflowX: 'auto', flexShrink: 0,
-        scrollbarWidth: 'none',
+        scrollbarWidth: 'thin',
+        scrollbarColor: '#363d52 transparent',
+        WebkitOverflowScrolling: 'touch',
       }}>
         {visibleTabs.map(tab => {
           const isActive = activeTab === tab.id
@@ -1969,11 +1972,12 @@ export default function GovernorCommandDashboard({ userRole }) {
               color:        isActive ? COLORS.text : COLORS.textMuted,
               cursor:       'pointer',
               fontFamily:   TYPOGRAPHY.mono,
-              fontSize:     10,
+              fontSize:     11,
               letterSpacing:'0.5px',
-              padding:      '10px 16px',
+              padding:      '10px 12px',
               whiteSpace:   'nowrap',
               transition:   'color 0.1s',
+              flexShrink:   0,
             }}>
               {tab.label}
             </button>
@@ -1982,7 +1986,7 @@ export default function GovernorCommandDashboard({ userRole }) {
       </div>
 
       {/* ── Content ── */}
-      <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
+      <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, minWidth: 0 }}>
         {renderTab()}
       </div>
     </div>

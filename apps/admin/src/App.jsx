@@ -302,13 +302,18 @@ function AdminApp() {
         setGatewaySession({ zone: routeCtx.zone, role: routeCtx.role })
         setRole(routeCtx.roleId)
         setHasRole(true)
+        return
       }
+      // No routeCtx in DEV — fall through to RolePicker
+      setHasRole(false)
       return
     }
 
     const session = getSession()
     if (!session) {
-      window.location.href = 'https://landing-alpha-seven-82.vercel.app/government'
+      if (import.meta.env.PROD) {
+        window.location.href = 'https://landing-alpha-seven-82.vercel.app/government'
+      }
       return
     }
 

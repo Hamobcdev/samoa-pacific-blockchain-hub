@@ -208,20 +208,20 @@ export const ROLES = {
   'CBS-CFO-2026': {
     id: 'CBS-CFO-2026', label: 'Chief Financial Officer',
     labelSM: "Pulega Tupe Sili o le Faletupe",
-    color: '#7c3aed', access: 'readonly',
-    ariaDescription: 'Read-only access — Chief Financial Officer role',
+    color: '#7c3aed', access: 'finance',
+    ariaDescription: 'Finance access — currency and disbursement panels',
   },
   'CBS-AUDITOR-2026': {
     id: 'CBS-AUDITOR-2026', label: 'Auditor',
     labelSM: "Tagata Siaki o le Faletupe",
-    color: '#dc2626', access: 'readonly',
-    ariaDescription: 'Read-only access — Auditor role',
+    color: '#dc2626', access: 'audit',
+    ariaDescription: 'Audit access — read, export, compliance, security panels',
   },
   'CBS-IT-2026': {
     id: 'CBS-IT-2026', label: 'IT Platform Officer',
     labelSM: "Ofisa Fa'aupuga IT o le Faletupe",
-    color: '#6b7280', access: 'readonly',
-    ariaDescription: 'Read-only access — IT Platform Officer role',
+    color: '#6b7280', access: 'technical',
+    ariaDescription: 'Technical access — node health and infrastructure panels',
   },
   MCIT_ADMIN: {
     id: 'MCIT_ADMIN', label: 'MCIT Administrator',

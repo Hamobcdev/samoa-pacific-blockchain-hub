@@ -3,8 +3,8 @@ import { COLORS, TYPOGRAPHY } from '../../theme.js'
 
 export function DataTable({ headers, rows, onRowClick, expandedRender }) {
   const [expanded, setExpanded] = useState(null)
-  const [sortKey, setSortKey] = useState(null)
-  const [sortDir, setSortDir] = useState('asc')
+  const [sortKey,  setSortKey]  = useState(null)
+  const [sortDir,  setSortDir]  = useState('asc')
 
   function handleSort(key) {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -29,16 +29,16 @@ export function DataTable({ headers, rows, onRowClick, expandedRender }) {
                 key={h.key}
                 onClick={() => h.sortable !== false && handleSort(h.key)}
                 style={{
-                  padding:       '8px 10px',
-                  background:    'rgba(255,255,255,0.03)',
-                  color:         COLORS.textMuted,
+                  padding:       '9px 12px',
+                  background:    COLORS.surface2,
+                  color:         COLORS.govBlue,
                   fontFamily:    TYPOGRAPHY.mono,
                   fontSize:      11,
                   fontWeight:    700,
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
                   textAlign:     h.align === 'right' ? 'right' : 'left',
-                  borderBottom:  `1px solid ${COLORS.border}`,
+                  borderBottom:  `2px solid ${COLORS.border}`,
                   whiteSpace:    'nowrap',
                   cursor:        h.sortable !== false ? 'pointer' : 'default',
                   userSelect:    'none',
@@ -46,7 +46,7 @@ export function DataTable({ headers, rows, onRowClick, expandedRender }) {
               >
                 {h.label}
                 {sortKey === h.key && (
-                  <span style={{ marginLeft: 4, opacity: 0.7 }}>{sortDir === 'asc' ? '▲' : '▼'}</span>
+                  <span style={{ marginLeft: 4, opacity: 0.6 }}>{sortDir === 'asc' ? '▲' : '▼'}</span>
                 )}
               </th>
             ))}
@@ -61,17 +61,17 @@ export function DataTable({ headers, rows, onRowClick, expandedRender }) {
                   if (onRowClick) onRowClick(row)
                 }}
                 style={{
-                  background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
+                  background: i % 2 === 0 ? '#ffffff' : COLORS.surface,
                   cursor:     (expandedRender || onRowClick) ? 'pointer' : 'default',
                   transition: 'background 0.1s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}
+                onMouseEnter={e => { e.currentTarget.style.background = COLORS.govBlueBg }}
+                onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? '#ffffff' : COLORS.surface }}
               >
                 {headers.map(h => (
                   <td key={h.key} style={{
-                    padding:      '9px 10px',
-                    borderBottom: `1px solid rgba(255,255,255,0.03)`,
+                    padding:      '10px 12px',
+                    borderBottom: `1px solid ${COLORS.border}`,
                     fontFamily:   h.mono ? TYPOGRAPHY.mono : TYPOGRAPHY.sans,
                     fontSize:     12,
                     color:        COLORS.text,
@@ -85,8 +85,8 @@ export function DataTable({ headers, rows, onRowClick, expandedRender }) {
               {expanded === i && expandedRender && (
                 <tr>
                   <td colSpan={headers.length} style={{
-                    background:   COLORS.surface2,
-                    borderBottom: `1px solid ${COLORS.border}`,
+                    background:   COLORS.govBlueBg,
+                    borderBottom: `1px solid ${COLORS.govBlueBorder}`,
                     padding:      '12px 20px',
                   }}>
                     {expandedRender(row)}

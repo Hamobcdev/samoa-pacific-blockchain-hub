@@ -10,6 +10,7 @@ const VARIANTS = {
   PENDING:   { color: COLORS.warning,      bg: COLORS.warningBg,      border: COLORS.warningBorder,     label: 'PENDING'    },
   INFO:      { color: COLORS.info,         bg: COLORS.infoBg,         border: COLORS.infoBorder,        label: 'INFO'       },
   OK:        { color: COLORS.operational,  bg: COLORS.operationalBg,  border: COLORS.operationalBorder, label: 'OK'         },
+  GREEN:     { color: COLORS.operational,  bg: COLORS.operationalBg,  border: COLORS.operationalBorder, label: 'GREEN'      },
 }
 
 export function StatusBadge({ variant = 'INFO', label, style: extraStyle }) {
@@ -23,7 +24,7 @@ export function StatusBadge({ variant = 'INFO', label, style: extraStyle }) {
       fontFamily:    TYPOGRAPHY.mono,
       fontSize:      11,
       fontWeight:    700,
-      letterSpacing: '1px',
+      letterSpacing: '0.5px',
       padding:       '2px 8px',
       textTransform: 'uppercase',
       whiteSpace:    'nowrap',

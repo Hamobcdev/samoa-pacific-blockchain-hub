@@ -48,38 +48,43 @@ export function MOFSidebar({ activeTab, onTab, roleId, lang, onSignOut }) {
       }}
     >
       {/* Identity */}
-      <div style={{ padding: '16px 14px 14px', borderBottom: `1px solid ${COLORS.border}` }}>
-        <div style={{ color: COLORS.gold, fontFamily: TYPOGRAPHY.mono, fontSize: 11, letterSpacing: '2px', marginBottom: 3 }}>
+      <div style={{
+        padding:      '16px 14px 14px',
+        borderBottom: `1px solid ${COLORS.border}`,
+        background:   COLORS.govBlueBg,
+      }}>
+        <div style={{ color: COLORS.govBlue, fontFamily: TYPOGRAPHY.mono, fontSize: 11, letterSpacing: '2px', marginBottom: 3, fontWeight: 700 }}>
           MOF ADMIN
         </div>
         <div style={{ color: COLORS.text, fontFamily: TYPOGRAPHY.sans, fontSize: 12, fontWeight: 600, lineHeight: 1.3 }}>
           Ministry of Finance
         </div>
-        <div style={{ color: role.color, fontFamily: TYPOGRAPHY.mono, fontSize: 11, letterSpacing: '1px', marginTop: 3 }}>
+        <div style={{ color: COLORS.govBlue, fontFamily: TYPOGRAPHY.mono, fontSize: 11, letterSpacing: '0.5px', marginTop: 3 }}>
           {role.id}
         </div>
-        <div style={{ color: COLORS.textDim, fontFamily: TYPOGRAPHY.mono, fontSize: 11, marginTop: 1 }}>
+        <div style={{ color: COLORS.textMuted, fontFamily: TYPOGRAPHY.mono, fontSize: 11, marginTop: 1 }}>
           Level {role.level}
         </div>
       </div>
 
       {/* Grouped nav */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0', background: '#ffffff' }}>
         {CATEGORIES.map(cat => {
           const visibleTabs = ALL_TABS.filter(tb => tb.category === cat.id && canSeeTab(tb.id))
           if (visibleTabs.length === 0) return null
           return (
             <div key={cat.id}>
               <div style={{
-                padding:       '8px 14px 4px',
+                padding:       '10px 14px 4px',
                 fontFamily:    TYPOGRAPHY.mono,
                 fontSize:      11,
-                color:         COLORS.textDim,
+                color:         COLORS.govBlue,
                 textTransform: 'uppercase',
                 letterSpacing: '1px',
+                fontWeight:    600,
                 display:       'flex',
                 alignItems:    'center',
-                gap:           6,
+                gap:           5,
               }}>
                 <span style={{ fontSize: 10 }}>{CATEGORY_ICONS[cat.id]}</span>
                 {cat.label}
@@ -96,22 +101,23 @@ export function MOFSidebar({ activeTab, onTab, roleId, lang, onSignOut }) {
                       alignItems:    'center',
                       gap:           8,
                       width:         '100%',
-                      background:    isActive ? COLORS.surface3 : 'transparent',
+                      background:    isActive ? COLORS.govBlueBg : 'transparent',
                       border:        'none',
-                      borderLeft:    isActive ? `3px solid ${COLORS.gold}` : '3px solid transparent',
-                      color:         isActive ? COLORS.gold : COLORS.textMuted,
+                      borderLeft:    isActive ? `3px solid ${COLORS.govBlue}` : '3px solid transparent',
+                      color:         isActive ? COLORS.govBlue : COLORS.textMuted,
                       cursor:        'pointer',
                       fontFamily:    TYPOGRAPHY.mono,
                       fontSize:      11,
-                      letterSpacing: '0.5px',
+                      fontWeight:    isActive ? 600 : 400,
+                      letterSpacing: '0.3px',
                       padding:       '8px 14px',
                       textAlign:     'left',
                       transition:    'background 0.1s, color 0.1s',
                     }}
-                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = COLORS.surface2 }}
-                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+                    onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = COLORS.surface2; e.currentTarget.style.color = COLORS.govBlue } }}
+                    onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = COLORS.textMuted } }}
                   >
-                    <span aria-hidden="true" style={{ fontSize: 12, width: 14, textAlign: 'center', flexShrink: 0 }}>
+                    <span aria-hidden="true" style={{ fontSize: 11, width: 14, textAlign: 'center', flexShrink: 0, color: isActive ? COLORS.govBlue : COLORS.textDim }}>
                       {TAB_ICONS[tab.id] || '·'}
                     </span>
                     <span style={{ flex: 1 }}>
@@ -126,9 +132,9 @@ export function MOFSidebar({ activeTab, onTab, roleId, lang, onSignOut }) {
       </div>
 
       {/* Standards footer */}
-      <div style={{ padding: '8px 14px', borderTop: `1px solid ${COLORS.border}` }}>
+      <div style={{ padding: '8px 14px', borderTop: `1px solid ${COLORS.border}`, background: COLORS.surface }}>
         {['PFM Act 2001', 'PEFA 2016', 'OCDS 1.1.5'].map(s => (
-          <div key={s} style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.textDim, lineHeight: 1.8 }}>
+          <div key={s} style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.textDim, lineHeight: 1.9 }}>
             {s}
           </div>
         ))}
@@ -143,6 +149,7 @@ export function MOFSidebar({ activeTab, onTab, roleId, lang, onSignOut }) {
           letterSpacing: '0.5px',
           padding:       '3px 8px',
           textAlign:     'center',
+          fontWeight:    600,
         }}>
           {t(lang, 'phase2.pending')}
         </div>
@@ -152,23 +159,23 @@ export function MOFSidebar({ activeTab, onTab, roleId, lang, onSignOut }) {
       <button
         onClick={onSignOut}
         style={{
-          background:    'transparent',
+          background:    COLORS.surface,
           border:        'none',
           borderTop:     `1px solid ${COLORS.border}`,
-          color:         COLORS.textDim,
+          color:         COLORS.textMuted,
           cursor:        'pointer',
           fontFamily:    TYPOGRAPHY.mono,
           fontSize:      11,
-          letterSpacing: '1px',
+          letterSpacing: '0.8px',
           padding:       '11px 14px',
           textAlign:     'left',
-          transition:    'color 0.1s',
+          transition:    'color 0.1s, background 0.1s',
           display:       'flex',
           alignItems:    'center',
           gap:           8,
         }}
-        onMouseEnter={e => e.currentTarget.style.color = COLORS.critical}
-        onMouseLeave={e => e.currentTarget.style.color = COLORS.textDim}
+        onMouseEnter={e => { e.currentTarget.style.color = COLORS.critical; e.currentTarget.style.background = COLORS.criticalBg }}
+        onMouseLeave={e => { e.currentTarget.style.color = COLORS.textMuted; e.currentTarget.style.background = COLORS.surface }}
       >
         <span aria-hidden="true">⎋</span>
         {t(lang, 'action.signout')}

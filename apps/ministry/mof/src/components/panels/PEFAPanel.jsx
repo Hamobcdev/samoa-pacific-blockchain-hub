@@ -74,24 +74,15 @@ const PEFA_DATA = [
 
 function ScoreBadge({ score }) {
   const map = {
-    'A':  [COLORS.pefaA,  `${COLORS.pefaA}18`],
-    'B+': [COLORS.pefaB,  `${COLORS.pefaB}18`],
-    'B':  [COLORS.pefaB,  `${COLORS.pefaB}18`],
-    'C':  [COLORS.pefaC,  `${COLORS.pefaC}18`],
-    'D':  [COLORS.pefaD,  `${COLORS.pefaD}18`],
+    'A':  [COLORS.pefaA, `${COLORS.pefaA}18`],
+    'B+': [COLORS.pefaB, `${COLORS.pefaB}18`],
+    'B':  [COLORS.pefaB, `${COLORS.pefaB}18`],
+    'C':  [COLORS.pefaC, `${COLORS.pefaC}18`],
+    'D':  [COLORS.pefaD, `${COLORS.pefaD}18`],
   }
   const [color, bg] = map[score] || [COLORS.pefaNA, 'transparent']
   return (
-    <span style={{
-      background:    bg,
-      border:        `1px solid ${color}55`,
-      borderRadius:  3,
-      color,
-      fontFamily:    TYPOGRAPHY.mono,
-      fontSize:      12,
-      fontWeight:    700,
-      padding:       '2px 9px',
-    }}>
+    <span style={{ background: bg, border: `1px solid ${color}55`, borderRadius: 3, color, fontFamily: TYPOGRAPHY.mono, fontSize: 12, fontWeight: 700, padding: '2px 9px' }}>
       {score}
     </span>
   )
@@ -99,7 +90,7 @@ function ScoreBadge({ score }) {
 
 function pillarAvg(indicators) {
   const map = { A: 4, B: 3, C: 2, D: 1 }
-  const scores = indicators.map(i => map[i.score.replace('+','')] || 0)
+  const scores = indicators.map(i => map[i.score.replace('+','')]||0)
   const avg = scores.reduce((a, b) => a + b, 0) / scores.length
   if (avg >= 3.5) return { label: 'A', color: COLORS.pefaA }
   if (avg >= 2.5) return { label: 'B', color: COLORS.pefaB }
@@ -109,39 +100,38 @@ function pillarAvg(indicators) {
 
 export function PEFAPanel({ lang }) {
   const [expandedRow, setExpandedRow] = useState(null)
-
   const allInds = PEFA_DATA.flatMap(p => p.indicators)
-  const totalA = allInds.filter(i => i.score === 'A').length
-  const totalB = allInds.filter(i => i.score.startsWith('B')).length
-  const totalC = allInds.filter(i => i.score === 'C').length
-  const totalD = allInds.filter(i => i.score === 'D').length
+  const totalA  = allInds.filter(i => i.score === 'A').length
+  const totalB  = allInds.filter(i => i.score.startsWith('B')).length
+  const totalC  = allInds.filter(i => i.score === 'C').length
+  const totalD  = allInds.filter(i => i.score === 'D').length
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
-        <KPICard label="Total Indicators" value="31" sub="PEFA 2016 framework"           color={COLORS.text}    icon="◎" />
-        <KPICard label="Rated A or B"     value={String(totalA + totalB)} sub="Strong / Adequate" color={COLORS.fiscal}  icon="✓" />
-        <KPICard label="Rated C or D"     value={String(totalC + totalD)} sub="Needs improvement" color={COLORS.warning} icon="⚠" />
-        <KPICard label="Next Assessment"  value="2026" sub="Self-assessment scheduled"   color={COLORS.info}    icon="◑" />
+        <KPICard label="Total Indicators" value="31"                   sub="PEFA 2016 framework"           color={COLORS.text}    icon="◎" />
+        <KPICard label="Rated A or B"     value={String(totalA+totalB)} sub="Strong / Adequate"            color={COLORS.fiscal}  icon="✓" />
+        <KPICard label="Rated C or D"     value={String(totalC+totalD)} sub="Needs improvement"            color={COLORS.warning} icon="⚠" />
+        <KPICard label="Next Assessment"  value="2026"                 sub="Self-assessment scheduled"     color={COLORS.info}    icon="◑" />
       </div>
 
       {/* 7-pillar summary */}
-      <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: '20px 24px' }}>
+      <div style={{ background: '#ffffff', border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: '20px 24px', boxShadow: '0 1px 3px rgba(26,58,107,0.05)' }}>
         <SectionHeader title="7-Pillar Summary" subtitle="PEFA 2016 · Average score per pillar" />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {PEFA_DATA.map(p => {
             const avg = pillarAvg(p.indicators)
-            const pct = { A: 100, B: 75, C: 50, D: 25 }[avg.label] || 0
+            const pct = { A:100, B:75, C:50, D:25 }[avg.label] || 0
             return (
               <div key={p.pillar}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.text }}>{p.pillar}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                  <div style={{ fontFamily: TYPOGRAPHY.sans, fontSize: 13, color: COLORS.text }}>{p.pillar}</div>
                   <ScoreBadge score={avg.label} />
                 </div>
-                <div style={{ height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: avg.color, borderRadius: 2, transition: 'width 0.4s' }} />
+                <div style={{ height: 6, background: COLORS.surface3, borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: avg.color, borderRadius: 3, transition: 'width 0.4s' }} />
                 </div>
               </div>
             )
@@ -150,41 +140,21 @@ export function PEFAPanel({ lang }) {
       </div>
 
       {/* Full 31-indicator table */}
-      <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: '20px 24px' }}>
-        <SectionHeader
-          title="Full 31-Indicator Scorecard"
-          subtitle="PEFA 2016 · Click indicator to expand dimensions"
-        />
+      <div style={{ background: '#ffffff', border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: '20px 24px', boxShadow: '0 1px 3px rgba(26,58,107,0.05)' }}>
+        <SectionHeader title="Full 31-Indicator Scorecard" subtitle="PEFA 2016 · Click indicator to expand dimension details" />
         {PEFA_DATA.map(p => (
-          <div key={p.pillar} style={{ marginBottom: 20 }}>
-            <div style={{
-              fontFamily:    TYPOGRAPHY.mono,
-              fontSize:      11,
-              color:         COLORS.info,
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              marginBottom:  8,
-            }}>
+          <div key={p.pillar} style={{ marginBottom: 22 }}>
+            <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.info, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8, fontWeight: 600 }}>
               {p.pillar}
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480 }}>
                 <thead>
                   <tr>
-                    {['ID', 'Indicator', 'Score', 'Status', 'Note'].map(h => (
-                      <th key={h} style={{
-                        padding:       '7px 10px',
-                        background:    'rgba(255,255,255,0.03)',
-                        color:         COLORS.textMuted,
-                        fontFamily:    TYPOGRAPHY.mono,
-                        fontSize:      11,
-                        fontWeight:    700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                        textAlign:     'left',
-                        borderBottom:  `1px solid ${COLORS.border}`,
-                        whiteSpace:    'nowrap',
-                      }}>{h}</th>
+                    {['ID','Indicator','Score','Status','▼'].map(h => (
+                      <th key={h} style={{ padding: '8px 10px', background: COLORS.surface2, color: COLORS.govBlue, fontFamily: TYPOGRAPHY.mono, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', borderBottom: `2px solid ${COLORS.border}`, whiteSpace: 'nowrap' }}>
+                        {h}
+                      </th>
                     ))}
                   </tr>
                 </thead>
@@ -196,40 +166,19 @@ export function PEFAPanel({ lang }) {
                       <React.Fragment key={ind.id}>
                         <tr
                           onClick={() => setExpandedRow(isExp ? null : rowKey)}
-                          style={{
-                            background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
-                            cursor: 'pointer',
-                          }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
-                          onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}
+                          style={{ background: i % 2 === 0 ? '#ffffff' : COLORS.surface, cursor: 'pointer' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = COLORS.govBlueBg }}
+                          onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? '#ffffff' : COLORS.surface }}
                         >
-                          <td style={{ padding: '8px 10px', fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.textMuted, borderBottom: `1px solid rgba(255,255,255,0.03)` }}>
-                            {ind.id}
-                          </td>
-                          <td style={{ padding: '8px 10px', fontFamily: TYPOGRAPHY.sans, fontSize: 12, color: COLORS.text, borderBottom: `1px solid rgba(255,255,255,0.03)` }}>
-                            {ind.name}
-                          </td>
-                          <td style={{ padding: '8px 10px', borderBottom: `1px solid rgba(255,255,255,0.03)` }}>
-                            <ScoreBadge score={ind.score} />
-                          </td>
-                          <td style={{ padding: '8px 10px', fontFamily: TYPOGRAPHY.sans, fontSize: 12, color: COLORS.textMuted, borderBottom: `1px solid rgba(255,255,255,0.03)` }}>
-                            {ind.status}
-                          </td>
-                          <td style={{ padding: '8px 10px', fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.textDim, borderBottom: `1px solid rgba(255,255,255,0.03)` }}>
-                            {isExp ? '▲' : '▼'}
-                          </td>
+                          <td style={{ padding: '9px 10px', fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.textMuted, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{ind.id}</td>
+                          <td style={{ padding: '9px 10px', fontFamily: TYPOGRAPHY.sans, fontSize: 12, color: COLORS.text, borderBottom: `1px solid ${COLORS.border}` }}>{ind.name}</td>
+                          <td style={{ padding: '9px 10px', borderBottom: `1px solid ${COLORS.border}` }}><ScoreBadge score={ind.score} /></td>
+                          <td style={{ padding: '9px 10px', fontFamily: TYPOGRAPHY.sans, fontSize: 12, color: COLORS.textMuted, borderBottom: `1px solid ${COLORS.border}` }}>{ind.status}</td>
+                          <td style={{ padding: '9px 10px', fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.textDim, borderBottom: `1px solid ${COLORS.border}`, textAlign: 'center' }}>{isExp ? '▲' : '▼'}</td>
                         </tr>
                         {isExp && (
                           <tr>
-                            <td colSpan={5} style={{
-                              background:   COLORS.surface2,
-                              borderBottom: `1px solid ${COLORS.border}`,
-                              padding:      '10px 20px',
-                              fontFamily:   TYPOGRAPHY.mono,
-                              fontSize:     11,
-                              color:        COLORS.textMuted,
-                              lineHeight:   1.7,
-                            }}>
+                            <td colSpan={5} style={{ background: COLORS.govBlueBg, borderBottom: `1px solid ${COLORS.govBlueBorder}`, padding: '10px 20px', fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.textMuted, lineHeight: 1.7 }}>
                               {ind.note} · Dimension-level breakdown: Phase 2 integration
                             </td>
                           </tr>
@@ -245,44 +194,21 @@ export function PEFAPanel({ lang }) {
       </div>
 
       {/* Blockchain contribution */}
-      <div style={{
-        background:    COLORS.surface,
-        border:        `1px solid ${COLORS.border}`,
-        borderLeft:    `4px solid ${COLORS.fiscal}`,
-        borderRadius:  8,
-        padding:       '16px 20px',
-      }}>
+      <div style={{ background: COLORS.fiscalBg, border: `1px solid ${COLORS.fiscalBorder}`, borderLeft: `4px solid ${COLORS.fiscal}`, borderRadius: 8, padding: '16px 20px' }}>
         <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, fontWeight: 700, color: COLORS.fiscal, marginBottom: 10, letterSpacing: '1px' }}>
           PEFA PILLARS ADDRESSED BY DPI BLOCKCHAIN LAYER
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {[
-            { pillar: 'P2 Transparency', desc: 'OCDS on-chain procurement records → PI-24 improvement' },
-            { pillar: 'P5 Internal Controls', desc: '#FA immutable audit trail → PI-25 strengthening' },
-            { pillar: 'P6 Accounting', desc: 'Merkle root anchoring at fiscal close → PI-27 integrity' },
-          ].map(c => (
-            <div key={c.pillar} style={{ display: 'flex', gap: 12 }}>
-              <div style={{
-                background:    COLORS.fiscalBg,
-                border:        `1px solid ${COLORS.fiscalBorder}`,
-                borderRadius:  3,
-                color:         COLORS.fiscal,
-                fontFamily:    TYPOGRAPHY.mono,
-                fontSize:      11,
-                fontWeight:    700,
-                padding:       '2px 8px',
-                whiteSpace:    'nowrap',
-                alignSelf:     'flex-start',
-              }}>
-                {c.pillar}
-              </div>
-              <div style={{ fontFamily: TYPOGRAPHY.sans, fontSize: 12, color: COLORS.textMuted, lineHeight: 1.5 }}>
-                {c.desc}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.textDim, marginTop: 12 }}>
+        {[
+          { pillar: 'P2 Transparency', desc: 'OCDS on-chain procurement records → PI-24 improvement' },
+          { pillar: 'P5 Internal Controls', desc: '#FA immutable audit trail → PI-25 strengthening' },
+          { pillar: 'P6 Accounting', desc: 'Merkle root anchoring at fiscal close → PI-27 integrity' },
+        ].map(c => (
+          <div key={c.pillar} style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
+            <div style={{ background: COLORS.operationalBg, border: `1px solid ${COLORS.operationalBorder}`, borderRadius: 3, color: COLORS.fiscal, fontFamily: TYPOGRAPHY.mono, fontSize: 11, fontWeight: 700, padding: '2px 8px', whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>{c.pillar}</div>
+            <div style={{ fontFamily: TYPOGRAPHY.sans, fontSize: 12, color: COLORS.textMuted, lineHeight: 1.55 }}>{c.desc}</div>
+          </div>
+        ))}
+        <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.textDim, marginTop: 10 }}>
           Research contribution: Working Paper 1 (WoG D-DPI Architecture) ·
           NUS / ISOC Foundation Research Programme 2026
         </div>

@@ -9,9 +9,9 @@ export function SectionHeader({ title, subtitle, badge, badgeColor }) {
           fontFamily:    TYPOGRAPHY.mono,
           fontSize:      11,
           fontWeight:    700,
-          color:         COLORS.gold,
+          color:         COLORS.govBlue,
           textTransform: 'uppercase',
-          letterSpacing: '2px',
+          letterSpacing: '1.5px',
           marginBottom:  3,
         }}>
           {title}
@@ -28,15 +28,16 @@ export function SectionHeader({ title, subtitle, badge, badgeColor }) {
       </div>
       {badge && (
         <div style={{
-          background:    badgeColor ? `${badgeColor}18` : COLORS.fiscalBg,
-          border:        `1px solid ${badgeColor ? `${badgeColor}44` : COLORS.fiscalBorder}`,
+          background:    badgeColor ? `${badgeColor}15` : COLORS.fiscalBg,
+          border:        `1px solid ${badgeColor ? `${badgeColor}40` : COLORS.fiscalBorder}`,
           borderRadius:  4,
           color:         badgeColor || COLORS.fiscal,
           fontFamily:    TYPOGRAPHY.mono,
           fontSize:      11,
-          letterSpacing: '1px',
+          letterSpacing: '0.5px',
           padding:       '3px 10px',
           whiteSpace:    'nowrap',
+          fontWeight:    600,
         }}>
           {badge}
         </div>

@@ -20,7 +20,7 @@ export function MOFHeader({ roleId, lang }) {
 
   return (
     <header style={{
-      background:    COLORS.surface,
+      background:    '#ffffff',
       borderBottom:  `1px solid ${COLORS.border}`,
       padding:       '0 24px',
       height:        56,
@@ -31,18 +31,19 @@ export function MOFHeader({ roleId, lang }) {
       position:      'sticky',
       top:           0,
       zIndex:        40,
+      boxShadow:     '0 1px 4px rgba(26,58,107,0.06)',
     }}>
       {/* Left — brand */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ display: 'flex', gap: 3 }}>
-          <div style={{ width: 16, height: 3, background: COLORS.flagRed, borderRadius: 1 }} />
+          <div style={{ width: 16, height: 3, background: COLORS.flagRed,  borderRadius: 1 }} />
           <div style={{ width: 16, height: 3, background: COLORS.flagBlue, borderRadius: 1 }} />
         </div>
         <div style={{
           background:    COLORS.govBlueBg,
           border:        `1px solid ${COLORS.govBlueBorder}`,
           borderRadius:  4,
-          color:         COLORS.info,
+          color:         COLORS.govBlue,
           fontFamily:    TYPOGRAPHY.mono,
           fontSize:      11,
           fontWeight:    700,
@@ -52,7 +53,14 @@ export function MOFHeader({ roleId, lang }) {
           MOF
         </div>
         <div>
-          <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, fontWeight: 700, color: COLORS.gold, letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+          <div style={{
+            fontFamily:    TYPOGRAPHY.mono,
+            fontSize:      11,
+            fontWeight:    700,
+            color:         COLORS.govBlue,
+            letterSpacing: '1.2px',
+            textTransform: 'uppercase',
+          }}>
             MOF FISCAL COMMAND CENTRE
           </div>
           <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.textMuted }}>
@@ -68,7 +76,7 @@ export function MOFHeader({ roleId, lang }) {
         fontFamily:    TYPOGRAPHY.mono,
         fontSize:      14,
         fontWeight:    700,
-        color:         COLORS.text,
+        color:         COLORS.govBlue,
         letterSpacing: '1px',
       }}>
         {clock}
@@ -91,10 +99,10 @@ export function MOFHeader({ roleId, lang }) {
           </span>
         )}
         <span style={{
-          background:    `${role.color}18`,
-          border:        `1px solid ${role.color}44`,
+          background:    COLORS.govBlueBg,
+          border:        `1px solid ${COLORS.govBlueBorder}`,
           borderRadius:  4,
-          color:         role.color,
+          color:         COLORS.govBlue,
           fontFamily:    TYPOGRAPHY.mono,
           fontSize:      11,
           letterSpacing: '1px',
@@ -110,13 +118,13 @@ export function MOFHeader({ roleId, lang }) {
             background:   COLORS.operational,
             animation:    'pulse 2s infinite',
           }} />
-          <span style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.operational }}>DPI LIVE</span>
+          <span style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.fiscal, fontWeight: 600 }}>DPI LIVE</span>
         </div>
         <span style={{
-          background:    COLORS.fiscalBg,
-          border:        `1px solid ${COLORS.fiscalBorder}`,
+          background:    COLORS.goldBg,
+          border:        `1px solid ${COLORS.goldBorder}`,
           borderRadius:  4,
-          color:         COLORS.fiscal,
+          color:         COLORS.gold,
           fontFamily:    TYPOGRAPHY.mono,
           fontSize:      11,
           letterSpacing: '1px',
@@ -133,6 +141,7 @@ export function MOFHeader({ roleId, lang }) {
           fontSize:      11,
           letterSpacing: '0.5px',
           padding:       '2px 8px',
+          fontWeight:    600,
         }}>
           6 COMPLIANCE ITEMS
         </span>

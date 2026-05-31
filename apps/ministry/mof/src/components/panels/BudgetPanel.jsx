@@ -2,7 +2,7 @@ import React from 'react'
 import {
   BarChart, Bar, LineChart, Line,
   XAxis, YAxis, Tooltip as ReTooltip,
-  ResponsiveContainer,
+  ResponsiveContainer, CartesianGrid,
 } from 'recharts'
 import { COLORS, TYPOGRAPHY } from '../../theme.js'
 import { KPICard } from '../shared/KPICard.jsx'
@@ -21,16 +21,11 @@ const BUDGET_MINISTRIES = [
 ]
 
 const COFOG_DATA = [
-  { name: 'General services',   val: 98.4  },
-  { name: 'Defence',            val: 12.1  },
-  { name: 'Public order',       val: 29.4  },
-  { name: 'Economic affairs',   val: 145.2 },
-  { name: 'Environment',        val: 18.3  },
-  { name: 'Housing',            val: 22.7  },
-  { name: 'Health',             val: 108.5 },
-  { name: 'Recreation',         val: 8.6   },
-  { name: 'Education',          val: 89.2  },
-  { name: 'Social protection',  val: 66.1  },
+  { name: 'General services',  val: 98.4  }, { name: 'Defence',         val: 12.1  },
+  { name: 'Public order',      val: 29.4  }, { name: 'Economic affairs',val: 145.2 },
+  { name: 'Environment',       val: 18.3  }, { name: 'Housing',         val: 22.7  },
+  { name: 'Health',            val: 108.5 }, { name: 'Recreation',      val: 8.6   },
+  { name: 'Education',         val: 89.2  }, { name: 'Social protection',val: 66.1  },
 ]
 
 const MTEF = [
@@ -40,7 +35,7 @@ const MTEF = [
 ]
 
 function pctColor(pct) {
-  if (pct >= 75) return COLORS.operational
+  if (pct >= 75) return COLORS.fiscal
   if (pct >= 50) return COLORS.warning
   return COLORS.critical
 }
@@ -54,15 +49,10 @@ function statusVariant(st) {
 function ChartTip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   return (
-    <div style={{
-      background: COLORS.surface2, border: `1px solid ${COLORS.border}`,
-      borderRadius: 4, fontFamily: TYPOGRAPHY.mono, fontSize: 11, padding: '8px 12px',
-    }}>
-      <div style={{ color: COLORS.gold, marginBottom: 4 }}>{label}</div>
+    <div style={{ background: '#fff', border: `1px solid ${COLORS.border}`, borderRadius: 4, fontFamily: TYPOGRAPHY.mono, fontSize: 12, padding: '8px 12px', boxShadow: '0 2px 8px rgba(26,58,107,0.1)' }}>
+      <div style={{ color: COLORS.govBlue, fontWeight: 700, marginBottom: 4 }}>{label}</div>
       {payload.map((p, i) => (
-        <div key={i} style={{ color: p.color || COLORS.text, marginBottom: 2 }}>
-          {p.name}: {typeof p.value === 'number' ? p.value.toFixed(1) : p.value}M
-        </div>
+        <div key={i} style={{ color: p.color || COLORS.text, marginBottom: 2 }}>{p.name}: {p.value?.toFixed?.(1) ?? p.value}M</div>
       ))}
     </div>
   )
@@ -70,7 +60,7 @@ function ChartTip({ active, payload, label }) {
 
 const TABLE_HEADERS = [
   { key: 'name',   label: 'Ministry' },
-  { key: 'vote',   label: 'Vote', mono: true },
+  { key: 'vote',   label: 'Vote',       mono: true },
   { key: 'approp', label: 'Appropriation (WST M)', align: 'right', mono: true },
   { key: 'actual', label: 'Expended (WST M)',       align: 'right', mono: true },
   { key: 'pctBar', label: '% Used',                 align: 'right', sortable: false },
@@ -84,8 +74,8 @@ export function BudgetPanel({ lang }) {
     actual: r.actual.toFixed(1),
     pctBar: (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
-        <span style={{ fontFamily: TYPOGRAPHY.mono, color: pctColor(r.pct) }}>{r.pct}%</span>
-        <div style={{ width: 48, height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+        <span style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 12, fontWeight: 700, color: pctColor(r.pct) }}>{r.pct}%</span>
+        <div style={{ width: 48, height: 5, background: COLORS.surface3, borderRadius: 2, overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${r.pct}%`, background: pctColor(r.pct), borderRadius: 2 }} />
         </div>
       </div>
@@ -98,18 +88,15 @@ export function BudgetPanel({ lang }) {
 
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
-        <KPICard label="Approved Budget"     value="WST 842.5M" sub="FY 2025/26 total"          color={COLORS.text}        icon="◼" />
-        <KPICard label="Expenditure to Date" value="WST 631.9M" sub="75% of approved budget"    color={COLORS.fiscal}      icon="▲" />
-        <KPICard label="Revenue Collected"   value="WST 598.2M" sub="71% of approved budget"    color={COLORS.fiscal}      icon="◎" />
-        <KPICard label="Fiscal Balance"      value="−WST 33.7M" sub="Deficit · PEFA PI-3"       color={COLORS.warning}     icon="◐" />
+        <KPICard label="Approved Budget"     value="WST 842.5M" sub="FY 2025/26 total"           color={COLORS.text}    icon="◼" />
+        <KPICard label="Expenditure to Date" value="WST 631.9M" sub="75% of approved budget"     color={COLORS.fiscal}  icon="▲" />
+        <KPICard label="Revenue Collected"   value="WST 598.2M" sub="71% of approved budget"     color={COLORS.fiscal}  icon="◎" />
+        <KPICard label="Fiscal Balance"      value="−WST 33.7M" sub="Deficit · PEFA PI-3"        color={COLORS.warning} icon="◐" />
       </div>
 
-      {/* Ministry vote table */}
-      <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: '20px 24px' }}>
-        <SectionHeader
-          title="Ministry Vote-Level Expenditure"
-          subtitle="PEFA PI-1, PI-2 · Appropriation vs Actual · Click row for sub-vote"
-        />
+      {/* Ministry table */}
+      <div style={{ background: '#ffffff', border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: '20px 24px', boxShadow: '0 1px 3px rgba(26,58,107,0.05)' }}>
+        <SectionHeader title="Ministry Vote-Level Expenditure" subtitle="PEFA PI-1, PI-2 · Appropriation vs Actual · Click row for sub-vote" />
         <DataTable
           headers={TABLE_HEADERS}
           rows={rows}
@@ -125,55 +112,39 @@ export function BudgetPanel({ lang }) {
         </div>
       </div>
 
-      {/* COFOG breakdown */}
-      <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: '20px 24px' }}>
-        <SectionHeader
-          title="COFOG Expenditure Breakdown"
-          subtitle="Classification of Functions of Government · IMF GFSM 2014"
-        />
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart
-            layout="vertical"
-            data={COFOG_DATA}
-            margin={{ top: 0, right: 20, left: 100, bottom: 0 }}
-          >
+      {/* COFOG */}
+      <div style={{ background: '#ffffff', border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: '20px 24px', boxShadow: '0 1px 3px rgba(26,58,107,0.05)' }}>
+        <SectionHeader title="COFOG Expenditure Breakdown" subtitle="Classification of Functions of Government · IMF GFSM 2014" />
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart layout="vertical" data={COFOG_DATA} margin={{ top: 0, right: 20, left: 110, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={COLORS.surface3} horizontal={false} />
             <XAxis type="number" tick={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, fill: COLORS.textMuted }} />
-            <YAxis dataKey="name" type="category" tick={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, fill: COLORS.textMuted }} width={100} />
+            <YAxis dataKey="name" type="category" tick={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, fill: COLORS.textMuted }} width={110} />
             <ReTooltip content={<ChartTip />} />
-            <Bar dataKey="val" name="Expenditure (WST M)" fill={COLORS.fiscal} radius={[0,2,2,0]} />
+            <Bar dataKey="val" name="Expenditure (WST M)" fill={COLORS.govBlue} radius={[0,3,3,0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       {/* MTEF */}
-      <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: '20px 24px' }}>
-        <SectionHeader
-          title="Medium-Term Expenditure Framework · MTEF 2026–2028"
-          subtitle="3-year projections · PFM Act 2001 S.14 · IMF DSA framework"
-        />
+      <div style={{ background: '#ffffff', border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: '20px 24px', boxShadow: '0 1px 3px rgba(26,58,107,0.05)' }}>
+        <SectionHeader title="Medium-Term Expenditure Framework · MTEF 2026–2028" subtitle="3-year projections · PFM Act 2001 S.14 · IMF DSA framework" />
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={MTEF} margin={{ top: 4, right: 16, left: -18, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={COLORS.surface3} />
             <XAxis dataKey="y" tick={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, fill: COLORS.textMuted }} />
             <YAxis tick={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, fill: COLORS.textMuted }} />
             <ReTooltip content={<ChartTip />} />
-            <Line type="monotone" dataKey="rev" name="Revenue target"       stroke={COLORS.fiscal}   strokeWidth={2} dot={{ fill: COLORS.fiscal }} />
-            <Line type="monotone" dataKey="exp" name="Expenditure ceiling"  stroke={COLORS.govBlue}  strokeWidth={2} dot={{ fill: COLORS.govBlue }} />
-            <Line type="monotone" dataKey="bal" name="Fiscal balance"       stroke={COLORS.warning}  strokeWidth={2} strokeDasharray="4 2" dot={{ fill: COLORS.warning }} />
+            <Line type="monotone" dataKey="rev" name="Revenue target"      stroke={COLORS.fiscal}  strokeWidth={2} dot={{ fill: COLORS.fiscal,  r: 4 }} />
+            <Line type="monotone" dataKey="exp" name="Expenditure ceiling" stroke={COLORS.govBlue} strokeWidth={2} dot={{ fill: COLORS.govBlue, r: 4 }} />
+            <Line type="monotone" dataKey="bal" name="Fiscal balance"      stroke={COLORS.warning} strokeWidth={2} strokeDasharray="4 2" dot={{ fill: COLORS.warning, r: 3 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
       {/* PEFA note */}
-      <div style={{
-        background:    COLORS.surface,
-        border:        `1px solid ${COLORS.border}`,
-        borderLeft:    `4px solid ${COLORS.fiscal}`,
-        borderRadius:  8,
-        padding:       '16px 20px',
-      }}>
-        <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, fontWeight: 700, color: COLORS.fiscal, marginBottom: 8, letterSpacing: '1px' }}>
-          PEFA MONITORING ACTIVE
-        </div>
+      <div style={{ background: COLORS.govBlueBg, border: `1px solid ${COLORS.govBlueBorder}`, borderLeft: `4px solid ${COLORS.govBlue}`, borderRadius: 8, padding: '16px 20px' }}>
+        <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, fontWeight: 700, color: COLORS.govBlue, marginBottom: 8, letterSpacing: '1px' }}>PEFA MONITORING ACTIVE</div>
         <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.textMuted, lineHeight: 1.8 }}>
           PEFA PI-1 (Aggregate expenditure outturn): monitoring active · Score B<br />
           PEFA PI-2 (Expenditure composition outturn): monitoring active · Score C<br />

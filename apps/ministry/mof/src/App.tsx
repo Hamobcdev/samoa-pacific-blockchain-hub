@@ -207,10 +207,10 @@ export default function App() {
 
         {/* Top bar with lang toggle + sign out */}
         <div style={{
-          background:     COLORS.surface,
+          background:     '#f8f9fb',
           borderBottom:   `1px solid ${COLORS.border}`,
           padding:        '0 24px',
-          height:         36,
+          height:         34,
           display:        'flex',
           alignItems:     'center',
           justifyContent: 'flex-end',
@@ -221,7 +221,7 @@ export default function App() {
           <button
             onClick={() => setLang(l => l === 'EN' ? 'SM' : 'EN')}
             style={{
-              background:    'transparent',
+              background:    '#ffffff',
               border:        `1px solid ${COLORS.border}`,
               borderRadius:  3,
               color:         COLORS.textMuted,
@@ -232,7 +232,7 @@ export default function App() {
               padding:       '2px 10px',
               transition:    'color 0.1s, border-color 0.1s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.color = COLORS.gold; e.currentTarget.style.borderColor = COLORS.gold }}
+            onMouseEnter={e => { e.currentTarget.style.color = COLORS.govBlue; e.currentTarget.style.borderColor = COLORS.govBlue }}
             onMouseLeave={e => { e.currentTarget.style.color = COLORS.textMuted; e.currentTarget.style.borderColor = COLORS.border }}
           >
             {lang === 'EN' ? 'SM' : 'EN'}

@@ -14,44 +14,45 @@ export function StubPanel({ title, standard, sprint, onChain, kpis, note }) {
 
       {/* Header */}
       <div style={{
-        background:    COLORS.surface,
-        border:        `1px solid ${COLORS.border}`,
-        borderLeft:    `4px solid ${COLORS.blocked}`,
-        borderRadius:  8,
-        padding:       '20px 24px',
+        background:   '#ffffff',
+        border:       `1px solid ${COLORS.border}`,
+        borderLeft:   `4px solid ${COLORS.blocked}`,
+        borderRadius: 8,
+        padding:      '20px 24px',
+        boxShadow:    '0 1px 3px rgba(26,58,107,0.05)',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, fontWeight: 700, color: COLORS.gold, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 4 }}>
+            <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, fontWeight: 700, color: COLORS.govBlue, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 4 }}>
               {title}
             </div>
-            <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.textMuted, marginBottom: 6 }}>
+            <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.textMuted, marginBottom: 4 }}>
               {standard}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <span style={{
-              background:    COLORS.blockedBg,
-              border:        `1px solid ${COLORS.blockedBorder}`,
-              borderRadius:  4,
-              color:         COLORS.blocked,
-              fontFamily:    TYPOGRAPHY.mono,
-              fontSize:      11,
-              letterSpacing: '1px',
-              padding:       '3px 10px',
+              background:   COLORS.blockedBg,
+              border:       `1px solid ${COLORS.blockedBorder}`,
+              borderRadius: 4,
+              color:        COLORS.blocked,
+              fontFamily:   TYPOGRAPHY.mono,
+              fontSize:     11,
+              letterSpacing:'0.5px',
+              padding:      '3px 10px',
+              fontWeight:   600,
             }}>
               PHASE 2
             </span>
             {sprint && (
               <span style={{
-                background:    COLORS.surface2,
-                border:        `1px solid ${COLORS.border}`,
-                borderRadius:  4,
-                color:         COLORS.textMuted,
-                fontFamily:    TYPOGRAPHY.mono,
-                fontSize:      11,
-                letterSpacing: '0.5px',
-                padding:       '3px 10px',
+                background:   COLORS.surface,
+                border:       `1px solid ${COLORS.border}`,
+                borderRadius: 4,
+                color:        COLORS.textMuted,
+                fontFamily:   TYPOGRAPHY.mono,
+                fontSize:     11,
+                padding:      '3px 10px',
               }}>
                 Sprint {sprint}
               </span>
@@ -75,17 +76,16 @@ export function StubPanel({ title, standard, sprint, onChain, kpis, note }) {
         justifyContent: 'center',
         minHeight:      200,
         gap:            12,
-        opacity:        0.7,
       }}>
         <div style={{
-          background:    COLORS.blockedBg,
-          border:        `1px dashed ${COLORS.blockedBorder}`,
-          borderRadius:  8,
-          padding:       '28px 40px',
-          textAlign:     'center',
-          maxWidth:      480,
+          background:   COLORS.blockedBg,
+          border:       `1px dashed ${COLORS.blockedBorder}`,
+          borderRadius: 8,
+          padding:      '28px 40px',
+          textAlign:    'center',
+          maxWidth:     480,
         }}>
-          <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.blocked, letterSpacing: '2px', marginBottom: 10 }}>
+          <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.blocked, letterSpacing: '1.5px', marginBottom: 10, fontWeight: 700 }}>
             PHASE 2 — PENDING MOF ENGAGEMENT
           </div>
           <div style={{ fontFamily: TYPOGRAPHY.sans, fontSize: 13, color: COLORS.textMuted, lineHeight: 1.65, marginBottom: 12 }}>
@@ -105,7 +105,7 @@ export function StubPanel({ title, standard, sprint, onChain, kpis, note }) {
         </div>
       </div>
 
-      <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.textDim, textAlign: 'center' }}>
+      <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 11, color: COLORS.textDim, textAlign: 'center', padding: '4px 0', borderTop: `1px solid ${COLORS.border}` }}>
         Phase 1 Research Environment · NUS / ISOC Foundation Research Programme 2026
       </div>
     </div>

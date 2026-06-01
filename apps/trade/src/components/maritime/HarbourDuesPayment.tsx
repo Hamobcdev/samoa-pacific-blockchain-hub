@@ -4,7 +4,6 @@ import { FeatureGate } from '@samoa-dpi/shared-ui'
 import { C, MONO, SANS, DEMO_VESSELS, CBS_GOVERNANCE_ITEMS, t } from '../../constants'
 import { useHarbourDues } from '../../hooks/useHarbourDues'
 import { useOMWSubmission, generateISO20022Ref } from '../../hooks/useOMWSubmission'
-import { FormStep } from '../shared/FormStep'
 import { ISO20022Ref } from '../shared/ISO20022Ref'
 import { ClearanceChip } from '../shared/ClearanceChip'
 import { CBSGovernanceModal } from '../shared/CBSGovernanceModal'
@@ -52,7 +51,10 @@ export function HarbourDuesPayment({ lang, onNext, onBack }: Props) {
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 640 }}>
-        <FormStep step={6} total={7} title={t(lang as Parameters<typeof t>[0], 'harbourDues')}>
+        <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 11, color: '#C9A227', letterSpacing: '2px', textTransform: 'uppercase' as const, marginBottom: 4 }}>
+          {t(lang as Parameters<typeof t>[0], 'harbourDues')}
+        </div>
+        <div>
 
           {/* Calculation table */}
           <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
@@ -138,7 +140,7 @@ export function HarbourDuesPayment({ lang, onNext, onBack }: Props) {
               {submitting ? 'Processing…' : 'Record dues (demo) →'}
             </button>
           </div>
-        </FormStep>
+        </div>
       </div>
 
       {showGov && <CBSGovernanceModal item={TIMELOCK_ITEM} onClose={() => setShowGov(false)} />}

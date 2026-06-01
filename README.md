@@ -65,12 +65,13 @@ No registration required. Research demonstration environment only.
 
 | Role | Credential Code | Function |
 |------|----------------|----------|
-| Shipping Agent / Ship Master | `SHIPPING-AGENT-2026` | Submit FAL forms, vessel arrival, harbour dues |
-| Freight Forwarder | `FREIGHT-2026` | Cargo declarations, B/L management |
+| Shipping Agent | `SHIPPING-AGENT-2026` | Submit FAL forms, vessel arrival, departure declaration |
+| Ship Master | `SHIP-MASTER-2026` | Read-only — clearance status, port clearance certificate, voyage details |
+| Freight Forwarder | `FREIGHT-2026` | Cargo declarations, B/L management, ASYCUDA |
 | Customs Officer (MOR) | `CUSTOMS-2026` | Customs clearance queue — agency view only |
 | MAF Biosecurity Officer | `MAF-2026` | Biosecurity queue — agency view only |
 | Port Health Officer (MOH) | `PORT-HEALTH-2026` | Health declaration queue — agency view only |
-| SPA Port Operations Officer | `SPA-2026` | Port authority queue — agency view only |
+| SPA Port Operations Officer | `SPA-2026` | Port authority queue — PORT CLEARED gate |
 
 ---
 

@@ -1,6 +1,9 @@
 import React, { useState } from 'react'
 import { C, MONO, SANS } from '../constants'
 import { AuditLog } from './AuditLog'
+import { useClearanceStatus } from '../hooks/useClearanceStatus'
+import { generateCertRef, generateISO20022Ref } from '../hooks/useOMWSubmission'
+import { PortClearanceCert } from './maritime/PortClearanceCert'
 import type { OMWAuthResult, AuditEntry } from '../types'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -77,7 +80,7 @@ function tdMuted(content: React.ReactNode) {
 
 function actionBtn(label: string, onClick: () => void, variant: 'default' | 'green' | 'amber' | 'red' = 'default') {
   const styles = {
-    default: { bg: C.surface3,   bdr: C.border2,   color: C.text     },
+    default: { bg: C.surface3,   bdr: C.border2,   color: C.textOnDark },
     green:   { bg: C.greenBg,    bdr: C.greenBdr,  color: C.green    },
     amber:   { bg: C.amberBg,    bdr: C.amberBdr,  color: C.amber    },
     red:     { bg: C.critBg,     bdr: C.critBdr,   color: C.critical },
@@ -672,6 +675,25 @@ function SPAView({ addAudit }: { addAudit: (e: AuditEntry) => void }) {
   const [queue, setQueue] = useState<SPAEntry[]>(SPA_QUEUE_INIT)
   const [assignModal, setAssignModal] = useState<SPAEntry | null>(null)
   const [selectedBerth, setSelectedBerth] = useState('B1')
+  const [portClearedRef, setPortClearedRef] = useState<Record<string, string>>({}) // vesselRef → certRef
+  const [showCert, setShowCert] = useState<string | null>(null)
+
+  // Check clearance record for MV Ofu Cargo (NOA-2026-0039) — the demo PORT CLEARED vessel
+  const { record: ofuRecord } = useClearanceStatus('NOA-2026-0039')
+  const AGENCY_CODES = ['customs', 'maf', 'portHealth', 'portAuth'] as const
+  const ofuAllCleared = AGENCY_CODES.every(c => {
+    const ms = ofuRecord.ministryStatuses.find(s => s.code === c)
+    return ms?.status === 'CLEARED'
+  })
+
+  function issuePortClearance(entry: SPAEntry) {
+    const certRef = generateCertRef()
+    const r       = generateISO20022Ref(entry.imo)
+    setPortClearedRef(prev => ({ ...prev, [entry.ref]: certRef }))
+    setQueue(prev => prev.map(q => q.ref === entry.ref ? { ...q, status: 'PORT CLEARED' } : q))
+    addAudit({ timestamp: wst(), form: 'Port Clearance Certificate Issued', reference: certRef, transmittedTo: 'SPA Port Authority · Vessel Agent · All Agencies', status: `PORT CLEARED — ${entry.vessel}` })
+    void r
+  }
 
   function confirmAssign() {
     if (!assignModal) return
@@ -705,13 +727,70 @@ function SPAView({ addAudit }: { addAudit: (e: AuditEntry) => void }) {
                     <td style={{ fontFamily: MONO, fontSize: 10, color: C.gold, padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>{q.dues}</td>
                     <td style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>{statusBadge(q.status)}</td>
                     <td style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}` }}>
-                      {q.status !== 'BERTH CONFIRMED' && actionBtn('Assign Berth', () => { setAssignModal(q); setSelectedBerth('B1') }, 'default')}
+                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                        {q.status !== 'BERTH CONFIRMED' && q.status !== 'PORT CLEARED' && actionBtn('Assign Berth', () => { setAssignModal(q); setSelectedBerth('B1') }, 'default')}
+                        {q.status === 'BERTH CONFIRMED' && !portClearedRef[q.ref] && (q.ref === 'NOA-2026-0039' ? ofuAllCleared : false) && (
+                          <button
+                            onClick={() => issuePortClearance(q)}
+                            style={{ background: C.green, border: 'none', borderRadius: 4, color: '#fff', cursor: 'pointer', fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: '0.5px', padding: '4px 10px', whiteSpace: 'nowrap' }}
+                          >
+                            Issue Port Clearance
+                          </button>
+                        )}
+                        {portClearedRef[q.ref] && (
+                          <button
+                            onClick={() => setShowCert(showCert === q.ref ? null : q.ref)}
+                            style={{ background: C.greenBg, border: `1px solid ${C.greenBdr}`, borderRadius: 4, color: C.green, cursor: 'pointer', fontFamily: MONO, fontSize: 9, letterSpacing: '0.5px', padding: '4px 10px', whiteSpace: 'nowrap' }}
+                          >
+                            {showCert === q.ref ? 'Hide Cert' : 'View Certificate'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          {/* PORT CLEARED banner + certificate */}
+          {Object.keys(portClearedRef).length > 0 && (
+            <div style={{ background: C.green, borderRadius: 8, padding: '16px 20px' }}>
+              <div style={{ fontFamily: MONO, fontSize: 12, color: '#fff', fontWeight: 700, letterSpacing: '1.5px', marginBottom: 4 }}>
+                PORT CLEARED — UA FAASAOLOTO I LE UAFU
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: 'rgba(255,255,255,0.85)' }}>
+                {Object.entries(portClearedRef).map(([ref, cert]) => (
+                  <div key={ref}>{ref} · Certificate: {cert} · {wst()}</div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Inline certificate view */}
+          {showCert && portClearedRef[showCert] && (() => {
+            const entry = queue.find(q => q.ref === showCert)
+            if (!entry) return null
+            const fakeTx = `0x${showCert.replace(/\W/g,'').padEnd(40,'0')}`
+            return (
+              <PortClearanceCert
+                certRef={portClearedRef[showCert]}
+                txHash={fakeTx}
+                payRef={generateISO20022Ref(entry.imo)}
+                vesselName={entry.vessel}
+                imoNumber={entry.imo}
+                flagState="WS"
+                masterName="Captain"
+                clearances={[
+                  { label: 'Customs & Revenue Authority', at: wst() },
+                  { label: 'MAF Biosecurity',             at: wst() },
+                  { label: 'Port Health — MOH',            at: wst() },
+                  { label: 'Samoa Port Authority',         at: wst() },
+                ]}
+                duesAmount={entry.dues}
+              />
+            )
+          })()}
 
           {/* Berth assignment modal */}
           {assignModal && (

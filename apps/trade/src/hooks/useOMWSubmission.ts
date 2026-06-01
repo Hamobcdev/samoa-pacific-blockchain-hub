@@ -3,26 +3,24 @@ import type { OMWSubmissionResult } from '../types'
 
 let _seqCounter = 41
 
-function nextSeq(): string {
+function nextSeq(pad: number): string {
   _seqCounter += 1
-  return String(_seqCounter).padStart(6, '0')
+  return String(_seqCounter).padStart(pad, '0')
 }
 
 export function generateISO20022Ref(imoNumber: string, portCode = 'WSAPI'): string {
   const yr = new Date().getFullYear()
-  return `OMW/${yr}/${portCode}/${imoNumber}/${nextSeq()}`
+  return `OMW/${yr}/${portCode}/${imoNumber}/${nextSeq(6)}`
 }
 
 export function generateNOARef(): string {
-  const yr  = new Date().getFullYear()
-  const seq = String(_seqCounter + 10).padStart(4, '0')
-  return `NOA-${yr}-${seq}`
+  const yr = new Date().getFullYear()
+  return `NOA-${yr}-${nextSeq(4)}`
 }
 
 export function generateCertRef(): string {
-  const yr  = new Date().getFullYear()
-  const seq = String(_seqCounter + 10).padStart(6, '0')
-  return `PCX-${yr}-${seq}`
+  const yr = new Date().getFullYear()
+  return `PCX-${yr}-${nextSeq(6)}`
 }
 
 export function useOMWSubmission() {
@@ -32,7 +30,6 @@ export function useOMWSubmission() {
   const submit = useCallback(async (imoNumber: string, portCode?: string): Promise<OMWSubmissionResult> => {
     setSubmitting(true)
     try {
-      // Demo mode: no wallet — simulate on-chain submission
       await new Promise(r => setTimeout(r, 900))
       const ref = generateISO20022Ref(imoNumber, portCode)
       const res: OMWSubmissionResult = {

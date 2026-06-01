@@ -4,6 +4,7 @@ import { LanguageProvider, CurrencyProvider } from '@samoa-dpi/shared-ui'
 import { C, MONO, SANS, TAPA_BG } from './constants'
 import { OMWAuthGate } from './components/OMWAuthGate'
 import { ShippingAgentDashboard } from './components/ShippingAgentDashboard'
+import { ShipMasterDashboard } from './components/ShipMasterDashboard'
 import { FreightForwarderDashboard } from './components/FreightForwarderDashboard'
 import { GovOfficerDashboard } from './components/GovOfficerDashboard'
 import { PortalFooter } from './components/layout/PortalFooter'
@@ -88,9 +89,10 @@ function AppInner() {
 
       {/* Main content */}
       <main style={{ flex: 1, padding: '24px', maxWidth: 960, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
-        {session.role === 'SHIPPING_AGENT'   && <ShippingAgentDashboard    session={session} />}
-        {session.role === 'FREIGHT_FORWARDER' && <FreightForwarderDashboard session={session} />}
-        {session.role === 'GOV_OFFICER'       && <GovOfficerDashboard       session={session} />}
+        {session.role === 'SHIPPING_AGENT'    && <ShippingAgentDashboard    session={session} />}
+        {session.role === 'SHIP_MASTER'       && <ShipMasterDashboard        session={session} />}
+        {session.role === 'FREIGHT_FORWARDER' && <FreightForwarderDashboard  session={session} />}
+        {session.role === 'GOV_OFFICER'       && <GovOfficerDashboard        session={session} />}
       </main>
 
       <PortalFooter />

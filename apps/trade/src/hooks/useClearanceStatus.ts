@@ -1,21 +1,24 @@
 import { useState, useEffect, useRef } from 'react'
-import { DEMO_CLEARANCE } from '../constants'
+import { DEMO_CLEARANCE, DEMO_CLEARANCE_CLEARED } from '../constants'
 import type { ClearanceRecord } from '../types'
 
 const POLL_MS = 30_000
 
+function getRecord(vesselRef: string): ClearanceRecord {
+  if (vesselRef === 'NOA-2026-0039') {
+    return { ...DEMO_CLEARANCE_CLEARED, vesselRef }
+  }
+  return { ...DEMO_CLEARANCE, vesselRef, formRef: vesselRef }
+}
+
 export function useClearanceStatus(vesselRef: string) {
-  const [record, setRecord]       = useState<ClearanceRecord>(DEMO_CLEARANCE)
+  const [record, setRecord]       = useState<ClearanceRecord>(() => getRecord(vesselRef))
   const [lastUpdated, setUpdated] = useState<Date>(new Date())
   const timerRef                  = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    // In demo mode, just use the static record.
-    // A real implementation would poll the chain or an API here.
-    void vesselRef // suppress lint
-
     const poll = () => {
-      setRecord({ ...DEMO_CLEARANCE })
+      setRecord(getRecord(vesselRef))
       setUpdated(new Date())
       timerRef.current = setTimeout(poll, POLL_MS)
     }

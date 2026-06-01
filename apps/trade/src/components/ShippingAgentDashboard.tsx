@@ -700,72 +700,127 @@ export function ShippingAgentDashboard({ session }: Props) {
   // ── DEPARTURE TAB ─────────────────────────────────────────────────────────
 
   function DepartureTab() {
-    const [crewInput, setCrewInput] = useState(String(crewCount || 0))
-    const crew = parseInt(crewInput, 10) || 0
-    const dues = 500 + crew * 50
+    const portCleared = statuses.filter(s => s.code !== 'IMMIG').every(s => s.status === 'Cleared')
 
-    const checks: Array<{ label: string; done: boolean }> = [
-      { label: 'FAL Form 1 submitted',                   done: submitted.fal1 },
-      { label: 'Cargo Declaration submitted to ASYCUDA', done: submitted.fal2 },
-      { label: 'All agency clearances received',         done: statuses.filter(s => s.code !== 'IMMIG').every(s => s.status === 'Cleared') },
-      { label: 'Harbour dues paid',                      done: submitted.dc },
-    ]
+    const [atd,            setAtd]            = useState('')
+    const [nextPort,       setNextPort]       = useState('')
+    const [pob,            setPob]            = useState('')
+    const [personsChange,  setPersonsChange]  = useState<'no' | 'yes'>('no')
+    const [changeRows,     setChangeRows]     = useState([{ name: '', reason: '' }])
+    const [storesDeclared, setStoresDeclared] = useState(false)
+    const [masterSig,      setMasterSig]      = useState(false)
+    const [depSubmitted,   setDepSubmitted]   = useState(false)
+    const [depRef,         setDepRef]         = useState('')
 
-    function requestDeparture() {
-      const r = ref('DC')
-      markSubmitted('dc', r, 'dc')
-      addAudit({ timestamp: wst(), form: 'Departure Clearance Request', reference: r, transmittedTo: 'SPA Port Authority', status: 'Submitted' })
+    function submitDeparture() {
+      const r = `OUT-${new Date().getFullYear()}-${String(Math.floor(100000 + Math.random() * 900000))}`
+      setDepRef(r)
+      setDepSubmitted(true)
+      addAudit({ timestamp: wst(), form: 'Departure Declaration', reference: r, transmittedTo: 'SPA Port Authority', status: 'Submitted' })
     }
 
-    return (
-      <div style={{ maxWidth: 560 }}>
-        {sectionHead('Departure Clearance', 'Samoa Port Authority — Port Departure Procedures')}
+    const canSubmit = !!atd && !!nextPort && !!pob && storesDeclared && masterSig
 
-        {/* Checklist */}
-        <div style={{ border: `1px solid ${C.border}`, borderRadius: 6, padding: 16, marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, letterSpacing: '1px', marginBottom: 4 }}>DEPARTURE CLEARANCE CHECKLIST</div>
-          {checks.map(c => (
-            <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontFamily: MONO, fontSize: 13, color: c.done ? C.green : C.dim }}>{c.done ? '☑' : '☐'}</span>
-              <span style={{ fontFamily: SANS, fontSize: 13, color: c.done ? C.text : C.muted }}>{c.label}</span>
+    if (!portCleared) {
+      return (
+        <div style={{ maxWidth: 560 }}>
+          {sectionHead('Departure', 'Outward Clearance — Samoa Port Authority')}
+          <div style={{ background: `${C.amber}10`, border: `1px solid ${C.amberBdr}`, borderRadius: 8, padding: '20px 24px' }}>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: C.amber, fontWeight: 700, marginBottom: 8 }}>
+              ⏳ PORT CLEARED REQUIRED BEFORE DEPARTURE
             </div>
-          ))}
-        </div>
-
-        {/* Dues calculator */}
-        <div style={{ border: `1px solid ${C.border}`, borderRadius: 6, padding: 16, marginBottom: 20 }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, letterSpacing: '1px', marginBottom: 12 }}>HARBOUR DUES CALCULATOR</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontFamily: MONO, fontSize: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: C.muted }}>
-              <span>Base dues:</span><span>WST 500.00</span>
+            <div style={{ fontFamily: SANS, fontSize: 13, color: C.muted, lineHeight: 1.6 }}>
+              The Departure Declaration form will be available once all four
+              border agencies have completed clearance and the Samoa Port
+              Authority has issued PORT CLEARED status.
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ color: C.muted }}>Crew members:</span>
-              <input type="number" value={crewInput} onChange={e => setCrewInput(e.target.value)} min={0}
-                style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 3, color: C.text, fontFamily: MONO, fontSize: 12, padding: '4px 8px', width: 60, outline: 'none' }} />
-              <span style={{ color: C.muted }}>× WST 50.00 = WST {(crew * 50).toFixed(2)}</span>
-            </div>
-            <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 8, display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: C.text, fontWeight: 700 }}>Total:</span>
-              <span style={{ color: C.gold, fontWeight: 700 }}>WST {dues.toFixed(2)}</span>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: C.dim, marginTop: 12 }}>
+              Current: {statuses.filter(s => s.code !== 'IMMIG' && s.status === 'Cleared').length} / 4 agencies cleared
             </div>
           </div>
         </div>
+      )
+    }
 
-        {!submitted.dc
-          ? (
-            <button onClick={requestDeparture}
-              style={{ background: C.flagBlue, border: 'none', borderRadius: 4, color: '#fff', cursor: 'pointer', fontFamily: MONO, fontSize: 11, fontWeight: 700, letterSpacing: '1px', padding: '12px 20px' }}>
-              Request Departure Clearance
-            </button>
-          )
-          : confirmation([
-              `✓ Departure Clearance Requested`,
-              `Certificate Reference: ${refs.dc}`,
-              `Transmitted to: SPA Port Authority`,
-              `Timestamp: ${wst()} WST`,
-            ])
-        }
+    if (depSubmitted) {
+      return (
+        <div style={{ maxWidth: 560 }}>
+          {sectionHead('Departure', 'Outward Clearance — Samoa Port Authority')}
+          {confirmation([
+            `✓ Departure Declaration Submitted`,
+            `Outward Clearance Reference: ${depRef}`,
+            `Vessel is cleared for departure.`,
+            `Timestamp: ${wst()} WST`,
+          ])}
+          <div style={{ background: `${C.amber}10`, border: `1px solid ${C.amberBdr}`, borderRadius: 6, padding: '10px 14px', marginTop: 12, fontFamily: SANS, fontSize: 12, color: C.amber, lineHeight: 1.6 }}>
+            Note: Outward clearance from Customs office required for cargo vessels
+            carrying dutiable goods — contact Customs MOR, Apia.
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div style={{ maxWidth: 600, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {sectionHead('Departure Declaration', 'Outward Clearance — IMO FAL Convention · Samoa Port Authority')}
+
+        {/* PORT CLEARED confirmation */}
+        <div style={{ background: C.greenBg, border: `1px solid ${C.greenBdr}`, borderRadius: 6, padding: '10px 14px', fontFamily: MONO, fontSize: 10, color: C.green }}>
+          ✓ PORT CLEARED — All agencies have completed assessment. Departure declaration may now be submitted.
+        </div>
+
+        {grid2([
+          fld('Actual Time of Departure (ATD)', atd, setAtd, { type: 'datetime-local' }),
+          fld('Next Port of Call', nextPort, setNextPort, { placeholder: 'e.g. Suva, Fiji' }),
+        ])}
+        {fld('Persons on Board at Departure', pob, setPob, { type: 'number', placeholder: 'Total crew + passengers' })}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted }}>Persons joining or disembarking in Samoa?</div>
+          <div style={{ display: 'flex', gap: 16 }}>
+            {(['no', 'yes'] as const).map(v => (
+              <label key={v} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontFamily: MONO, fontSize: 11, color: personsChange === v ? C.text : C.muted }}>
+                <input type="radio" name="persons-change" value={v} checked={personsChange === v} onChange={() => setPersonsChange(v)} style={{ accentColor: C.flagBlue }} />
+                {v === 'yes' ? 'Yes' : 'No'}
+              </label>
+            ))}
+          </div>
+          {personsChange === 'yes' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {changeRows.map((row, i) => (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  {fld('Name', row.name, v => { const n=[...changeRows]; n[i]={...n[i],name:v}; setChangeRows(n) })}
+                  {fld('Reason', row.reason, v => { const n=[...changeRows]; n[i]={...n[i],reason:v}; setChangeRows(n) })}
+                </div>
+              ))}
+              <button onClick={() => setChangeRows(x => [...x, { name:'', reason:'' }])}
+                style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 3, color: C.muted, cursor: 'pointer', fontFamily: MONO, fontSize: 9, padding: '3px 8px', alignSelf: 'flex-start' }}>
+                + Add Row
+              </button>
+            </div>
+          )}
+        </div>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontFamily: MONO, fontSize: 11, color: C.muted }}>
+          <input type="checkbox" checked={storesDeclared} onChange={e => setStoresDeclared(e.target.checked)} style={{ accentColor: C.flagBlue }} />
+          Final stores and bunkers declaration is accurate. All ship's stores for voyage use only.
+        </label>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontFamily: MONO, fontSize: 11, color: C.muted }}>
+          <input type="checkbox" checked={masterSig} onChange={e => setMasterSig(e.target.checked)} style={{ accentColor: C.flagBlue }} />
+          I, the Master, confirm all information in this departure declaration is correct and complete.
+        </label>
+
+        {!canSubmit && (
+          <div style={{ fontFamily: MONO, fontSize: 10, color: C.amber }}>
+            Required: ATD, Next Port, Persons on Board, stores declaration, Master confirmation
+          </div>
+        )}
+
+        <button onClick={submitDeparture} disabled={!canSubmit}
+          style={{ background: canSubmit ? C.flagBlue : C.surface2, border: 'none', borderRadius: 4, color: canSubmit ? '#fff' : C.muted, cursor: canSubmit ? 'pointer' : 'not-allowed', fontFamily: MONO, fontSize: 11, fontWeight: 700, letterSpacing: '1px', padding: '12px 20px', alignSelf: 'flex-start', opacity: canSubmit ? 1 : 0.6 }}>
+          Submit Departure Declaration
+        </button>
       </div>
     )
   }

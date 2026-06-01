@@ -158,7 +158,7 @@ export const DEMO_OFFICER_CREDENTIALS: Record<string, { name: string; credHash: 
   portAuth:   { name: 'Harbour Master Pepe Fiti', credHash: '0x2a8f...c14d' },
 }
 
-// ── Demo clearance record ─────────────────────────────────────────────────────
+// ── Demo clearance record — in-progress ──────────────────────────────────────
 
 export const DEMO_CLEARANCE: ClearanceRecord = {
   vesselRef:  'NOA-2026-0042',
@@ -182,6 +182,32 @@ export const DEMO_CLEARANCE: ClearanceRecord = {
   ],
   duesAmount: '15,687.00',
   duesStatus: 'CBS_HELD',
+}
+
+// ── Demo clearance record — fully cleared (MV Ofu Cargo) ─────────────────────
+
+export const DEMO_CLEARANCE_CLEARED: ClearanceRecord = {
+  vesselRef:  'NOA-2026-0039',
+  formRef:    'NOA-2026-0039',
+  vesselName: 'MV Ofu Cargo',
+  imoNumber:  '8812345',
+  eta:        '18/05/2026 09:00',
+  formStatuses: [
+    { label: 'Notice of Arrival',          status: 'SUBMITTED' },
+    { label: 'FAL Form 1 (General Decl)',  status: 'SUBMITTED' },
+    { label: 'FAL Form 5 (Crew List)',     status: 'SUBMITTED' },
+    { label: 'FAL Form 7 (Dangerous Gds)', status: 'NOT_REQUIRED' },
+    { label: 'Health Declaration',         status: 'SUBMITTED' },
+  ],
+  ministryStatuses: [
+    { ministry: 'Customs & Revenue',    code: 'customs',    status: 'CLEARED', clearedAt: '18/05 08:15' },
+    { ministry: 'Immigration',          code: 'immigration',status: 'CLEARED', clearedAt: '18/05 08:20' },
+    { ministry: 'MAF / Biosecurity',    code: 'maf',        status: 'CLEARED', clearedAt: '18/05 08:30' },
+    { ministry: 'Port Health',          code: 'portHealth', status: 'CLEARED', clearedAt: '18/05 08:45' },
+    { ministry: 'Samoa Port Authority', code: 'portAuth',   status: 'CLEARED', clearedAt: '18/05 09:00' },
+  ],
+  duesAmount: '10,332.00',
+  duesStatus: 'PAID',
 }
 
 // ── CBS Governance items (canonical — must match apps/admin exactly) ──────────
@@ -312,6 +338,15 @@ export const I18N = {
     back:                 '← Back',
     download:             'Download',
     copyClipboard:        'Copy to clipboard',
+    statusPending:        'FAATALITALI',
+    statusUnderReview:    "O LO'O SIAKI",
+    statusApproved:       'UA PASIA',
+    statusPortCleared:    'UA FAASAOLOTO I LE UAFU',
+    statusHold:           'TAOFI',
+    portClearedBanner:    'UA FAASAOLOTO I LE UAFU / PORT CLEARED',
+    tabClearanceStatus:   'Clearance Status',
+    tabPortCert:          'Port Clearance Certificate',
+    tabVoyageDetails:     'Voyage Details',
   },
   sm: {
     portalTitle:          "Faitoto'o o Fefa'ataua'iga ma Tulagavae",
@@ -337,6 +372,15 @@ export const I18N = {
     back:                 '← Toe foi',
     download:             'Sii i lalo',
     copyClipboard:        'Kopi i le klipiboa',
+    statusPending:        'FAATALITALI',
+    statusUnderReview:    "O LO'O SIAKI",
+    statusApproved:       'UA PASIA',
+    statusPortCleared:    'UA FAASAOLOTO I LE UAFU',
+    statusHold:           'TAOFI',
+    portClearedBanner:    'UA FAASAOLOTO I LE UAFU / PORT CLEARED',
+    tabClearanceStatus:   'Tulaga o Faatagaga',
+    tabPortCert:          'Tusi Faatagaga o le Uafu',
+    tabVoyageDetails:     'Faaamatalaga o le Malaga',
   },
 }
 
@@ -375,18 +419,20 @@ export const TAPA_BG = `url("data:image/svg+xml,${encodeURIComponent(TAPA_PATTER
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
 export const C = {
-  flagRed:   '#CE1126',
-  flagBlue:  '#003087',
-  gold:      '#C9A227',
-  bg:        '#070910',
-  surface:   '#0c1222',
-  surface2:  '#111830',
-  surface3:  '#18213c',
-  border:    '#1b2540',
-  border2:   '#253258',
-  text:      '#e8edf8',
-  muted:     '#8c9ab8',
-  dim:       '#3a4a6a',
+  flagRed:    '#CE1126',
+  flagBlue:   '#003087',
+  gold:       '#C9A227',
+  bg:         '#ffffff',
+  surface:    '#f8f9fb',
+  surface2:   '#f0f2f5',
+  surface3:   '#18213c',
+  border:     '#d0d5dd',
+  border2:    '#253258',
+  text:       '#1a2a3a',
+  muted:      '#4a5568',
+  dim:        '#718096',
+  textOnDark: '#e8edf8',
+  navy:       '#1a2a3a',
   green:     '#00c896',
   greenBg:   '#021a12',
   greenBdr:  '#054030',

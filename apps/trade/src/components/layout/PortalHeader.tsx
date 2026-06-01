@@ -1,7 +1,6 @@
 import React from 'react'
 // @ts-ignore
 import { LanguageToggle } from '@samoa-dpi/shared-ui'
-import { TapaHeader } from '../cultural/TapaHeader'
 import { C, MONO, SANS, t } from '../../constants'
 import type { TopRole, OfficerSubRole } from '../../types'
 import type { LangKey } from '../../constants'
@@ -35,7 +34,6 @@ export function PortalHeader({ lang, role, officerSubRole, onSwitchRole }: Props
 
   return (
     <header style={{ background: C.surface, borderBottom: `1px solid ${C.border}` }}>
-      <TapaHeader height={6} />
       <div style={{
         display:     'flex',
         alignItems:  'center',

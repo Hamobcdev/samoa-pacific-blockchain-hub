@@ -3,7 +3,6 @@ import React, { useState } from 'react'
 import { FeatureGate } from '@samoa-dpi/shared-ui'
 import { C, MONO, SANS, DEMO_VESSELS, DEMO_OFFICER_CREDENTIALS, CBS_GOVERNANCE_ITEMS } from '../../constants'
 import { ClearanceChip } from '../shared/ClearanceChip'
-import { OfficerCredentialInput } from '../shared/OfficerCredentialInput'
 import { AsycudaStubPopup } from '../shared/AsycudaStubPopup'
 import { CBSGovernanceModal } from '../shared/CBSGovernanceModal'
 import type { OfficerSubRole } from '../../types'
@@ -180,7 +179,11 @@ export function OfficerClearanceQueue({ officerSubRole }: Props) {
               )
             })()}
 
-            <OfficerCredentialInput id="officer-cred-review" value={credHash} onChange={setCredHash} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label htmlFor="officer-cred-review" style={{ fontFamily: MONO, fontSize: 10, color: C.muted }}>Officer Credential Hash</label>
+              <input id="officer-cred-review" type="password" value={credHash} onChange={e => setCredHash(e.target.value)}
+                style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontFamily: MONO, fontSize: 12, padding: '8px 10px', outline: 'none', letterSpacing: '2px' }} />
+            </div>
 
             {/* Notes */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

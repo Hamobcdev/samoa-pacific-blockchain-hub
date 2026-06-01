@@ -116,6 +116,20 @@ NUS/ISOC (separate deadline 22 May):
 
 ---
 
+## OMW PORTAL CREDENTIALS — CURRENT (post OMW-1A)
+
+| Credential Code | Role | Zone | Access |
+|---|---|---|---|
+| `SHIPPING-AGENT-2026` | Shipping Agent | 1 | FAL forms 1–7, MDH, MARPOL, departure declaration |
+| `SHIP-MASTER-2026` | Ship Master — **read-only** | 1 | Clearance status, port clearance certificate, voyage details |
+| `FREIGHT-2026` | Freight Forwarder | 1 | Cargo declarations, B/L management, ASYCUDA |
+| `CUSTOMS-2026` | Customs Officer — MOR | 2 | Customs clearance queue + ASYCUDA |
+| `MAF-2026` | MAF Biosecurity Officer | 2 | Biosecurity inspection queue |
+| `PORT-HEALTH-2026` | Port Health Officer — MOH | 2 | Port health screening queue |
+| `SPA-2026` | Samoa Port Authority | 2 | Port operations queue — **PORT CLEARED gate** |
+
+---
+
 ## TECHNOLOGY DECISIONS — LOCKED
 
 | Question | Decision | Phase |

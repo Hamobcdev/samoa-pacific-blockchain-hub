@@ -116,17 +116,20 @@ NUS/ISOC (separate deadline 22 May):
 
 ---
 
-## OMW PORTAL CREDENTIALS — CURRENT (post OMW-1A)
+## OMW PORTAL CREDENTIALS — CURRENT (post OMW-1B)
 
 | Credential Code | Role | Zone | Access |
 |---|---|---|---|
-| `SHIPPING-AGENT-2026` | Shipping Agent | 1 | FAL forms 1–7, MDH, MARPOL, departure declaration |
+| `SHIPPING-AGENT-2026` | Shipping Agent | 1 | FAL forms 1–7, MDH, MARPOL, departure declaration; vessel type selector (Cruise→FAL6+STA, Tanker→declaration panel) |
 | `SHIP-MASTER-2026` | Ship Master — **read-only** | 1 | Clearance status, port clearance certificate, voyage details |
 | `FREIGHT-2026` | Freight Forwarder | 1 | Cargo declarations, B/L management, ASYCUDA |
+| `SSC-AGENT-2026` | SSC Shipping Agent | 1 | Ferry services — Upolu↔Savai'i (simplified) & Apia↔Pago Pago (FAL 1+6, USCG 96-hr notice) |
+| `YACHT-MASTER-2026` | Yacht Master — small craft | 1 | Master's declaration (NOA-YT ref), FAL simplified, clearance status, outward clearance |
 | `CUSTOMS-2026` | Customs Officer — MOR | 2 | Customs clearance queue + ASYCUDA |
 | `MAF-2026` | MAF Biosecurity Officer | 2 | Biosecurity inspection queue |
 | `PORT-HEALTH-2026` | Port Health Officer — MOH | 2 | Port health screening queue |
 | `SPA-2026` | Samoa Port Authority | 2 | Port operations queue — **PORT CLEARED gate** |
+| `STA-2026` | Samoa Tourism Authority | 2 | Cruise arrivals, shore excursion operators, vessel info — **read-only, no clearance data** |
 
 ---
 

@@ -264,7 +264,7 @@ export interface OMWSubmissionResult {
 // ── OMW Auth (Prompt 08) ──────────────────────────────────────────────────────
 
 export interface OMWAuthResult {
-  role: 'SHIPPING_AGENT' | 'FREIGHT_FORWARDER' | 'GOV_OFFICER' | 'SHIP_MASTER'
+  role: 'SHIPPING_AGENT' | 'FREIGHT_FORWARDER' | 'GOV_OFFICER' | 'SHIP_MASTER' | 'SSC_AGENT' | 'YACHT_MASTER' | 'STA_OFFICER'
   zone: 1 | 2
   label: string
   agency: string | null

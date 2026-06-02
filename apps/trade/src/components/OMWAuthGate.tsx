@@ -3,13 +3,16 @@ import { C, MONO, SANS, TAPA_BG } from '../constants'
 import type { OMWAuthResult } from '../types'
 
 const AUTH_MAP: Record<string, Omit<OMWAuthResult, 'authedAt'>> = {
-  'SHIPPING-AGENT-2026': { role: 'SHIPPING_AGENT',   zone: 1, label: 'Shipping Agent',                    agency: null },
-  'SHIP-MASTER-2026':    { role: 'SHIP_MASTER',       zone: 1, label: 'Ship Master — Read Only',           agency: null },
-  'FREIGHT-2026':        { role: 'FREIGHT_FORWARDER', zone: 1, label: 'Freight Forwarder / Trade Agent',   agency: null },
-  'CUSTOMS-2026':        { role: 'GOV_OFFICER',       zone: 2, label: 'Customs Officer — MOR',             agency: 'CUSTOMS' },
-  'MAF-2026':            { role: 'GOV_OFFICER',       zone: 2, label: 'MAF Biosecurity Officer',           agency: 'MAF' },
-  'PORT-HEALTH-2026':    { role: 'GOV_OFFICER',       zone: 2, label: 'Port Health Officer — MOH',         agency: 'PORT_HEALTH' },
-  'SPA-2026':            { role: 'GOV_OFFICER',       zone: 2, label: 'SPA Port Operations Officer',       agency: 'SPA' },
+  'SHIPPING-AGENT-2026': { role: 'SHIPPING_AGENT',   zone: 1, label: 'Shipping Agent',                         agency: null  },
+  'SHIP-MASTER-2026':    { role: 'SHIP_MASTER',       zone: 1, label: 'Ship Master — Read Only',                agency: null  },
+  'FREIGHT-2026':        { role: 'FREIGHT_FORWARDER', zone: 1, label: 'Freight Forwarder / Trade Agent',        agency: null  },
+  'SSC-AGENT-2026':      { role: 'SSC_AGENT',         zone: 1, label: 'SSC Shipping Agent — Ferry Services',    agency: 'SSC' },
+  'YACHT-MASTER-2026':   { role: 'YACHT_MASTER',      zone: 1, label: 'Yacht Master — Small Craft / Pleasure',  agency: null  },
+  'CUSTOMS-2026':        { role: 'GOV_OFFICER',       zone: 2, label: 'Customs Officer — MOR',                  agency: 'CUSTOMS'      },
+  'MAF-2026':            { role: 'GOV_OFFICER',       zone: 2, label: 'MAF Biosecurity Officer',                agency: 'MAF'          },
+  'PORT-HEALTH-2026':    { role: 'GOV_OFFICER',       zone: 2, label: 'Port Health Officer — MOH',              agency: 'PORT_HEALTH'  },
+  'SPA-2026':            { role: 'GOV_OFFICER',       zone: 2, label: 'SPA Port Operations Officer',            agency: 'SPA'          },
+  'STA-2026':            { role: 'STA_OFFICER',       zone: 2, label: 'Samoa Tourism Authority — Cruise Ops',   agency: 'STA'          },
 }
 
 interface Props {

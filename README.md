@@ -68,10 +68,13 @@ No registration required. Research demonstration environment only.
 | Shipping Agent | `SHIPPING-AGENT-2026` | Submit FAL forms, vessel arrival, departure declaration |
 | Ship Master | `SHIP-MASTER-2026` | Read-only — clearance status, port clearance certificate, voyage details |
 | Freight Forwarder | `FREIGHT-2026` | Cargo declarations, B/L management, ASYCUDA |
+| SSC Ferry Agent | `SSC-AGENT-2026` | SSC ferry services — inter-island & Apia ↔ Pago Pago (FAL 6, USCG 96-hr notice) |
+| Yacht Master | `YACHT-MASTER-2026` | Pleasure craft — Master's declaration, FAL simplified, outward clearance |
 | Customs Officer (MOR) | `CUSTOMS-2026` | Customs clearance queue — agency view only |
 | MAF Biosecurity Officer | `MAF-2026` | Biosecurity queue — agency view only |
 | Port Health Officer (MOH) | `PORT-HEALTH-2026` | Health declaration queue — agency view only |
 | SPA Port Operations Officer | `SPA-2026` | Port authority queue — PORT CLEARED gate |
+| STA Cruise Officer | `STA-2026` | Samoa Tourism Authority — cruise arrivals & shore excursion operators (read-only) |
 
 ---
 

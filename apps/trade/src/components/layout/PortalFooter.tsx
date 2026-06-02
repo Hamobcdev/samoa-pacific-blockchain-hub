@@ -37,6 +37,8 @@ export function PortalFooter() {
               'ISO 28000:2022',
               'UNCTAD 2029 BT Readiness',
               'WHO IHR 2005',
+              'MWTI Shipping Act 1998',
+              'MWTI Port Regulations 2019',
             ].map(s => (
               <span key={s} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 3, fontFamily: MONO, fontSize: 8, color: C.dim, padding: '1px 6px', letterSpacing: '0.5px' }}>
                 {s}

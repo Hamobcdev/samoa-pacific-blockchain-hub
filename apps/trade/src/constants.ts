@@ -210,6 +210,114 @@ export const DEMO_CLEARANCE_CLEARED: ClearanceRecord = {
   duesStatus: 'PAID',
 }
 
+// ── Demo clearance record — Lady Samoa IV / Ferry (NOA-2026-0050) ────────────
+
+export const DEMO_CLEARANCE_FERRY: ClearanceRecord = {
+  vesselRef:  'NOA-2026-0050',
+  formRef:    'NOA-2026-0050',
+  vesselName: 'MV Lady Samoa IV',
+  imoNumber:  '9720192',
+  eta:        '08/06/2026 08:00',
+  formStatuses: [
+    { label: 'Notice of Arrival',          status: 'SUBMITTED' },
+    { label: 'FAL Form 1 (General Decl)',  status: 'SUBMITTED' },
+    { label: 'FAL Form 6 (Passenger List)',status: 'SUBMITTED' },
+    { label: 'FAL Form 5 (Crew List)',     status: 'SUBMITTED' },
+    { label: 'Health Declaration',         status: 'SUBMITTED' },
+  ],
+  ministryStatuses: [
+    { ministry: 'Customs & Revenue',    code: 'customs',    status: 'CLEARED',       clearedAt: '08/06 09:15' },
+    { ministry: 'Immigration',          code: 'immigration',status: 'CLEARED',       clearedAt: '08/06 09:20' },
+    { ministry: 'MAF / Biosecurity',    code: 'maf',        status: 'PENDING' },
+    { ministry: 'Port Health',          code: 'portHealth', status: 'CLEARED',       clearedAt: '08/06 09:30' },
+    { ministry: 'Samoa Port Authority', code: 'portAuth',   status: 'AWAITING_PRIOR' },
+  ],
+  duesAmount: '4,726.00',
+  duesStatus: 'PENDING',
+}
+
+// ── Demo clearance record — SV Pacific Dream / Yacht (NOA-YT-2026-0001) ──────
+
+export const DEMO_CLEARANCE_YACHT: ClearanceRecord = {
+  vesselRef:  'NOA-YT-2026-0001',
+  formRef:    'NOA-YT-2026-0001',
+  vesselName: 'SV Pacific Dream',
+  imoNumber:  'N/A — pleasure craft',
+  eta:        '15/05/2026 11:00',
+  formStatuses: [
+    { label: "Master's Pre-Arrival Declaration", status: 'SUBMITTED' },
+    { label: 'FAL Form 1 (General Decl)',         status: 'SUBMITTED' },
+    { label: 'Persons on Board List (FAL 5)',      status: 'SUBMITTED' },
+    { label: 'Maritime Declaration of Health',     status: 'SUBMITTED' },
+  ],
+  ministryStatuses: [
+    { ministry: 'Customs & Revenue',    code: 'customs',    status: 'AWAITING_DOCS' },
+    { ministry: 'Immigration',          code: 'immigration',status: 'CLEARED',       clearedAt: '15/05 11:30' },
+    { ministry: 'MAF / Biosecurity',    code: 'maf',        status: 'PENDING' },
+    { ministry: 'Port Health',          code: 'portHealth', status: 'CLEARED',       clearedAt: '15/05 11:00' },
+    { ministry: 'Samoa Port Authority', code: 'portAuth',   status: 'AWAITING_PRIOR' },
+  ],
+  duesAmount: '350.00',
+  duesStatus: 'PENDING',
+}
+
+// ── STA demo arrivals ─────────────────────────────────────────────────────────
+
+export interface STAArrival {
+  vesselName:         string
+  eta:                string
+  vesselType:         string
+  passengersAshore:   number
+  shoreWindowFrom:    string
+  shoreWindowTo:      string
+  notificationRef:    string
+  status:             'CONFIRMED' | 'PENDING' | 'CANCELLED'
+}
+
+export const DEMO_STA_ARRIVALS: STAArrival[] = [
+  {
+    vesselName:       'MV Pacific Explorer',
+    eta:              '08/06/2026 07:00',
+    vesselType:       'CRUISE',
+    passengersAshore: 320,
+    shoreWindowFrom:  '08:00',
+    shoreWindowTo:    '17:00',
+    notificationRef:  'STA-2026-0001',
+    status:           'CONFIRMED',
+  },
+  {
+    vesselName:       'MV Island Star',
+    eta:              '15/06/2026 08:00',
+    vesselType:       'CRUISE',
+    passengersAshore: 180,
+    shoreWindowFrom:  '09:00',
+    shoreWindowTo:    '16:00',
+    notificationRef:  'STA-2026-0002',
+    status:           'PENDING',
+  },
+]
+
+// ── Vessel types ──────────────────────────────────────────────────────────────
+
+export const VESSEL_TYPES = [
+  { id: 'CARGO',   label: 'Cargo / General Freight' },
+  { id: 'CRUISE',  label: 'Cruise / Passenger' },
+  { id: 'TANKER',  label: 'Tanker / Bulk Carrier' },
+  { id: 'ROPAX',   label: 'Ro-Pax Ferry' },
+  { id: 'YACHT',   label: 'Yacht / Small Craft' },
+] as const
+
+export type VesselTypeId = typeof VESSEL_TYPES[number]['id']
+
+// ── SSC routes ────────────────────────────────────────────────────────────────
+
+export const SSC_ROUTES = [
+  { id: 'INTERNATIONAL', label: 'Apia ↔ Pago Pago',      ports: ['WSAPI', 'ASPPG'] },
+  { id: 'DOMESTIC',      label: "Upolu ↔ Savaiʻi",  ports: ['Mulifanua', 'Salelologa'] },
+] as const
+
+export type SSCRouteId = typeof SSC_ROUTES[number]['id']
+
 // ── CBS Governance items (canonical — must match apps/admin exactly) ──────────
 
 export const CBS_GOVERNANCE_ITEMS: CBSGovernanceItem[] = [

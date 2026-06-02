@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react'
-import { C, MONO, SANS } from '../constants'
+import { C, MONO, SANS, VESSEL_TYPES } from '../constants'
+import type { VesselTypeId } from '../constants'
 import { AuditLog } from './AuditLog'
 import type { OMWAuthResult, AuditEntry } from '../types'
 
@@ -116,6 +117,7 @@ export function ShippingAgentDashboard({ session }: Props) {
   const [audit, setAudit] = useState<AuditEntry[]>([])
   const [statuses, setStatuses] = useState<AgencyStatus[]>(INITIAL_STATUSES)
   const [refreshCount, setRefreshCount] = useState(0)
+  const [vesselTypeId, setVesselTypeId] = useState<VesselTypeId>('CARGO')
 
   // submitted state per form
   const [submitted, setSubmitted] = useState({ fal1: false, fal2: false, fal3: false, fal4: false, fal5: false, fal7: false, mdh: false, dc: false })
@@ -226,6 +228,70 @@ export function ShippingAgentDashboard({ session }: Props) {
             </div>
           )}
         </div>
+
+        {/* Vessel type selector */}
+        <div style={{ border: `1px solid ${C.border}`, borderRadius: 6, padding: '14px 16px' }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: C.gold, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 10 }}>VESSEL TYPE</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {VESSEL_TYPES.map(vt => (
+              <button key={vt.id} onClick={() => setVesselTypeId(vt.id as VesselTypeId)}
+                style={{ background: vesselTypeId === vt.id ? C.flagBlue : C.surface2, border: `1px solid ${vesselTypeId === vt.id ? C.flagBlue : C.border}`, borderRadius: 4, color: vesselTypeId === vt.id ? '#fff' : C.muted, cursor: 'pointer', fontFamily: MONO, fontSize: 10, padding: '7px 14px', transition: 'all 0.12s' }}>
+                {vt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* CRUISE: FAL 6 + STA notification */}
+        {vesselTypeId === 'CRUISE' && (
+          <div style={{ border: `2px solid ${C.flagBlue}50`, borderRadius: 6, overflow: 'hidden' }}>
+            <div style={{ background: `${C.flagBlue}18`, borderBottom: `1px solid ${C.flagBlue}30`, padding: '10px 14px' }}>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: C.info, fontWeight: 700, letterSpacing: '1px' }}>CRUISE / PASSENGER VESSEL — ADDITIONAL REQUIREMENTS</div>
+            </div>
+            <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <span style={{ background: `${C.flagBlue}25`, border: `1px solid ${C.flagBlue}50`, borderRadius: 3, fontFamily: MONO, fontSize: 9, color: C.info, padding: '2px 8px', whiteSpace: 'nowrap', marginTop: 2 }}>FAL 6 REQUIRED</span>
+                <div style={{ fontFamily: SANS, fontSize: 12, color: C.muted, lineHeight: 1.6 }}>
+                  <strong style={{ color: C.text }}>FAL Form 6 — Passenger List</strong> is mandatory for all passenger vessels.
+                  Submit the full passenger manifest in the Declarations tab (FAL Forms section) at least 24 hours before arrival.
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <span style={{ background: `${C.amber}18`, border: `1px solid ${C.amberBdr}`, borderRadius: 3, fontFamily: MONO, fontSize: 9, color: C.amber, padding: '2px 8px', whiteSpace: 'nowrap', marginTop: 2 }}>STA NOTICE</span>
+                <div style={{ fontFamily: SANS, fontSize: 12, color: C.muted, lineHeight: 1.6 }}>
+                  <strong style={{ color: C.text }}>Samoa Tourism Authority notification required.</strong> The STA must be notified of cruise vessel arrivals
+                  at least 72 hours in advance to coordinate shore excursion operators and tourism services.
+                  A copy of the passenger manifest is automatically forwarded to STA on FAL 6 submission.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TANKER: Declaration panel */}
+        {vesselTypeId === 'TANKER' && (
+          <div style={{ border: `1px solid ${C.amberBdr}`, borderRadius: 6, overflow: 'hidden' }}>
+            <div style={{ background: `${C.amber}12`, borderBottom: `1px solid ${C.amberBdr}`, padding: '10px 14px' }}>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: C.amber, fontWeight: 700, letterSpacing: '1px' }}>TANKER / BULK CARRIER — ADDITIONAL DECLARATIONS</div>
+            </div>
+            <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ fontFamily: SANS, fontSize: 12, color: C.muted, lineHeight: 1.6 }}>
+                Tankers and bulk carriers are subject to additional Samoa Port Authority requirements:
+              </div>
+              {[
+                'MARPOL Annex I — Oil Record Book to be available for inspection on arrival',
+                'Cargo Information — MSDS / SDS sheets required for all liquid bulk cargo',
+                'SOPEP (Shipboard Oil Pollution Emergency Plan) to be on board',
+                'Dangerous Goods notification (FAL 7) required if carrying Class 3 or above',
+                'SPA Harbour Master may require pre-arrival safety conference for tankers >5,000 GT',
+              ].map((item, i) => (
+                <div key={i} style={{ fontFamily: SANS, fontSize: 12, color: C.dim, display: 'flex', gap: 8 }}>
+                  <span style={{ color: C.amber, flexShrink: 0 }}>›</span> {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {sectionHead('FAL Form 1 — General Declaration', 'IMO FAL Convention 2024 · Standard General Declaration')}
 

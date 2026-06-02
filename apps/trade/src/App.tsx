@@ -7,6 +7,9 @@ import { ShippingAgentDashboard } from './components/ShippingAgentDashboard'
 import { ShipMasterDashboard } from './components/ShipMasterDashboard'
 import { FreightForwarderDashboard } from './components/FreightForwarderDashboard'
 import { GovOfficerDashboard } from './components/GovOfficerDashboard'
+import { SSCAgentDashboard } from './components/SSCAgentDashboard'
+import { YachtMasterDashboard } from './components/YachtMasterDashboard'
+import { STADashboard } from './components/STADashboard'
 import { PortalFooter } from './components/layout/PortalFooter'
 import type { OMWAuthResult } from './types'
 
@@ -93,6 +96,9 @@ function AppInner() {
         {session.role === 'SHIP_MASTER'       && <ShipMasterDashboard        session={session} />}
         {session.role === 'FREIGHT_FORWARDER' && <FreightForwarderDashboard  session={session} />}
         {session.role === 'GOV_OFFICER'       && <GovOfficerDashboard        session={session} />}
+        {session.role === 'SSC_AGENT'         && <SSCAgentDashboard          session={session} />}
+        {session.role === 'YACHT_MASTER'      && <YachtMasterDashboard       session={session} />}
+        {session.role === 'STA_OFFICER'       && <STADashboard               session={session} />}
       </main>
 
       <PortalFooter />
